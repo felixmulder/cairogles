@@ -244,7 +244,10 @@ _cairo_gl_context_setup_operand (cairo_gl_context_t *ctx,
     case CAIRO_GL_OPERAND_CONSTANT:
         break;
     case CAIRO_GL_OPERAND_TEXTURE:
-        glActiveTexture (GL_TEXTURE0 + tex_unit);
+        if (ctx->states_cache.active_texture != GL_TEXTURE0 + tex_unit) {
+	    glActiveTexture (GL_TEXTURE0 + tex_unit);
+	    ctx->states_cache.active_texture = GL_TEXTURE0 + tex_unit;
+        }
         glBindTexture (ctx->tex_target, operand->texture.tex);
         _cairo_gl_texture_set_extend (ctx, ctx->tex_target,
                                       operand->texture.attributes.extend,
@@ -275,7 +278,10 @@ _cairo_gl_context_setup_operand (cairo_gl_context_t *ctx,
     case CAIRO_GL_OPERAND_RADIAL_GRADIENT_A0:
     case CAIRO_GL_OPERAND_RADIAL_GRADIENT_NONE:
     case CAIRO_GL_OPERAND_RADIAL_GRADIENT_EXT:
-        glActiveTexture (GL_TEXTURE0 + tex_unit);
+        if(ctx->states_cache.active_texture != GL_TEXTURE0 + tex_unit) {
+	    glActiveTexture (GL_TEXTURE0 + tex_unit);
+	    ctx->states_cache.active_texture = GL_TEXTURE0 + tex_unit;
+        }
         glBindTexture (ctx->tex_target, operand->gradient.gradient->tex);
         _cairo_gl_texture_set_extend (ctx, ctx->tex_target,
 				      operand->gradient.extend, FALSE);
@@ -403,11 +409,35 @@ _cairo_gl_set_operator (cairo_gl_context_t *ctx,
     }
 
     if (ctx->current_target->base.content == CAIRO_CONTENT_ALPHA) {
-        glBlendFuncSeparate (GL_ZERO, GL_ZERO, src_factor, dst_factor);
+        /* cache glBlendFunc, src factor and dst factor, alpha factor */
+	if (ctx->states_cache.src_color_factor != GL_ZERO ||
+	   ctx->states_cache.dst_color_factor != GL_ZERO ||
+	   ctx->states_cache.src_alpha_factor != src_factor ||
+	   ctx->states_cache.dst_alpha_factor != dst_factor) {
+	    glBlendFuncSeparate (GL_ZERO, GL_ZERO, src_factor, dst_factor);
+	    ctx->states_cache.src_color_factor = GL_ZERO;
+	    ctx->states_cache.dst_color_factor = GL_ZERO;
+	    ctx->states_cache.src_alpha_factor = src_factor;
+	    ctx->states_cache.dst_alpha_factor = dst_factor;
+        }
     } else if (ctx->current_target->base.content == CAIRO_CONTENT_COLOR) {
-        glBlendFuncSeparate (src_factor, dst_factor, GL_ONE, GL_ONE);
+	if (ctx->states_cache.src_color_factor != src_factor ||
+	    ctx->states_cache.dst_color_factor != dst_factor ||
+	    ctx->states_cache.src_alpha_factor != GL_ONE ||
+	    ctx->states_cache.dst_alpha_factor != GL_ONE) {
+	    glBlendFuncSeparate (src_factor, dst_factor, GL_ONE, GL_ONE);
+	    ctx->states_cache.src_color_factor = src_factor;
+	    ctx->states_cache.dst_color_factor = dst_factor;
+	    ctx->states_cache.src_alpha_factor = GL_ONE;
+	    ctx->states_cache.dst_alpha_factor = GL_ONE;
+        }
     } else {
-        glBlendFunc (src_factor, dst_factor);
+        if (ctx->states_cache.src_color_factor != src_factor ||
+	    ctx->states_cache.dst_color_factor != dst_factor) {
+	    glBlendFunc (src_factor, dst_factor);
+	    ctx->states_cache.src_color_factor = src_factor;
+	    ctx->states_cache.dst_color_factor = dst_factor;
+        }
     }
 }
 
@@ -523,7 +553,6 @@ _scissor_to_doubles (cairo_gl_surface_t	*surface,
     if (_cairo_gl_surface_is_texture (surface) == FALSE)
 	y1 = surface->height - (y1 + height);
     glScissor (x1, y1, x2 - x1, height);
-    glEnable (GL_SCISSOR_TEST);
 }
 
 void
@@ -562,13 +591,6 @@ _cairo_gl_composite_setup_vbo (cairo_gl_context_t *ctx,
     return vertex_size_changed;
 }
 
-static void
-_disable_stencil_buffer (void)
-{
-    glDisable (GL_STENCIL_TEST);
-    glDepthMask (GL_FALSE);
-}
-
 static cairo_int_status_t
 _cairo_gl_composite_setup_painted_clipping (cairo_gl_composite_t *setup,
 					    cairo_gl_context_t *ctx,
@@ -581,8 +603,9 @@ _cairo_gl_composite_setup_painted_clipping (cairo_gl_composite_t *setup,
     cairo_clip_t *old_clip = setup->dst->clip_on_stencil_buffer;
 
     if (clip->num_boxes == 1 && clip->path == NULL) {
-	_scissor_to_box (dst, &clip->boxes[0]);
-	goto disable_stencil_buffer_and_return;
+    _scissor_to_box (dst, &clip->boxes[0]);
+    _enable_scissor_buffer (ctx);
+    goto disable_stencil_buffer_and_return;
     }
 
     if (! _cairo_gl_ensure_stencil (ctx, setup->dst)) {
@@ -596,8 +619,12 @@ _cairo_gl_composite_setup_painted_clipping (cairo_gl_composite_t *setup,
     _cairo_gl_scissor_to_rectangle (dst, _cairo_clip_get_extents (clip));
 
     /* The clip is not rectangular, so use the stencil buffer. */
-    glDepthMask (GL_TRUE);
-    glEnable (GL_STENCIL_TEST);
+    if (! ctx->states_cache.depth_mask ) {
+	glDepthMask (GL_TRUE);
+	ctx->states_cache.depth_mask = TRUE;
+    }
+
+    _enable_stencil_buffer (ctx);
 
     if (_cairo_clip_equal (old_clip, setup->clip)) {
         goto activate_stencil_buffer_and_return;
@@ -636,7 +663,7 @@ activate_stencil_buffer_and_return:
     return CAIRO_INT_STATUS_SUCCESS;
 
 disable_stencil_buffer_and_return:
-    _disable_stencil_buffer ();
+    _disable_stencil_buffer (ctx);
     return status;
 }
 
@@ -679,8 +706,8 @@ _cairo_gl_composite_setup_clipping (cairo_gl_composite_t *setup,
 	return _cairo_gl_composite_setup_painted_clipping (setup, ctx,
                                                            vertex_size);
 disable_all_clipping:
-    _disable_stencil_buffer ();
-    glDisable (GL_SCISSOR_TEST);
+    _disable_stencil_buffer (ctx);
+    _disable_scissor_buffer (ctx);
     return CAIRO_INT_STATUS_SUCCESS;
 }
 
@@ -771,7 +798,10 @@ _cairo_gl_composite_begin (cairo_gl_composite_t *setup,
 	return status;
 
     _cairo_gl_context_set_destination (ctx, setup->dst, setup->multisample);
-    glEnable (GL_BLEND);
+    if (ctx->states_cache.blend_enabled == FALSE) {
+	glEnable (GL_BLEND);
+	ctx->states_cache.blend_enabled = TRUE;
+    }
 
     status = _cairo_gl_set_operands_and_operator (setup, ctx);
     if (unlikely (status))
@@ -873,6 +903,7 @@ _cairo_gl_composite_draw_triangles_with_clip_region (cairo_gl_context_t *ctx,
 	cairo_region_get_rectangle (ctx->clip_region, i, &rect);
 
 	_cairo_gl_scissor_to_rectangle (ctx->current_target, &rect);
+	_enable_scissor_buffer (ctx);
 	_cairo_gl_composite_draw_triangles (ctx, count);
     }
 }
