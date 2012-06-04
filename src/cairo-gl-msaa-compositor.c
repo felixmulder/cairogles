@@ -556,12 +556,16 @@ _stroke_shaper_add_quad (void			*closure,
 
 static cairo_bool_t
 _stroke_components_may_overlap (const cairo_path_fixed_t *path,
-				const cairo_stroke_style_t *style)
+				const cairo_stroke_style_t *style,
+				cairo_bool_t hairline_stroke)
 {
     const cairo_path_buf_t *buf;
 
     if (style->dash)
 	return TRUE;
+
+    if (hairline_stroke && _cairo_path_fixed_is_single_arc (path))
+	return FALSE;
 
     buf  = cairo_path_head (path);
     if (buf->num_ops > 2)
@@ -604,13 +608,14 @@ _prevent_overlapping_strokes (cairo_gl_context_t 		*ctx,
 			      cairo_composite_rectangles_t 	*composite,
 			      const cairo_path_fixed_t		*path,
 			      const cairo_stroke_style_t	*style,
-			      const cairo_matrix_t		*ctm)
+			      const cairo_matrix_t		*ctm,
+			      cairo_bool_t			 hairline_stroke)
 {
     cairo_rectangle_int_t stroke_extents;
     const cairo_pattern_t *pattern = composite->original_source_pattern;
     cairo_pattern_type_t type = cairo_pattern_get_type ((cairo_pattern_t *) pattern);
 
-    if (! _stroke_components_may_overlap (path, style))
+    if (! _stroke_components_may_overlap (path, style, hairline_stroke))
 	return CAIRO_INT_STATUS_SUCCESS;
 
     if (! _cairo_gl_ensure_stencil (ctx, setup->dst))
@@ -710,6 +715,7 @@ _cairo_gl_msaa_compositor_stroke (const cairo_compositor_t	*compositor,
     cairo_int_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *) composite->surface;
     struct _tristrip_composite_info info;
+    cairo_bool_t hairline = FALSE;
 
     if (! can_use_msaa_compositor (dst, antialias))
 	return CAIRO_INT_STATUS_UNSUPPORTED;
@@ -758,10 +764,31 @@ _cairo_gl_msaa_compositor_stroke (const cairo_compositor_t	*compositor,
     if (unlikely (status))
 	goto finish;
 
+    hairline = _cairo_gl_hairline_style_is_hairline (style, ctm);
     status = _prevent_overlapping_strokes (info.ctx, &info.setup,
-					   composite, path, style, ctm);
+					   composite, path, style,
+					   ctm, hairline);
     if (unlikely (status))
 	goto finish;
+
+    if (hairline) {
+	cairo_gl_hairline_closure_t closure;
+
+	closure.ctx = info.ctx;
+
+	closure.tolerance = tolerance;
+
+	status = _cairo_gl_path_fixed_stroke_to_hairline (path, &closure,
+							  style, ctm,
+							  ctm_inverse,
+							  _cairo_gl_hairline_move_to,
+							  style->dash ?
+							  _cairo_gl_hairline_line_to_dashed :
+							  _cairo_gl_hairline_line_to,
+							  _cairo_gl_hairline_curve_to,
+							  _cairo_gl_hairline_close_path);
+	goto finish;
+    }
 
     status = _cairo_path_fixed_stroke_to_shaper ((cairo_path_fixed_t *) path,
 						 style,
