@@ -44,8 +44,44 @@
 
 #include "cairo-error-private.h"
 #include "cairo-gl-private.h"
+#include "cairo-rtree-private.h"
 
 #define MAX_MSAA_SAMPLES 4
+
+cairo_int_status_t
+_cairo_gl_image_cache_init (cairo_gl_context_t *ctx, int width, int height,
+                            cairo_gl_image_cache_t **image_cache)
+{
+    cairo_surface_t *cache_surface = _cairo_gl_surface_create_scratch (ctx,
+						CAIRO_CONTENT_COLOR_ALPHA,
+						width, height);
+    if (unlikely (cache_surface->status)) {
+	cairo_surface_destroy (cache_surface);
+	return CAIRO_INT_STATUS_UNSUPPORTED;
+    }
+
+    _cairo_surface_release_device_reference (cache_surface);
+    *image_cache = _cairo_malloc (sizeof (cairo_gl_image_cache_t));
+    (*image_cache)->surface = (cairo_gl_surface_t *)cache_surface;
+    (*image_cache)->surface->supports_msaa = FALSE;
+    _cairo_rtree_init (&((*image_cache)->rtree), width, height,
+		       IMAGE_CACHE_MIN_SIZE,
+		       sizeof (cairo_gl_image_t),
+		       _cairo_gl_image_node_destroy);
+
+    (*image_cache)->copy_success = TRUE;
+    return CAIRO_INT_STATUS_SUCCESS;
+}
+
+void
+_cairo_gl_image_cache_fini (cairo_gl_context_t *ctx)
+{
+    if (ctx->image_cache) {
+	_cairo_rtree_fini (&ctx->image_cache->rtree);
+	cairo_surface_destroy (&ctx->image_cache->surface->base);
+    }
+    free (ctx->image_cache);
+}
 
 static void
 _gl_lock (void *device)
@@ -111,6 +147,9 @@ _gl_finish (void *device)
 
     for (n = 0; n < ARRAY_LENGTH (ctx->glyph_cache); n++)
 	_cairo_gl_glyph_cache_fini (ctx, &ctx->glyph_cache[n]);
+
+
+    _cairo_gl_image_cache_fini (ctx);
 
     _gl_unlock (device);
 }
@@ -319,6 +358,8 @@ _cairo_gl_context_init (cairo_gl_context_t *ctx)
     for (n = 0; n < ARRAY_LENGTH (ctx->glyph_cache); n++)
 	_cairo_gl_glyph_cache_init (&ctx->glyph_cache[n]);
 
+    ctx->image_cache = NULL;
+
     return CAIRO_STATUS_SUCCESS;
 }
 
@@ -379,7 +420,7 @@ _cairo_gl_ensure_msaa_gles_framebuffer (cairo_gl_context_t *ctx,
 }
 #endif
 
-static void
+void
 _cairo_gl_ensure_framebuffer (cairo_gl_context_t *ctx,
                               cairo_gl_surface_t *surface)
 {
