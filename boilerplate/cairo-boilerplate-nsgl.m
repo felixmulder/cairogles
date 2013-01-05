@@ -263,6 +263,20 @@ static const cairo_boilerplate_target_t targets[] = {
 	TRUE, FALSE, FALSE
     },
     {
+	"nsgl", "gl", NULL, NULL,
+	CAIRO_SURFACE_TYPE_GL, CAIRO_CONTENT_COLOR, 1,
+	"cairo_nsgl_surface_create",
+	_cairo_boilerplate_nsgl_create_surface,
+	cairo_surface_create_similar,
+	NULL, NULL,
+	_cairo_boilerplate_get_image_surface,
+	cairo_surface_write_to_png,
+	_cairo_boilerplate_nsgl_cleanup,
+	_cairo_boilerplate_nsgl_synchronize,
+        NULL,
+	TRUE, FALSE, FALSE
+    },
+    {
 	"nsgl-window", "gl", NULL, NULL,
 	CAIRO_SURFACE_TYPE_GL, CAIRO_CONTENT_COLOR_ALPHA, 1,
 	"cairo_nsgl_surface_create_for_window",
