@@ -60,6 +60,7 @@ _cairo_boilerplate_nsgl_cleanup (void *closure)
     cairo_device_destroy (gltc->device);
 
     [NSOpenGLContext clearCurrentContext];
+    [gltc->ctx release];
     [gltc->pool release];
 
     free (gltc);
