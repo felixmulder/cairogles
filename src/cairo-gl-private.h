@@ -105,6 +105,30 @@ typedef enum cairo_gl_flavor {
     CAIRO_GL_FLAVOR_ES = 2
 } cairo_gl_flavor_t;
 
+/* The order here is sensitive because of the logic of 
+ *_cairo_gl_shader_uniform_for_texunit. */
+typedef enum cairo_gl_uniform_t {
+    CAIRO_GL_UNIFORM_TEXDIMS,    /* "source_texdims" */
+    CAIRO_GL_UNIFORM_TEXGEN,     /* "source_texgen" */
+    CAIRO_GL_UNIFORM_CONSTANT,   /* "source_constant" */
+    CAIRO_GL_UNIFORM_SAMPLER,    /* "source_sampler" */
+    CAIRO_GL_UNIFORM_A,          /* "source_a" */
+    CAIRO_GL_UNIFORM_CIRCLE_D,   /* "source_circle_d" */
+    CAIRO_GL_UNIFORM_RADIUS_0,   /* "source_radius_0" */
+
+    CAIRO_GL_UNIFORM_MASK_TEXDIMS,      /* "mask_texdims" */
+    CAIRO_GL_UNIFORM_MASK_TEXGEN,       /* "mask_texgen" */
+    CAIRO_GL_UNIFORM_MASK_CONSTANT,     /* "mask_constant" */
+    CAIRO_GL_UNIFORM_MASK_SAMPLER,      /* "mask_sampler" */
+    CAIRO_GL_UNIFORM_MASK_A,            /* "mask_a" */
+    CAIRO_GL_UNIFORM_MASK_CIRCLE_D,     /* "mask_circle_d" */
+    CAIRO_GL_UNIFORM_MASK_RADIUS_0,     /* "mask_radius_0" */
+
+    CAIRO_GL_UNIFORM_PROJECTION_MATRIX, /* "ModelViewProjectionMatrix" */
+
+    CAIRO_GL_UNIFORM_MAX
+} cairo_gl_uniform_t;
+
 /* Indices for vertex attributes used by BindAttribLocation etc */
 enum {
     CAIRO_GL_VERTEX_ATTRIB_INDEX = 0,
@@ -202,6 +226,7 @@ typedef enum cairo_gl_tex {
 typedef struct cairo_gl_shader {
     GLuint fragment_shader;
     GLuint program;
+    GLint uniforms[CAIRO_GL_UNIFORM_MAX];
 } cairo_gl_shader_t;
 
 typedef enum cairo_gl_shader_in {
@@ -648,37 +673,41 @@ _cairo_gl_get_shader_by_type (cairo_gl_context_t *ctx,
                               cairo_gl_shader_in_t in,
                               cairo_gl_shader_t **shader);
 
+cairo_private cairo_gl_uniform_t
+_cairo_gl_shader_uniform_for_texunit (cairo_gl_uniform_t uniform,
+				      cairo_gl_tex_t tex_unit);
+
 cairo_private void
 _cairo_gl_shader_bind_float (cairo_gl_context_t *ctx,
-			     const char *name,
+			     cairo_gl_uniform_t uniform,
 			     float value);
 
 cairo_private void
 _cairo_gl_shader_bind_vec2 (cairo_gl_context_t *ctx,
-			    const char *name,
+			    cairo_gl_uniform_t uniform,
 			    float value0, float value1);
 
 cairo_private void
 _cairo_gl_shader_bind_vec3 (cairo_gl_context_t *ctx,
-			    const char *name,
+			    cairo_gl_uniform_t uniform,
 			    float value0,
 			    float value1,
 			    float value2);
 
 cairo_private void
 _cairo_gl_shader_bind_vec4 (cairo_gl_context_t *ctx,
-			    const char *name,
+			    cairo_gl_uniform_t uniform,
 			    float value0, float value1,
 			    float value2, float value3);
 
 cairo_private void
 _cairo_gl_shader_bind_matrix (cairo_gl_context_t *ctx,
-			      const char *name,
+			      cairo_gl_uniform_t uniform,
 			      const cairo_matrix_t* m);
 
 cairo_private void
 _cairo_gl_shader_bind_matrix4f (cairo_gl_context_t *ctx,
-				const char *name,
+				cairo_gl_uniform_t uniform,
 				GLfloat* gl_m);
 
 cairo_private void
