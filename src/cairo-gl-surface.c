@@ -761,6 +761,15 @@ cairo_gl_surface_swapbuffers (cairo_surface_t *abstract_surface)
 
 	ctx->swap_buffers (ctx, surface);
 
+
+	/* According to http://www.khronos.org/registry/egl/specs/EGLTechNote0001.html#bufquery
+	 * the stencil buffer is not preserved after eglSwapBuffers, so we should discard
+	 * any cached one here. */
+	if (surface->clip_on_stencil_buffer) {
+	    _cairo_clip_destroy (surface->clip_on_stencil_buffer);
+	    surface->clip_on_stencil_buffer = NULL;
+	}
+
         status = _cairo_gl_context_release (ctx, status);
         if (status)
             status = _cairo_surface_set_error (abstract_surface, status);
