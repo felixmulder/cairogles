@@ -578,6 +578,7 @@ _cairo_gl_composite_setup_painted_clipping (cairo_gl_composite_t *setup,
 
     cairo_gl_surface_t *dst = setup->dst;
     cairo_clip_t *clip = setup->clip;
+    cairo_clip_t *old_clip = setup->dst->clip_on_stencil_buffer;
 
     if (clip->num_boxes == 1 && clip->path == NULL) {
 	_scissor_to_box (dst, &clip->boxes[0]);
@@ -598,12 +599,8 @@ _cairo_gl_composite_setup_painted_clipping (cairo_gl_composite_t *setup,
     glDepthMask (GL_TRUE);
     glEnable (GL_STENCIL_TEST);
 
-    /* Texture surfaces have private depth/stencil buffers, so we can
-     * rely on any previous clip being cached there. */
-    if (_cairo_gl_surface_is_texture (setup->dst)) {
-	cairo_clip_t *old_clip = setup->dst->clip_on_stencil_buffer;
-	if (_cairo_clip_equal (old_clip, setup->clip))
-	    goto activate_stencil_buffer_and_return;
+    if (_cairo_clip_equal (old_clip, setup->clip)) {
+        goto activate_stencil_buffer_and_return;
 
 	if (old_clip) {
 	    _cairo_clip_destroy (setup->dst->clip_on_stencil_buffer);
