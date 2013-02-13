@@ -167,6 +167,11 @@ _gl_destroy (void *device)
 
     ctx->acquire (ctx);
 
+    if (ctx->glyph_mask) {
+	cairo_surface_destroy (&ctx->glyph_mask->base);
+	ctx->glyph_mask = NULL;
+    }
+
     while (! cairo_list_is_empty (&ctx->fonts)) {
 	cairo_gl_font_t *font;
 
