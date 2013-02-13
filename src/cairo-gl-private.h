@@ -498,6 +498,9 @@ struct _cairo_gl_context {
     cairo_gl_draw_mode_t draw_mode;
     cairo_gl_states_t states_cache;
 
+    /* Intermediate mask surface for glyph rendering. Created on first access, enlarged on demand. */
+    cairo_gl_surface_t *glyph_mask;
+
     void (*acquire) (void *ctx);
     void (*release) (void *ctx);
 

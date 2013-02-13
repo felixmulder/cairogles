@@ -223,6 +223,34 @@ cairo_gl_context_get_glyph_cache (cairo_gl_context_t *ctx,
     return CAIRO_STATUS_SUCCESS;
 }
 
+/* Clear a partial surface, assumes context has already been acquired */
+static void _cairo_gl_surface_clear_with_extent (cairo_gl_context_t *ctx,
+						 cairo_gl_surface_t * dst,
+						 cairo_rectangle_int_t *extent,
+						 cairo_bool_t use_multisample )
+{
+    _cairo_gl_context_set_destination(ctx, dst, use_multisample);
+
+
+   if (ctx->states_cache.clear_red != 0 ||
+       ctx->states_cache.clear_green != 0 ||
+       ctx->states_cache.clear_blue != 0 ||
+       ctx->states_cache.clear_alpha != 0) {
+
+	ctx->states_cache.clear_red = 0;
+	ctx->states_cache.clear_green = 0;
+	ctx->states_cache.clear_blue = 0;
+	ctx->states_cache.clear_alpha = 0;
+
+	glClearColor (0, 0, 0, 0);
+    }
+
+    _enable_scissor_buffer (ctx);
+    glScissor(0, 0, extent->width, extent->height);
+
+}
+
+
 static cairo_status_t
 render_glyphs (cairo_gl_surface_t *dst,
 	       int dst_x, int dst_y,
@@ -358,21 +386,43 @@ render_glyphs_via_mask (cairo_gl_surface_t *dst,
 			cairo_composite_glyphs_info_t *info,
 			cairo_clip_t *clip)
 {
-    cairo_surface_t *mask;
     cairo_status_t status;
     cairo_bool_t has_component_alpha;
+    cairo_gl_context_t *ctx;
 
     TRACE ((stderr, "%s\n", __FUNCTION__));
 
-    /* XXX: For non-CA, this should be CAIRO_CONTENT_ALPHA to save memory */
-    mask = cairo_gl_surface_create (dst->base.device,
-                                    CAIRO_CONTENT_COLOR_ALPHA,
-                                    info->extents.width,
-                                    info->extents.height);
-    if (unlikely (mask->status))
-        return mask->status;
+    status = _cairo_gl_context_acquire (dst->base.device, &ctx);
+    if (unlikely (status))
+	return status;
 
-    status = render_glyphs ((cairo_gl_surface_t *) mask,
+    if (ctx->glyph_mask &&
+	(ctx->glyph_mask->width < info->extents.width ||
+	 ctx->glyph_mask->height < info->extents.height)) {
+	cairo_surface_destroy (&ctx->glyph_mask->base);
+	ctx->glyph_mask = NULL;
+    }
+
+    /* Create the mask if it has not yet been initialized or it was too small and deleted above. */
+    if (!ctx->glyph_mask) {
+	/* XXX: For non-CA, this should be CAIRO_CONTENT_ALPHA to save memory */
+	ctx->glyph_mask = (cairo_gl_surface_t *)
+	     cairo_gl_surface_create (dst->base.device,
+				      CAIRO_CONTENT_COLOR_ALPHA,
+				      info->extents.width,
+				      info->extents.height);
+	if (unlikely (ctx->glyph_mask->base.status)) {
+	    status = ctx->glyph_mask->base.status;
+	    status = _cairo_gl_context_release (ctx, status);
+	    return status;
+	}
+    }
+
+    _cairo_gl_surface_clear_with_extent (ctx,
+					 (cairo_gl_surface_t *)ctx->glyph_mask,
+					 &info->extents, FALSE);
+
+    status = render_glyphs (ctx->glyph_mask,
 			    info->extents.x, info->extents.y,
 			    CAIRO_OPERATOR_ADD, NULL,
 			    info, &has_component_alpha, NULL);
@@ -381,8 +431,8 @@ render_glyphs_via_mask (cairo_gl_surface_t *dst,
 	cairo_surface_pattern_t source_pattern;
 	cairo_rectangle_int_t clip_extents;
 
-	mask->is_clear = FALSE;
-	_cairo_pattern_init_for_surface (&mask_pattern, mask);
+	ctx->glyph_mask->base.is_clear = FALSE;
+	_cairo_pattern_init_for_surface (&mask_pattern, &ctx->glyph_mask->base);
 	mask_pattern.base.has_component_alpha = has_component_alpha;
 	mask_pattern.base.filter = CAIRO_FILTER_NEAREST;
 	mask_pattern.base.extend = CAIRO_EXTEND_NONE;
@@ -412,7 +462,7 @@ render_glyphs_via_mask (cairo_gl_surface_t *dst,
 	_cairo_pattern_fini (&source_pattern.base);
     }
 
-    cairo_surface_destroy (mask);
+    status = _cairo_gl_context_release(ctx, status);
 
     return status;
 }
