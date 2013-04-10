@@ -721,6 +721,7 @@ _cairo_gl_context_set_destination (cairo_gl_context_t *ctx,
     /* OpenGL ES surfaces are always in MSAA mode once it's been turned on,
      * so we don't need to check whether we are switching modes for that
      * surface type. */
+    cairo_bool_t same_surface = ctx->current_target == surface;
     if (ctx->current_target == surface && ! surface->needs_update &&
 	(ctx->gl_flavor == CAIRO_GL_FLAVOR_ES ||
 	 surface->msaa_active == multisampling))
@@ -743,7 +744,8 @@ _cairo_gl_context_set_destination (cairo_gl_context_t *ctx,
 #endif
 	}
     } else {
-        ctx->make_current (ctx, surface);
+        if (!same_surface)
+            ctx->make_current (ctx, surface);
 
 #if CAIRO_HAS_GL_SURFACE
 	if (multisampling)
