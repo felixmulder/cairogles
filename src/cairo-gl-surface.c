@@ -392,6 +392,7 @@ _cairo_gl_surface_init (cairo_device_t *device,
     surface->height = height;
     surface->needs_update = FALSE;
     surface->needs_to_cache = FALSE;
+    surface->image_node = NULL;
 
     _cairo_gl_surface_embedded_operand_init (surface);
 }
@@ -1050,6 +1051,12 @@ _cairo_gl_surface_finish (void *abstract_surface)
     if (surface->msaa_rb)
 	ctx->dispatch.DeleteRenderbuffers (1, &surface->msaa_rb);
 #endif
+
+    if (surface->image_node) {
+        surface->image_node->node.pinned = FALSE;
+	_cairo_rtree_node_remove (&ctx->image_cache->rtree,
+				  &surface->image_node->node);
+    }
 
     return _cairo_gl_context_release (ctx, status);
 }
