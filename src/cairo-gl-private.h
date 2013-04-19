@@ -96,12 +96,15 @@
  * (especially on embedded devices). */
 #define CAIRO_GL_VBO_SIZE (16*1024)
 
-#define IMAGE_CACHE_WIDTH 2048
-#define IMAGE_CACHE_HEIGHT 2048
+#define MIN_IMAGE_CACHE_WIDTH 512
+#define MIN_IMAGE_CACHE_HEIGHT 512
+#define MAX_IMAGE_CACHE_WIDTH 2048
+#define MAX_IMAGE_CACHE_HEIGHT 2048
 #define IMAGE_CACHE_MIN_SIZE 1
 #define IMAGE_CACHE_MAX_SIZE 256
 
 typedef struct _cairo_gl_surface cairo_gl_surface_t;
+typedef struct _cairo_gl_image   cairo_gl_image_t;
 
 /* GL flavor */
 typedef enum cairo_gl_flavor {
@@ -228,6 +231,7 @@ struct _cairo_gl_surface {
     cairo_bool_t needs_to_cache;
     /* Damage is too expensive to check, we use this flag. */
     cairo_bool_t content_changed;
+    cairo_gl_image_t *image_node;
 };
 
 typedef struct cairo_gl_glyph_cache {
@@ -247,19 +251,18 @@ typedef struct cairo_gl_shader {
     GLint uniforms[CAIRO_GL_UNIFORM_MAX];
 } cairo_gl_shader_t;
 
-typedef struct cairo_gl_image_cache {
+typedef struct _cairo_gl_image_cache {
     cairo_rtree_t rtree;
     cairo_gl_surface_t *surface;
+    cairo_bool_t copy_success;
 } cairo_gl_image_cache_t;
 
-typedef struct cairo_gl_image {
+struct _cairo_gl_image {
     cairo_rtree_node_t node;
     cairo_surface_t *original_surface;
     struct { float x, y; } p1, p2;
     cairo_gl_context_t *ctx;
-    cairo_bool_t node_removed;
-    cairo_bool_t user_data_removed;
-} cairo_gl_image_t;
+};
 
 typedef enum cairo_gl_shader_in {
     CAIRO_GL_SHADER_IN_NORMAL,
@@ -431,7 +434,7 @@ struct _cairo_gl_context {
 
     cairo_bool_t thread_aware;
 
-    cairo_gl_image_cache_t image_cache;
+    cairo_gl_image_cache_t *image_cache;
 
     void (*acquire) (void *ctx);
     void (*release) (void *ctx);
@@ -864,8 +867,11 @@ _cairo_gl_image_node_fini (void *data);
 cairo_private void
 _cairo_gl_image_cache_unlock (cairo_gl_context_t *ctx);
 
-cairo_int_status_t
-_cairo_gl_image_cache_init (cairo_gl_context_t *ctx);
+cairo_private cairo_int_status_t
+_cairo_gl_image_cache_init (cairo_gl_context_t *ctx, int width, int height,
+                            cairo_gl_image_cache_t **image_cache);
+cairo_private void
+_cairo_gl_image_cache_fini (cairo_gl_context_t *ctx);
 
 cairo_private void
 _cairo_gl_ensure_framebuffer (cairo_gl_context_t *ctx,
