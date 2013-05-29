@@ -237,6 +237,13 @@ _cairo_pattern_init (cairo_pattern_t *pattern, cairo_pattern_type_t type)
     cairo_matrix_init_identity (&pattern->matrix);
 
     cairo_list_init (&pattern->observers);
+
+    pattern->x_sigma = 0.0f;
+    pattern->y_sigma = 0.0;
+    pattern->x_radius = 0;
+    pattern->y_radius = 0;
+    pattern->convolution_matrix = NULL;
+    pattern->convolution_changed = FALSE;
 }
 
 static cairo_status_t
@@ -358,6 +365,17 @@ _cairo_pattern_init_copy (cairo_pattern_t	*pattern,
     CAIRO_REFERENCE_COUNT_INIT (&pattern->ref_count, 0);
     _cairo_user_data_array_init (&pattern->user_data);
 
+    /* make separate copy of convolution matrix */
+    if (other->convolution_matrix) {
+        int col = 2 * other->x_radius + 1;
+        int row = 2 * other->y_radius + 1;
+        int size = row * col;
+
+        pattern->convolution_matrix = _cairo_malloc_ab (size, sizeof(double));
+        memcpy (pattern->convolution_matrix, other->convolution_matrix,
+                sizeof (double) * size);
+    }
+
     return CAIRO_STATUS_SUCCESS;
 }
 
@@ -393,6 +411,16 @@ _cairo_pattern_init_static_copy (cairo_pattern_t	*pattern,
     }
 
     memcpy (pattern, other, size);
+
+    if (other->convolution_matrix) {
+        int col = 2 * other->x_radius + 1;
+        int row = 2 * other->y_radius + 1;
+        int size = row * col;
+
+        pattern->convolution_matrix = _cairo_malloc_ab (size, sizeof(double) );
+        memcpy (pattern->convolution_matrix, other->convolution_matrix,
+                sizeof (double) * size);
+    }
 
     CAIRO_REFERENCE_COUNT_INIT (&pattern->ref_count, 0);
     _cairo_user_data_array_init (&pattern->user_data);
@@ -460,6 +488,9 @@ _cairo_pattern_fini (cairo_pattern_t *pattern)
 	_cairo_raster_source_pattern_finish (pattern);
 	break;
     }
+
+    if (pattern->convolution_matrix)
+        free (pattern->convolution_matrix);
 
 #if HAVE_VALGRIND
     switch (pattern->type) {
@@ -4485,6 +4516,145 @@ cairo_mesh_pattern_get_control_point (cairo_pattern_t *pattern,
     return CAIRO_STATUS_SUCCESS;
 }
 slim_hidden_def (cairo_mesh_pattern_get_control_point);
+
+cairo_status_t
+cairo_pattern_set_sigma (cairo_pattern_t *pattern,
+                         const double     x_sigma,
+                         const double     y_sigma)
+{
+    if (pattern->status)
+	return pattern->status;
+
+    if (pattern->filter != CAIRO_FILTER_GAUSSIAN)
+        return CAIRO_STATUS_PATTERN_TYPE_MISMATCH;
+
+    if (pattern->type != CAIRO_PATTERN_TYPE_SURFACE)
+	return CAIRO_STATUS_PATTERN_TYPE_MISMATCH;
+
+    if (x_sigma < 0.0 || y_sigma < 0.0)
+	return CAIRO_STATUS_INVALID_SIZE;
+
+    if (pattern->x_sigma == x_sigma && pattern->y_sigma == y_sigma)
+        return CAIRO_STATUS_SUCCESS;
+
+    pattern->x_sigma = x_sigma;
+    pattern->y_sigma = y_sigma;
+    pattern->convolution_changed = TRUE;
+
+    return CAIRO_STATUS_SUCCESS;
+}
+
+cairo_status_t
+cairo_pattern_get_sigma (cairo_pattern_t *pattern,
+                         double          *x_sigma,
+                         double          *y_sigma)
+{
+    if (pattern->status)
+	return pattern->status;
+
+    if (pattern->filter != CAIRO_FILTER_GAUSSIAN)
+	return CAIRO_STATUS_PATTERN_TYPE_MISMATCH;
+
+    if (pattern->type != CAIRO_PATTERN_TYPE_SURFACE)
+	return CAIRO_STATUS_PATTERN_TYPE_MISMATCH;
+
+    *x_sigma = pattern->x_sigma;
+    *y_sigma = pattern->y_sigma;
+    return CAIRO_STATUS_SUCCESS;
+}
+
+cairo_status_t
+_cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
+{
+    double x_sigma, y_sigma;
+    unsigned int x_factor, y_factor;
+
+    double x_sigma_sq, y_sigma_sq;
+    int row, col, n;
+    double *buffer;
+    int i, x, y;
+    double u, v;
+    double sum = 0.0;
+
+    if (pattern->status)
+	return pattern->status;
+
+    if (pattern->filter != CAIRO_FILTER_GAUSSIAN)
+	return CAIRO_STATUS_PATTERN_TYPE_MISMATCH;
+
+    if (pattern->type != CAIRO_PATTERN_TYPE_SURFACE)
+	return CAIRO_STATUS_PATTERN_TYPE_MISMATCH;
+
+    if (! pattern->convolution_changed)
+        return CAIRO_STATUS_SUCCESS;
+
+    x_factor = 1;
+    y_factor = 1;
+    x_sigma = pattern->x_sigma;
+    y_sigma = pattern->y_sigma;
+
+    /* no blur */
+    if (x_sigma == 0.0 && y_sigma == 0.0)
+        return CAIRO_STATUS_SUCCESS;
+
+    if (x_sigma == 0.0)
+        pattern->x_radius = 1;
+    else {
+        while (x_sigma > CAIRO_MAX_SIGMA) {
+	    x_sigma /= 2.0;
+ 	    x_factor *= 2;
+        }
+        /* XXX: skia uses 3, we follow css spec which is 2 */
+	pattern->x_radius = ceil (x_sigma * 2);
+    }
+    pattern->shrink_factor_x = x_factor;
+
+    if (y_sigma == 0.0)
+        pattern->y_radius = 1;
+    else {
+        while (y_sigma > CAIRO_MAX_SIGMA) {
+	    y_sigma *= 0.5;
+ 	    y_factor *= 2;
+        }
+	pattern->y_radius = ceil (y_sigma * 2);
+    }
+    pattern->shrink_factor_y = y_factor;
+
+    if (pattern->convolution_matrix)
+	free (pattern->convolution_matrix);
+
+    /* 2D gaussian
+     * f(x, y) = exp (-((x-x0)^2/(2*x_sigma^2)+(y-y0)^2/(2*y_sigma*2)))
+     */
+    row = pattern->y_radius;
+    col = pattern->x_radius;
+    n = (2 * row + 1) * (2 * col + 1);
+
+    x_sigma_sq = 2 * x_sigma * x_sigma;
+    y_sigma_sq = 2 * y_sigma * y_sigma;
+
+    buffer = _cairo_malloc_ab (n, sizeof (double));
+
+    i = 0;
+    for (y = -row; y <= row; y++) {
+        for (x = - col; x <= col; x++) {
+            u = x * x;
+            v = y * y;
+            buffer[i] = exp (-(u/x_sigma_sq + v/y_sigma_sq));
+            sum += buffer[i];
+            i++;
+        }
+    }
+
+    /* normalize */
+    sum = 1.0 / sum;
+    for (i = 0; i < n; i++)
+        buffer[i] *= sum;
+
+    pattern->convolution_matrix = buffer;
+    pattern->convolution_changed = FALSE;
+    return CAIRO_STATUS_SUCCESS;
+}
 
 void
 _cairo_pattern_reset_static_data (void)

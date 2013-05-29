@@ -43,6 +43,9 @@
 
 #include <stdio.h> /* FILE* */
 
+#define CAIRO_MAX_SIGMA 4  /* from skia */
+#define CAITRO_DEFAULT_SIGMA 0
+
 CAIRO_BEGIN_DECLS
 
 typedef struct _cairo_pattern_observer cairo_pattern_observer_t;
@@ -75,6 +78,17 @@ struct _cairo_pattern {
 
     cairo_matrix_t		matrix;
     double			opacity;
+
+    /* we use this to shrink image before we apply blur */
+    unsigned int                shrink_factor_x;
+    unsigned int                shrink_factor_y;
+    unsigned int                x_radius;
+    unsigned int                y_radius;
+    double                      x_sigma;
+    double                      y_sigma;
+
+    double                      *convolution_matrix;
+    cairo_bool_t                convolution_changed;
 };
 
 struct _cairo_solid_pattern {
@@ -353,6 +367,9 @@ _cairo_raster_source_pattern_init_copy (cairo_pattern_t *pattern,
 
 cairo_private void
 _cairo_raster_source_pattern_finish (cairo_pattern_t *abstract_pattern);
+
+cairo_private cairo_status_t 
+_cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern);
 
 cairo_private void
 _cairo_debug_print_pattern (FILE *file, const cairo_pattern_t *pattern);

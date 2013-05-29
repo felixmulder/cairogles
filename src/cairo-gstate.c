@@ -1056,6 +1056,9 @@ _cairo_gstate_paint (cairo_gstate_t *gstate)
     if (_cairo_clip_is_all_clipped (gstate->clip))
 	return CAIRO_STATUS_SUCCESS;
 
+    if (gstate->source->filter == CAIRO_FILTER_GAUSSIAN)
+	status = _cairo_pattern_create_gaussian_matrix (gstate->source);
+
     op = _reduce_op (gstate);
     if (op == CAIRO_OPERATOR_CLEAR) {
 	pattern = &_cairo_pattern_clear.base;
@@ -1085,6 +1088,12 @@ _cairo_gstate_mask (cairo_gstate_t  *gstate,
     status = _cairo_gstate_get_pattern_status (gstate->source);
     if (unlikely (status))
 	return status;
+
+    if (gstate->source->filter == CAIRO_FILTER_GAUSSIAN)
+	status = _cairo_pattern_create_gaussian_matrix (gstate->source);
+
+    if (mask->filter == CAIRO_FILTER_GAUSSIAN)
+	status = _cairo_pattern_create_gaussian_matrix (mask);
 
     if (gstate->op == CAIRO_OPERATOR_DEST)
 	return CAIRO_STATUS_SUCCESS;
@@ -1159,6 +1168,9 @@ _cairo_gstate_stroke (cairo_gstate_t *gstate, cairo_path_fixed_t *path)
     status = _cairo_gstate_get_pattern_status (gstate->source);
     if (unlikely (status))
 	return status;
+
+    if (gstate->source->filter == CAIRO_FILTER_GAUSSIAN)
+	status = _cairo_pattern_create_gaussian_matrix (gstate->source);
 
     if (gstate->op == CAIRO_OPERATOR_DEST)
 	return CAIRO_STATUS_SUCCESS;
@@ -1260,6 +1272,9 @@ _cairo_gstate_fill (cairo_gstate_t *gstate, cairo_path_fixed_t *path)
     status = _cairo_gstate_get_pattern_status (gstate->source);
     if (unlikely (status))
 	return status;
+
+    if (gstate->source->filter == CAIRO_FILTER_GAUSSIAN)
+	status = _cairo_pattern_create_gaussian_matrix (gstate->source);
 
     if (gstate->op == CAIRO_OPERATOR_DEST)
 	return CAIRO_STATUS_SUCCESS;
@@ -1926,6 +1941,9 @@ _cairo_gstate_show_text_glyphs (cairo_gstate_t		   *gstate,
     status = _cairo_gstate_get_pattern_status (gstate->source);
     if (unlikely (status))
 	return status;
+
+    if (gstate->source->filter == CAIRO_FILTER_GAUSSIAN)
+	status = _cairo_pattern_create_gaussian_matrix (gstate->source);
 
     if (gstate->op == CAIRO_OPERATOR_DEST)
 	return CAIRO_STATUS_SUCCESS;

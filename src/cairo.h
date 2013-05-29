@@ -2907,6 +2907,16 @@ cairo_pattern_set_filter (cairo_pattern_t *pattern, cairo_filter_t filter);
 cairo_public cairo_filter_t
 cairo_pattern_get_filter (cairo_pattern_t *pattern);
 
+cairo_public cairo_status_t 
+cairo_pattern_set_sigma (cairo_pattern_t *pattern,
+                         const double     x_sigma,
+                         const double     y_sigma);
+
+cairo_public cairo_status_t
+cairo_pattern_get_sigma (cairo_pattern_t *pattern,
+                         double          *x_sigma,
+                         double          *y_sigma);
+
 cairo_public cairo_status_t
 cairo_pattern_get_rgba (cairo_pattern_t *pattern,
 			double *red, double *green,
