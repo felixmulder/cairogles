@@ -200,6 +200,27 @@ _pixman_white_image (void)
 }
 #endif /* !PIXMAN_HAS_ATOMIC_OPS */
 
+static pixman_fixed_t *
+_pixman_image_create_convolution_params (double *params,
+					 int size_1, int size_2,
+					 int length)
+{
+    int i;
+    pixman_fixed_t *pixman_params;
+
+    if (length == 0 || params == NULL)
+	return NULL;
+
+    pixman_params = _cairo_malloc_ab (length + 2, sizeof (double));
+    pixman_params[0] = pixman_int_to_fixed (size_1);
+    pixman_params[1] = pixman_int_to_fixed (size_2);
+
+    for (i = 0; i < length; i++)
+	pixman_params[i + 2] = pixman_double_to_fixed (params[i]);
+
+    return pixman_params;
+}
+
 
 pixman_image_t *
 _pixman_image_for_color (const cairo_color_t *cairo_color)
@@ -689,6 +710,134 @@ get_proxy (cairo_surface_t *proxy)
     return ((struct proxy *)proxy)->image;
 }
 
+static cairo_surface_t * 
+gaussian_filter (cairo_surface_t *src,  const cairo_pattern_t *pattern)
+{
+    int row, col;
+    int width, height;
+    pixman_fixed_t *pixman_params;
+    pixman_transform_t pixman_transform;
+    cairo_int_status_t status;
+    cairo_matrix_t matrix;
+    int ix = 0;
+    int iy = 0;
+
+    cairo_image_surface_t *temp_surface;
+    cairo_image_surface_t *src_image = (cairo_image_surface_t *)src;
+    cairo_image_surface_t *out_src_image;
+
+    int src_width = cairo_image_surface_get_width (src);
+    int src_height = cairo_image_surface_get_height (src);
+
+    /* XXX: we need to first scale the image down */
+    if (pattern->filter == CAIRO_FILTER_GAUSSIAN &&
+        pattern->convolution_matrix) {
+	row = pattern->y_radius * 2 + 1;
+	col = pattern->x_radius * 2 + 1;
+ 	width = src_width / pattern->shrink_factor_x;
+ 	height = src_height / pattern->shrink_factor_y;
+
+	/* create temp surfaces */
+	temp_surface = (cairo_image_surface_t *)
+	    cairo_image_surface_create (src_image->format,
+                                        width, height);
+
+	/* create blurred image */
+	out_src_image = (cairo_image_surface_t *)
+	    cairo_image_surface_create (src_image->format,
+                                        src_width, src_height);
+
+	/* paint clone to temp_surface_1 */
+	pixman_image_set_filter (src_image->pixman_image, PIXMAN_FILTER_BILINEAR, NULL, 0);
+	/* set up transform matrix */
+        cairo_matrix_init_scale (&matrix, 
+				 (double) src_width / (double) width,
+				 (double) src_height / (double) height);
+        status = _cairo_matrix_to_pixman_matrix_offset (&matrix,
+						        pattern->filter,
+							width/2,
+							height/2,
+						        &pixman_transform,
+							&ix, &iy);
+	if (status == CAIRO_INT_STATUS_NOTHING_TO_DO) {
+	    /* If the transform is an identity, we don't need to set it */
+	}
+	else if (unlikely (status != CAIRO_INT_STATUS_SUCCESS ||
+		       ! pixman_image_set_transform (src_image->pixman_image,
+						     &pixman_transform))) {
+	    cairo_surface_destroy (&out_src_image->base);
+	    out_src_image = (cairo_image_surface_t *) cairo_surface_reference (src);
+	    goto DONE;
+	}
+	/* set repeat to none */
+	pixman_image_set_repeat (src_image->pixman_image, PIXMAN_REPEAT_NONE);
+
+	if (pattern->has_component_alpha)
+	    pixman_image_set_component_alpha (src_image->pixman_image, TRUE);
+        pixman_image_composite32 (PIXMAN_OP_SRC,
+				  src_image->pixman_image,
+				  NULL,
+				  temp_surface->pixman_image,
+				  0, 0,
+				  0, 0,
+				  0, 0,
+				  width, height);
+
+	/* XXX: begin blur pass
+         * ideally, we should modify pixman to allow two passes
+         */
+	/* set up convolution params */
+	pixman_params =
+	    _pixman_image_create_convolution_params (pattern->convolution_matrix, col, row, col * row);
+	pixman_image_set_filter (temp_surface->pixman_image, PIXMAN_FILTER_CONVOLUTION,
+			   (const pixman_fixed_t *)pixman_params, col * row + 2);
+	free (pixman_params);
+
+	/* set up transform matrix */
+        cairo_matrix_init_scale (&matrix, 
+				 (double) width / (double) src_width,
+				 (double) height / (double) src_height);
+        status = _cairo_matrix_to_pixman_matrix_offset (&matrix,
+						        pattern->filter,
+							width/2,
+							height/2,
+						        &pixman_transform,
+							&ix, &iy);
+	if (status == CAIRO_INT_STATUS_NOTHING_TO_DO) {
+	    /* If the transform is an identity, we don't need to set it */
+	}
+	else if (unlikely (status != CAIRO_INT_STATUS_SUCCESS ||
+		       ! pixman_image_set_transform (temp_surface->pixman_image,
+						     &pixman_transform))) {
+	    cairo_surface_destroy (&out_src_image->base);
+	    out_src_image = (cairo_image_surface_t *) cairo_surface_reference (src);
+	    goto DONE;
+	}
+	/* set repeat to none */
+	pixman_image_set_repeat (temp_surface->pixman_image, PIXMAN_REPEAT_NONE);
+
+	if (pattern->has_component_alpha)
+	    pixman_image_set_component_alpha (temp_surface->pixman_image, TRUE);
+
+        pixman_image_composite32 (PIXMAN_OP_SRC,
+				  temp_surface->pixman_image,
+				  NULL,
+				  out_src_image->pixman_image,
+				  0, 0,
+				  0, 0,
+				  0, 0,
+				  src_width, src_height);
+DONE:
+	/* free temp surfaces */
+	cairo_surface_destroy (&temp_surface->base);
+    }
+    else
+	out_src_image = (cairo_image_surface_t *) cairo_surface_reference (src);
+
+    return &out_src_image->base;
+
+}
+
 static pixman_image_t *
 _pixman_image_for_recording (cairo_image_surface_t *dst,
 			     const cairo_surface_pattern_t *pattern,
@@ -704,6 +853,7 @@ _pixman_image_for_recording (cairo_image_surface_t *dst,
     cairo_extend_t extend;
     cairo_matrix_t *m, matrix;
     int tx = 0, ty = 0;
+    cairo_surface_t *blurred_surface;
 
     TRACE ((stderr, "%s\n", __FUNCTION__));
 
@@ -782,7 +932,11 @@ _pixman_image_for_recording (cairo_image_surface_t *dst,
     }
 
 done:
-    pixman_image = pixman_image_ref (((cairo_image_surface_t *)clone)->pixman_image);
+    /* filter with gaussian */
+    blurred_surface = gaussian_filter (clone,  &pattern->base);
+    
+    pixman_image = pixman_image_ref (((cairo_image_surface_t *)blurred_surface)->pixman_image);
+    cairo_surface_destroy (blurred_surface);
     cairo_surface_destroy (clone);
 
     *ix = -limit.x;
@@ -808,7 +962,9 @@ _pixman_image_for_surface (cairo_image_surface_t *dst,
 			   int *ix, int *iy)
 {
     cairo_extend_t extend = pattern->base.extend;
-    pixman_image_t *pixman_image;
+    pixman_image_t *pixman_image = NULL;
+    pixman_image_t *blurred_pixman_image = NULL;
+    cairo_surface_t *blurred_surface = NULL;
 
     TRACE ((stderr, "%s\n", __FUNCTION__));
 
@@ -873,7 +1029,11 @@ _pixman_image_for_surface (cairo_image_surface_t *dst,
 						     ix, iy))
 	    {
 		cairo_surface_destroy (defer_free);
-		return pixman_image_ref (source->pixman_image);
+                /* filter with gaussian */
+                blurred_surface = gaussian_filter (&source->base,  &pattern->base);
+		blurred_pixman_image = pixman_image_ref (((cairo_image_surface_t *)blurred_surface)->pixman_image);
+		cairo_surface_destroy (blurred_surface);
+		return blurred_pixman_image;
 	    }
 #endif
 
@@ -884,6 +1044,10 @@ _pixman_image_for_surface (cairo_image_surface_t *dst,
 						     source->stride);
 	    if (unlikely (pixman_image == NULL)) {
 		cairo_surface_destroy (defer_free);
+		if (blurred_surface)
+		    cairo_surface_destroy (blurred_surface);
+		if (blurred_pixman_image)
+		    pixman_image_unref (blurred_pixman_image);
 		return NULL;
 	    }
 
@@ -892,6 +1056,7 @@ _pixman_image_for_surface (cairo_image_surface_t *dst,
 						   _defer_free_cleanup,
 						   defer_free);
 	    }
+            blurred_surface = gaussian_filter (&source->base,  &pattern->base);
 	} else if (type == CAIRO_SURFACE_TYPE_SUBSURFACE) {
 	    cairo_surface_subsurface_t *sub;
 	    cairo_bool_t is_contained = FALSE;
@@ -928,7 +1093,11 @@ _pixman_image_for_surface (cairo_image_surface_t *dst,
 						     pattern->base.filter,
 						     ix, iy))
 	    {
-		return pixman_image_ref (source->pixman_image);
+                /* filter with gaussian */
+                blurred_surface = gaussian_filter (&source->base,  &pattern->base);
+		blurred_pixman_image = pixman_image_ref (((cairo_image_surface_t *)blurred_surface)->pixman_image);
+		cairo_surface_destroy (blurred_surface);
+		return blurred_pixman_image;
 	    }
 #endif
 
@@ -943,14 +1112,21 @@ _pixman_image_for_surface (cairo_image_surface_t *dst,
 							     sub->extents.height,
 							     data,
 							     source->stride);
-		    if (unlikely (pixman_image == NULL))
+		    if (unlikely (pixman_image == NULL)) {
+			if (blurred_surface)
+			    cairo_surface_destroy (blurred_surface);
+			if (blurred_pixman_image)
+			    pixman_image_unref (blurred_pixman_image);
 			return NULL;
+		    }
 		} else {
 		    /* XXX for a simple translation and EXTEND_NONE we can
 		     * fix up the pattern matrix instead.
 		     */
 		}
 	    }
+	    /* filter */
+            blurred_surface = gaussian_filter (&source->base,  &pattern->base);
 	}
     }
 
@@ -961,8 +1137,13 @@ _pixman_image_for_surface (cairo_image_surface_t *dst,
 	cairo_status_t status;
 
 	status = _cairo_surface_acquire_source_image (pattern->surface, &image, &extra);
-	if (unlikely (status))
+	if (unlikely (status)) {
+	    if (blurred_surface)
+		cairo_surface_destroy (blurred_surface);
+	    if (blurred_pixman_image)
+		pixman_image_unref (blurred_pixman_image);
 	    return NULL;
+	}
 
 	pixman_image = pixman_image_create_bits (image->pixman_format,
 						 image->width,
@@ -971,13 +1152,24 @@ _pixman_image_for_surface (cairo_image_surface_t *dst,
 						 image->stride);
 	if (unlikely (pixman_image == NULL)) {
 	    _cairo_surface_release_source_image (pattern->surface, image, extra);
+	    if (blurred_surface)
+		cairo_surface_destroy (blurred_surface);
+	    if (blurred_pixman_image)
+		pixman_image_unref (blurred_pixman_image);
 	    return NULL;
 	}
+
+	/* filter with gaussian */
+        blurred_surface = gaussian_filter (&image->base,  &pattern->base);
 
 	cleanup = malloc (sizeof (*cleanup));
 	if (unlikely (cleanup == NULL)) {
 	    _cairo_surface_release_source_image (pattern->surface, image, extra);
 	    pixman_image_unref (pixman_image);
+	    if (blurred_surface)
+		cairo_surface_destroy (blurred_surface);
+	    if (blurred_pixman_image)
+		pixman_image_unref (blurred_pixman_image);
 	    return NULL;
 	}
 
@@ -988,14 +1180,34 @@ _pixman_image_for_surface (cairo_image_surface_t *dst,
 					   _acquire_source_cleanup, cleanup);
     }
 
-    if (! _pixman_image_set_properties (pixman_image,
-					&pattern->base, extents,
-					ix, iy)) {
-	pixman_image_unref (pixman_image);
-	pixman_image= NULL;
+    if (blurred_surface) {
+	blurred_pixman_image = pixman_image_ref (((cairo_image_surface_t *)blurred_surface)->pixman_image);
+	cairo_surface_destroy (blurred_surface);
     }
 
-    return pixman_image;
+    if (! _pixman_image_set_properties (blurred_pixman_image,
+					&pattern->base, extents,
+					ix, iy)) {
+	pixman_image_unref (blurred_pixman_image);
+	blurred_pixman_image= NULL;
+    }
+    if (! blurred_pixman_image) {
+	if (! _pixman_image_set_properties (pixman_image,
+					    &pattern->base, extents,
+					    ix, iy)) {
+	    pixman_image_unref (pixman_image);
+	    pixman_image= NULL;
+	}
+    }
+
+    if (blurred_pixman_image) {
+	if (pixman_image)
+	    pixman_image_unref (pixman_image);
+    }
+    else
+	blurred_pixman_image = pixman_image;
+
+    return blurred_pixman_image;
 }
 
 struct raster_source_cleanup {

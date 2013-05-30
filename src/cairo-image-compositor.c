@@ -1999,6 +1999,14 @@ mono_renderer_init (cairo_image_span_renderer_t	*r,
     if (antialias != CAIRO_ANTIALIAS_NONE)
 	return CAIRO_INT_STATUS_UNSUPPORTED;
 
+    if (composite->source_pattern.base.type == CAIRO_PATTERN_TYPE_SURFACE &&
+        composite->source_pattern.base.filter == CAIRO_FILTER_GAUSSIAN)
+        return CAIRO_INT_STATUS_UNSUPPORTED;
+
+    if (composite->mask_pattern.base.type == CAIRO_PATTERN_TYPE_SURFACE &&
+        composite->mask_pattern.base.filter == CAIRO_FILTER_GAUSSIAN)
+        return CAIRO_INT_STATUS_UNSUPPORTED;
+
     if (!_cairo_pattern_is_opaque_solid (&composite->mask_pattern.base))
 	return CAIRO_INT_STATUS_UNSUPPORTED;
 
@@ -2744,6 +2752,14 @@ inplace_renderer_init (cairo_image_span_renderer_t	*r,
 
     if (composite->mask_pattern.base.type != CAIRO_PATTERN_TYPE_SOLID)
 	return CAIRO_INT_STATUS_UNSUPPORTED;
+
+    if (composite->source_pattern.base.type == CAIRO_PATTERN_TYPE_SURFACE &&
+        composite->source_pattern.base.filter == CAIRO_FILTER_GAUSSIAN)
+        return CAIRO_INT_STATUS_UNSUPPORTED;
+
+    if (composite->mask_pattern.base.type == CAIRO_PATTERN_TYPE_SURFACE &&
+        composite->mask_pattern.base.filter == CAIRO_FILTER_GAUSSIAN)
+        return CAIRO_INT_STATUS_UNSUPPORTED;
 
     r->base.render_rows = NULL;
     r->bpp = composite->mask_pattern.solid.color.alpha_short >> 8;
