@@ -92,6 +92,7 @@ cairo_private cairo_gl_dispatch_entry_t dispatch_shaders_entries[] = {
     DISPATCH_ENTRY_ARB (Uniform2f),
     DISPATCH_ENTRY_ARB (Uniform3f),
     DISPATCH_ENTRY_ARB (Uniform4f),
+    DISPATCH_ENTRY_ARB (Uniform1fv),
     DISPATCH_ENTRY_ARB (UniformMatrix3fv),
     DISPATCH_ENTRY_ARB (UniformMatrix4fv),
     DISPATCH_ENTRY_ARB (Uniform1i),

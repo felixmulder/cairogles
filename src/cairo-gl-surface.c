@@ -393,6 +393,10 @@ _cairo_gl_surface_init (cairo_device_t *device,
     surface->needs_update = FALSE;
     surface->needs_to_cache = FALSE;
     surface->image_node = NULL;
+    surface->force_no_cache = FALSE;
+
+    surface->image_content_scale_x = 1.0;
+    surface->image_content_scale_y = 1.0;
 
     _cairo_gl_surface_embedded_operand_init (surface);
 }
@@ -1027,10 +1031,14 @@ _cairo_gl_surface_finish (void *abstract_surface)
     if (unlikely (status))
         return status;
 
-    if (ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_TEXTURE &&
+    if ((ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_TEXTURE ||
+	 ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_X_GAUSSIAN ||
+	 ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_Y_GAUSSIAN) &&
         ctx->operands[CAIRO_GL_TEX_SOURCE].texture.surface == surface)
         _cairo_gl_context_destroy_operand (ctx, CAIRO_GL_TEX_SOURCE);
-    if (ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_TEXTURE &&
+    if ((ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_TEXTURE ||
+	 ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_X_GAUSSIAN ||
+	 ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_Y_GAUSSIAN) &&
         ctx->operands[CAIRO_GL_TEX_MASK].texture.surface == surface)
         _cairo_gl_context_destroy_operand (ctx, CAIRO_GL_TEX_MASK);
     if (ctx->current_target == surface)
@@ -1140,11 +1148,11 @@ _cairo_gl_surface_map_to_image (void      *abstract_surface,
 
     /* If the original surface has not been modified or
      * is clear, we can avoid downloading data. */
-    if (surface->base.is_clear || surface->base.serial == 0) {
+/*    if (surface->base.is_clear || surface->base.serial == 0) {
 	status = _cairo_gl_context_release (ctx, status);
 	return image;
     }
-
+*/
     /* This is inefficient, as we'd rather just read the thing without making
      * it the destination.  But then, this is the fallback path, so let's not
      * fall back instead.
@@ -1296,9 +1304,13 @@ _cairo_gl_surface_flush (void *abstract_surface, unsigned flags)
     if (unlikely (status))
         return status;
 
-    if ((ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_TEXTURE &&
+    if (((ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_TEXTURE ||
+	  ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_X_GAUSSIAN ||
+	  ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_Y_GAUSSIAN) &&
          ctx->operands[CAIRO_GL_TEX_SOURCE].texture.surface == surface) ||
-        (ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_TEXTURE &&
+        ((ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_TEXTURE ||
+	  ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_X_GAUSSIAN ||
+	  ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_Y_GAUSSIAN) &&
          ctx->operands[CAIRO_GL_TEX_MASK].texture.surface == surface) ||
         (ctx->current_target == surface))
       _cairo_gl_composite_flush (ctx);

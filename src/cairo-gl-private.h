@@ -105,6 +105,7 @@
 #define MAX_IMAGE_CACHE_HEIGHT 2048
 #define IMAGE_CACHE_MIN_SIZE 1
 #define IMAGE_CACHE_MAX_SIZE 256
+#define MIN_SCRATCH_SIZE 32
 
 typedef struct _cairo_gl_surface cairo_gl_surface_t;
 typedef struct _cairo_gl_image   cairo_gl_image_t;
@@ -126,6 +127,9 @@ typedef enum cairo_gl_uniform_t {
     CAIRO_GL_UNIFORM_A,          /* "source_a" */
     CAIRO_GL_UNIFORM_CIRCLE_D,   /* "source_circle_d" */
     CAIRO_GL_UNIFORM_RADIUS_0,   /* "source_radius_0" */
+    CAIRO_GL_UNIFORM_BLUR_RADIUS,/* "source_blur_radius" */
+    CAIRO_GL_UNIFORM_BLURS,	 /* "source_blurs" */
+    CAIRO_GL_UNIFORM_BLUR_STEP,	 /* "source_blurstep" */
 
     CAIRO_GL_UNIFORM_MASK_TEXDIMS,      /* "mask_texdims" */
     CAIRO_GL_UNIFORM_MASK_TEXGEN,       /* "mask_texgen" */
@@ -134,8 +138,12 @@ typedef enum cairo_gl_uniform_t {
     CAIRO_GL_UNIFORM_MASK_A,            /* "mask_a" */
     CAIRO_GL_UNIFORM_MASK_CIRCLE_D,     /* "mask_circle_d" */
     CAIRO_GL_UNIFORM_MASK_RADIUS_0,     /* "mask_radius_0" */
+    CAIRO_GL_UNIFORM_MASK_BLUR_RADIUS,  /* "mask_blur_radius */
+    CAIRO_GL_UNIFORM_MASK_BLURS,	/* "mask_blurs */
+    CAIRO_GL_UNIFORM_MASK_BLUR_STEP,	/* "mask_blur_step" */
 
     CAIRO_GL_UNIFORM_PROJECTION_MATRIX, /* "ModelViewProjectionMatrix" */
+
 
     CAIRO_GL_UNIFORM_MAX
 } cairo_gl_uniform_t;
@@ -161,6 +169,8 @@ typedef enum cairo_gl_operand_type {
     CAIRO_GL_OPERAND_RADIAL_GRADIENT_A0,
     CAIRO_GL_OPERAND_RADIAL_GRADIENT_NONE,
     CAIRO_GL_OPERAND_RADIAL_GRADIENT_EXT,
+    CAIRO_GL_OPERAND_X_GAUSSIAN,
+    CAIRO_GL_OPERAND_Y_GAUSSIAN,
 
     CAIRO_GL_OPERAND_COUNT
 } cairo_gl_operand_type_t;
@@ -186,6 +196,9 @@ typedef struct cairo_gl_operand {
 	    cairo_bool_t use_atlas;
 	    cairo_extend_t extend;
 	    struct { float x, y; } p1, p2;
+	    float *coef;
+	    int x_radius;
+	    int y_radius;
 	} texture;
 	struct {
 	    GLfloat color[4];
@@ -239,6 +252,9 @@ struct _cairo_gl_surface {
 
     /* Indicate whether we need to cache it in image_cache. */
     cairo_bool_t needs_to_cache;
+    cairo_bool_t force_no_cache;
+    double image_content_scale_x;
+    double image_content_scale_y;
     /* Damage is too expensive to check, we use this flag. */
     cairo_bool_t content_changed;
     cairo_gl_image_t *image_node;
@@ -336,7 +352,7 @@ typedef void (*cairo_gl_emit_glyph_t) (cairo_gl_context_t *ctx,
 				       GLfloat glyph_x1, GLfloat glyph_y1,
 				       GLfloat glyph_x2, GLfloat glyph_y2);
 
-#define cairo_gl_var_type_hash(src,mask,src_atlas_extend,mask_atlas_extend,src_use_atlas,mask_use_atlas,spans,dest) ((spans) << 11) | ((mask) << 9 | (src << 7) | (mask_atlas_extend << 5) | (src_atlas_extend << 3) | (mask_use_atlas << 2) | (src_use_atlas << 1) | (dest))
+#define cairo_gl_var_type_hash(src,mask,src_atlas_extend,mask_atlas_extend,src_use_atlas,mask_use_atlas,spans,dest) ((spans) << 13) | ((mask) << 10 | (src << 7) | (mask_atlas_extend << 5) | (src_atlas_extend << 3) | (mask_use_atlas << 2) | (src_use_atlas << 1) | (dest))
 #define CAIRO_GL_VAR_TYPE_MAX (1 << 12)
 
 typedef void (*cairo_gl_generic_func_t)(void);
@@ -378,6 +394,8 @@ typedef struct _cairo_gl_dispatch {
     void (*Uniform3f) (GLint location, GLfloat x, GLfloat y, GLfloat z);
     void (*Uniform4f) (GLint location, GLfloat x, GLfloat y, GLfloat z,
 			 GLfloat w);
+    void (*Uniform1fv) (GLint location, GLsizei count, const GLfloat *v);
+
     void (*UniformMatrix3fv) (GLint location, GLsizei count,
 				GLboolean transpose, const GLfloat *value);
     void (*UniformMatrix4fv) (GLint location, GLsizei count,
@@ -502,6 +520,8 @@ struct _cairo_gl_context {
 
     /* Intermediate mask surface for glyph rendering. Created on first access, enlarged on demand. */
     cairo_gl_surface_t *glyph_mask;
+    /* Intermediate blur surface for gaussian blur. Created on first access, enlarged on demand. */
+    cairo_gl_surface_t *scratch_surfaces[2];
 
     void (*acquire) (void *ctx);
     void (*release) (void *ctx);
@@ -836,6 +856,16 @@ cairo_private void
 _cairo_gl_shader_bind_float (cairo_gl_context_t *ctx,
 			     cairo_gl_uniform_t uniform,
 			     float value);
+
+cairo_private void
+_cairo_gl_shader_bind_float_array (cairo_gl_context_t *ctx,
+				   cairo_gl_uniform_t uniform,
+				   int num, float *values);
+
+cairo_private void
+_cairo_gl_shader_bind_int (cairo_gl_context_t *ctx,
+			     cairo_gl_uniform_t uniform,
+			     int value);
 
 cairo_private void
 _cairo_gl_shader_bind_vec2 (cairo_gl_context_t *ctx,

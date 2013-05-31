@@ -163,13 +163,20 @@ _gl_finish (void *device)
 static void
 _gl_destroy (void *device)
 {
+    int n;
+
     cairo_gl_context_t *ctx = device;
 
     ctx->acquire (ctx);
 
     if(ctx->glyph_mask) {
-	cairo_surface_destroy (ctx->glyph_mask);
+	cairo_surface_destroy (&ctx->glyph_mask->base);
 	ctx->glyph_mask = NULL;
+    }
+
+    for (n = 0; n < 2; n++) {
+	if (ctx->scratch_surfaces[n])
+	    cairo_surface_destroy (&ctx->scratch_surfaces[n]->base);
     }
 
     while (! cairo_list_is_empty (&ctx->fonts)) {
@@ -370,6 +377,9 @@ _cairo_gl_context_init (cairo_gl_context_t *ctx)
 	_cairo_gl_glyph_cache_init (&ctx->glyph_cache[n]);
 
     ctx->image_cache = NULL;
+
+    for (n = 0; n < 2; n++)
+	ctx->scratch_surfaces[n] = NULL;
 
     _cairo_gl_context_reset (ctx);
 

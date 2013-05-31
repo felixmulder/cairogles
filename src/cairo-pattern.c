@@ -412,16 +412,6 @@ _cairo_pattern_init_static_copy (cairo_pattern_t	*pattern,
 
     memcpy (pattern, other, size);
 
-    if (other->convolution_matrix) {
-        int col = 2 * other->x_radius + 1;
-        int row = 2 * other->y_radius + 1;
-        int size = row * col;
-
-        pattern->convolution_matrix = _cairo_malloc_ab (size, sizeof(double) );
-        memcpy (pattern->convolution_matrix, other->convolution_matrix,
-                sizeof (double) * size);
-    }
-
     CAIRO_REFERENCE_COUNT_INIT (&pattern->ref_count, 0);
     _cairo_user_data_array_init (&pattern->user_data);
 }
@@ -4616,6 +4606,8 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
  	    x_factor *= 2;
 	    width *= 0.5;
 	}
+	if (x_sigma > CAIRO_MAX_SIGMA)
+	    x_sigma = CAIRO_MAX_SIGMA;
         /* XXX: skia uses 3, we follow css spec which is 2 */
 	pattern->x_radius = ceil (x_sigma * 2);
     }
@@ -4632,6 +4624,8 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
 	    y_factor *= 2;
 	    height *= 0.5;
 	}
+	if (y_sigma > CAIRO_MAX_SIGMA)
+	    y_sigma = CAIRO_MAX_SIGMA;
 	pattern->y_radius = ceil (y_sigma * 2);
     }
     pattern->shrink_factor_y = y_factor;
@@ -4639,6 +4633,7 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
     if (pattern->convolution_matrix)
 	free (pattern->convolution_matrix);
 
+    pattern->convolution_matrix = NULL;
     /* 2D gaussian
      * f(x, y) = exp (-((x-x0)^2/(2*x_sigma^2)+(y-y0)^2/(2*y_sigma*2)))
      */
