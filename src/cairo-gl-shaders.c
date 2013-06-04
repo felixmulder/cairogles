@@ -588,112 +588,64 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 	    }
 	}
 	else if (op->type == CAIRO_GL_OPERAND_X_GAUSSIAN) {
-	    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES &&
-	        _cairo_gl_shader_needs_border_fade (op))
-	    {
-		/* always uses atlas */
-		_cairo_output_stream_printf (stream,
-		    "    int i;\n"
-		    "    vec2 texcoords;\n"
-		    "    vec2 border_fade;\n"
-		    "    vec4 texel = vec4 (0.0, 0.0, 0.0, 0.0);\n"
-		    "    vec2 wrapped_coords = %s_wrap (%s_texcoords, %s_start_coords, %s_stop_coords);\n"
-		    "    if (wrapped_coords == vec2 (-1.0, -1.0))\n"
-		    "        return texel;\n"
-		    "    for (i = -%s_blur_radius; i <= %s_blur_radius; i++) {\n"
-		    "        texcoords = %s_texcoords + vec2 (%s_blur_step * i, 0.0);\n"
-		    "        border_fade = %s_border_fade (texcoords, %s_texdims);\n"
-		    "        wrapped_coords = %s_wrap (texcoords, %s_start_coords, %s_stop_coords);\n"
-		    "        if (wrapped_coords == vec2 (-1.0, -1.0))\n"
-		    "            texel += vec4 (0.0, 0.0, 0.0, 1.0) * %s_blurs[i+%s_blur_radius] * border_fade.x * border_fade.y;\n"
-		    "        else\n"
-		    "            texel += texture2D%s (%s_sampler, wrapped_coords) * %s_blurs[i+%s_blur_radius] * border_fade.x * border_fade.y;\n"
-		    "    }\n"
-		    "    return texel;\n"
-		    "}\n",
-		    namestr, namestr, namestr, namestr, namestr,
-		    namestr, namestr, namestr, namestr, namestr,
-		    namestr, namestr, namestr, namestr, namestr,
-		    rectstr, namestr, namestr, namestr);
-	    }
-	    else
-	    {
-		_cairo_output_stream_printf (stream,
-		    "    int i;\n"
-		    "    vec2 texcoords;\n"
-		    "    vec4 texel = vec4 (0.0, 0.0, 0.0, 0.0);\n"
-		    "    vec2 wrapped_coords = %s_wrap (%s_texcoords, %s_start_coords, %s_stop_coords);\n"
-		    "    if (wrapped_coords == vec2 (-1.0, -1.0))\n"
-		    "        return texel;\n"
-		    "    for (i = -%s_blur_radius; i <= %s_blur_radius; i++) {\n"
-		    "        texcoords = %s_texcoords + vec2 (%s_blur_step * i, 0.0);\n"
-		    "        wrapped_coords = %s_wrap (texcoords, %s_start_coords, %s_stop_coords);\n"
-		    "        if (wrapped_coords == vec2 (-1.0, -1.0))\n"
-		    "            texel += vec4 (0.0, 0.0, 0.0, 1.0) * %s_blurs[i+%s_blur_radius];\n"
-		    "        else\n"
-		    "            texel += texture2D%s (%s_sampler, wrapped_coords) * %s_blurs[i+%s_blur_radius];\n"
-		    "    }\n"
-		    "    return texel;\n"
-		    "}\n",
-		    namestr, namestr, namestr, namestr,
-		    namestr, namestr, namestr, namestr,
-		    namestr, namestr, namestr, namestr, namestr,
-		    rectstr, namestr, namestr, namestr);
-	    }
+	    _cairo_output_stream_printf (stream,
+		"    int i;\n"
+		"    vec2 texcoords;\n"
+		"    float alpha;\n"
+		"    vec4 texel = vec4 (0.0, 0.0, 0.0, 0.0);\n"
+		"    vec2 wrapped_coords = %s_wrap (%s_texcoords, %s_start_coords, %s_stop_coords);\n"
+		"    if (wrapped_coords == vec2 (-1.0, -1.0))\n"
+		"        return texel;\n"
+		"    texel += texture2D%s (%s_sampler, wrapped_coords);\n"
+		"    alpha = texel.a;\n"
+		"    texel = texel * %s_blurs[%s_blur_radius];\n"
+		"    for (i = -%s_blur_radius; i <= %s_blur_radius; i++) {\n"
+		"        if (i == 0)\n"
+		"            continue;\n"
+		"        texcoords = %s_texcoords + vec2 (%s_blur_step * float(i), 0.0);\n"
+		"        wrapped_coords = %s_wrap (texcoords, %s_start_coords, %s_stop_coords);\n"
+		"        if (wrapped_coords == vec2 (-1.0, -1.0))\n"
+		"            texel += vec4 (0.0, 0.0, 0.0, alpha) * %s_blurs[i+%s_blur_radius];\n"
+		"        else\n"
+		"            texel += texture2D%s (%s_sampler, wrapped_coords) * %s_blurs[i+%s_blur_radius];\n"
+		"    }\n"
+		"    return texel;\n"
+		"}\n",
+		namestr, namestr, namestr, namestr,
+		rectstr, namestr, namestr, namestr,
+		namestr, namestr, namestr, namestr,
+		namestr, namestr, namestr, namestr, namestr,
+		rectstr, namestr, namestr, namestr);
 	}
 	else {
-	    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES &&
-	        _cairo_gl_shader_needs_border_fade (op))
-	    {
-		/* always uses atlas */
-		_cairo_output_stream_printf (stream,
-		    "    int i;\n"
-		    "    vec2 texcoords;\n"
-		    "    vec2 border_fade;\n"
-		    "    vec4 texel = vec4 (0.0, 0.0, 0.0, 0.0);\n"
-		    "    vec2 wrapped_coords = %s_wrap (%s_texcoords, %s_start_coords, %s_stop_coords);\n"
-		    "    if (wrapped_coords == vec2 (-1.0, -1.0))\n"
-		    "        return texel;\n"
-		    "    for (i = -%s_blur_radius; i <= %s_blur_radius; i++) {\n"
-		    "        texcoords = %s_texcoords + vec2 (0.0, %s_blur_step * i);\n"
-		    "        border_fade = %s_border_fade (texcoords, %s_texdims);\n"
-		    "        wrapped_coords = %s_wrap (texcoords, %s_start_coords, %s_stop_coords);\n"
-		    "        if (wrapped_coords == vec2 (-1.0, -1.0))\n"
-		    "            texel += vec4 (0.0, 0.0, 0.0, 1.0) * %s_blurs[i+%s_blur_radius] * border_fade.x * border_fade.y;\n"
-		    "        else\n"
-		    "            texel += texture2D%s (%s_sampler, wrapped_coords) * %s_blurs[i+%s_blur_radius] * border_fade.x * border_fade.y;\n"
-		    "    }\n"
-		    "    return texel;\n"
-		    "}\n",
-		    namestr, namestr, namestr, namestr, namestr,
-		    namestr, namestr, namestr, namestr, namestr,
-		    namestr, namestr, namestr, namestr, namestr,
-		    rectstr, namestr, namestr, namestr);
-	    }
-	    else
-	    {
-		_cairo_output_stream_printf (stream,
-		    "    int i;\n"
-		    "    vec2 texcoords;\n"
-		    "    vec4 texel = vec4 (0.0, 0.0, 0.0, 0.0);\n"
-		    "    vec2 wrapped_coords = %s_wrap (%s_texcoords, %s_start_coords, %s_stop_coords);\n"
-		    "    if (wrapped_coords == vec2 (-1.0, -1.0))\n"
-		    "        return texel;\n"
-		    "    for (i = -%s_blur_radius; i <= %s_blur_radius; i++) {\n"
-		    "        texcoords = %s_texcoords + vec2 (0.0, %s_blur_step * i);\n"
-		    "        wrapped_coords = %s_wrap (texcoords, %s_start_coords, %s_stop_coords);\n"
-		    "        if (wrapped_coords == vec2 (-1.0, -1.0))\n"
-		    "            texel += vec4 (0.0, 0.0, 0.0, 1.0) * %s_blurs[i+%s_blur_radius];\n"
-		    "        else\n"
-		    "            texel += texture2D%s (%s_sampler, wrapped_coords) * %s_blurs[i+%s_blur_radius];\n"
-		    "    }\n"
-		    "    return texel;\n"
-		    "}\n",
-		    namestr, namestr, namestr, namestr,
-		    namestr, namestr, namestr, namestr,
-		    namestr, namestr, namestr, namestr, namestr,
-		    rectstr, namestr, namestr, namestr);
-	    }
+	    _cairo_output_stream_printf (stream,
+		"    int i;\n"
+		"    float alpha;\n"
+		"    vec2 texcoords;\n"
+		"    vec4 texel = vec4 (0.0, 0.0, 0.0, 0.0);\n"
+		"    vec2 wrapped_coords = %s_wrap (%s_texcoords, %s_start_coords, %s_stop_coords);\n"
+		"    if (wrapped_coords == vec2 (-1.0, -1.0))\n"
+		"        return texel;\n"
+		"    texel += texture2D%s (%s_sampler, wrapped_coords);\n"
+		"    alpha = texel.a;\n"
+		"    texel = texel * %s_blurs[%s_blur_radius];\n"
+		"    for (i = -%s_blur_radius; i <= %s_blur_radius; i++) {\n"
+		"        if (i == 0)\n"
+		"            continue;\n"
+		"        texcoords = %s_texcoords + vec2 (0.0, %s_blur_step * float(i));\n"
+		"        wrapped_coords = %s_wrap (texcoords, %s_start_coords, %s_stop_coords);\n"
+		"        if (wrapped_coords == vec2 (-1.0, -1.0))\n"
+		"            texel += vec4 (0.0, 0.0, 0.0, alpha) * %s_blurs[i+%s_blur_radius];\n"
+		"        else\n"
+		"            texel += texture2D%s (%s_sampler, wrapped_coords) * %s_blurs[i+%s_blur_radius];\n"
+		"    }\n"
+		"    return texel;\n"
+		"}\n",
+		namestr, namestr, namestr, namestr,
+		rectstr, namestr, namestr, namestr,
+		namestr, namestr, namestr, namestr,
+		namestr, namestr, namestr, namestr, namestr,
+		rectstr, namestr, namestr, namestr);
 	}
         break;
     case CAIRO_GL_OPERAND_LINEAR_GRADIENT:

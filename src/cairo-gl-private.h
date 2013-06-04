@@ -110,6 +110,14 @@
 typedef struct _cairo_gl_surface cairo_gl_surface_t;
 typedef struct _cairo_gl_image   cairo_gl_image_t;
 
+/* GL blur stages */
+typedef enum _cairo_blur_stage {
+    CAIRO_GL_BLUR_STAGE_NONE,
+    CAIRO_GL_BLUR_STAGE_0,	/* shrink stage  */
+    CAIRO_GL_BLUR_STAGE_1,	/* x/y pass      */
+    CAIRO_GL_BLUR_STAGE_2	/* enlarge stage */
+} cairo_blur_stage_t;
+
 /* GL flavor */
 typedef enum cairo_gl_flavor {
     CAIRO_GL_FLAVOR_NONE = 0,
@@ -255,6 +263,7 @@ struct _cairo_gl_surface {
     cairo_bool_t force_no_cache;
     double image_content_scale_x;
     double image_content_scale_y;
+    cairo_blur_stage_t blur_stage;
     /* Damage is too expensive to check, we use this flag. */
     cairo_bool_t content_changed;
     cairo_gl_image_t *image_node;
