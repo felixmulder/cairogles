@@ -1631,7 +1631,9 @@ _cairo_gl_operand_bind_to_shader (cairo_gl_context_t *ctx,
 				    operand->texture.coef);
     }
 
-    if (operand->type == CAIRO_GL_OPERAND_TEXTURE) {
+    if (operand->type == CAIRO_GL_OPERAND_TEXTURE ||
+        operand->type == CAIRO_GL_OPERAND_X_GAUSSIAN ||
+        operand->type == CAIRO_GL_OPERAND_Y_GAUSSIAN) {
 	    if (operand->texture.texgen)
 		    texgen = &operand->texture.attributes.matrix;
     } else {
