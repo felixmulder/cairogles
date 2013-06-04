@@ -71,6 +71,8 @@ struct _cairo_gstate {
 
     cairo_pattern_t *source;
 
+    cairo_shadow_t shadow;
+
     struct _cairo_gstate *next;
 };
 
@@ -383,5 +385,20 @@ _cairo_gstate_set_antialias (cairo_gstate_t *gstate,
 
 cairo_private cairo_antialias_t
 _cairo_gstate_get_antialias (cairo_gstate_t *gstate);
+
+cairo_private cairo_status_t
+_cairo_gstate_set_shadow (cairo_gstate_t *gstate, cairo_shadow_type_t shadow);
+
+cairo_private cairo_status_t
+_cairo_gstate_set_shadow_offset (cairo_gstate_t *gstate, double x_offset,
+				 double y_offset);
+
+cairo_private cairo_status_t
+_cairo_gstate_set_shadow_rgba (cairo_gstate_t *gstate, double r, double g,
+			       double b, double a);
+
+cairo_private cairo_status_t
+_cairo_gstate_set_shadow_sigma (cairo_gstate_t *gstate, double x_sigma,
+				double y_sigma);
 
 #endif /* CAIRO_GSTATE_PRIVATE_H */

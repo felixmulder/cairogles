@@ -252,8 +252,7 @@ _cairo_gl_context_setup_operand (cairo_gl_context_t *ctx,
 	}
 	break;
     case CAIRO_GL_OPERAND_TEXTURE:
-    case CAIRO_GL_OPERAND_X_GAUSSIAN:
-    case CAIRO_GL_OPERAND_Y_GAUSSIAN:
+    case CAIRO_GL_OPERAND_GAUSSIAN:
         if (ctx->states_cache.active_texture != GL_TEXTURE0 + tex_unit) {
 	    glActiveTexture (GL_TEXTURE0 + tex_unit);
 	    ctx->states_cache.active_texture = GL_TEXTURE0 + tex_unit;
@@ -354,8 +353,7 @@ _cairo_gl_context_destroy_operand (cairo_gl_context_t *ctx,
 	if (ctx->operands[tex_unit].constant.encode_as_attribute)
 	    dispatch->DisableVertexAttribArray (CAIRO_GL_COLOR_ATTRIB_INDEX);
     case CAIRO_GL_OPERAND_TEXTURE:
-    case CAIRO_GL_OPERAND_X_GAUSSIAN:
-    case CAIRO_GL_OPERAND_Y_GAUSSIAN:
+    case CAIRO_GL_OPERAND_GAUSSIAN:
         dispatch->DisableVertexAttribArray (CAIRO_GL_TEXCOORD0_ATTRIB_INDEX + tex_unit);
 	if (ctx->operands[tex_unit].texture.use_atlas) {
 	    dispatch->DisableVertexAttribArray (CAIRO_GL_START_COORD0_ATTRIB_INDEX + tex_unit);
@@ -1134,8 +1132,7 @@ _cairo_gl_context_choose_emit_span (cairo_gl_context_t *ctx)
 		    break;
 
 	    case CAIRO_GL_OPERAND_TEXTURE:
-	    case CAIRO_GL_OPERAND_X_GAUSSIAN:
-	    case CAIRO_GL_OPERAND_Y_GAUSSIAN:
+	    case CAIRO_GL_OPERAND_GAUSSIAN:
 		    if (!ctx->operands[CAIRO_GL_TEX_MASK].texture.texgen)
 			    return _cairo_gl_composite_emit_span;
 		    break;
@@ -1159,8 +1156,7 @@ _cairo_gl_context_choose_emit_span (cairo_gl_context_t *ctx)
 	break;
 
     case CAIRO_GL_OPERAND_TEXTURE:
-    case CAIRO_GL_OPERAND_X_GAUSSIAN:
-    case CAIRO_GL_OPERAND_Y_GAUSSIAN:
+    case CAIRO_GL_OPERAND_GAUSSIAN:
 	if (!ctx->operands[CAIRO_GL_TEX_SOURCE].texture.texgen)
 		return _cairo_gl_composite_emit_span;
     }
@@ -1255,8 +1251,7 @@ _cairo_gl_context_choose_emit_glyph (cairo_gl_context_t *ctx)
     case CAIRO_GL_OPERAND_RADIAL_GRADIENT_NONE:
     case CAIRO_GL_OPERAND_RADIAL_GRADIENT_EXT:
     case CAIRO_GL_OPERAND_TEXTURE:
-    case CAIRO_GL_OPERAND_X_GAUSSIAN:
-    case CAIRO_GL_OPERAND_Y_GAUSSIAN:
+    case CAIRO_GL_OPERAND_GAUSSIAN:
 	return _cairo_gl_composite_emit_glyph;
     }
 }

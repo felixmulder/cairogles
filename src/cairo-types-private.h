@@ -424,6 +424,16 @@ typedef struct _cairo_unscaled_font {
     cairo_reference_count_t		 ref_count;
     const cairo_unscaled_font_backend_t	*backend;
 } cairo_unscaled_font_t;
+
+typedef struct _cairo_shadow {
+    double x_offset;
+    double y_offset;
+    cairo_shadow_type_t type;
+    double 	x_sigma;
+    double	y_sigma;
+    cairo_color_t color;
+} cairo_shadow_t;
+    
 CAIRO_END_DECLS
 
 #endif /* CAIRO_TYPES_PRIVATE_H */

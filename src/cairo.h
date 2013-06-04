@@ -2907,7 +2907,7 @@ cairo_pattern_set_filter (cairo_pattern_t *pattern, cairo_filter_t filter);
 cairo_public cairo_filter_t
 cairo_pattern_get_filter (cairo_pattern_t *pattern);
 
-cairo_public cairo_status_t 
+cairo_public cairo_status_t
 cairo_pattern_set_sigma (cairo_pattern_t *pattern,
                          const double     x_sigma,
                          const double     y_sigma);
@@ -2916,6 +2916,29 @@ cairo_public cairo_status_t
 cairo_pattern_get_sigma (cairo_pattern_t *pattern,
                          double          *x_sigma,
                          double          *y_sigma);
+
+/* since 1.12.14 */
+typedef enum _cairo_shadow_type {
+    CAIRO_SHADOW_NONE = 0,
+    CAIRO_SHADOW_DROP,
+    CAIRO_SHADOW_INSET
+} cairo_shadow_type_t;
+
+cairo_public void
+cairo_set_shadow (cairo_t *cr, cairo_shadow_type_t shadow);
+
+cairo_public void
+cairo_set_shadow_offset (cairo_t *cr, double x_offset, double y_offset);
+
+cairo_public void
+cairo_set_shadow_rgb (cairo_t *cr, double red, double green, double blue);
+
+cairo_public void
+cairo_set_shadow_rgba (cairo_t *cr, double red, double green,
+		       double blue, double alpha);
+
+cairo_public void 
+cairo_set_shadow_sigma (cairo_t *cr, double x_sigma, double y_sigma);
 
 cairo_public cairo_status_t
 cairo_pattern_get_rgba (cairo_pattern_t *pattern,

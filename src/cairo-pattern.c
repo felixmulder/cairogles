@@ -126,7 +126,7 @@ const cairo_solid_pattern_t _cairo_pattern_clear = {
       CAIRO_EXTEND_REPEAT,		/* extend */
       FALSE,				/* has component alpha */
       { 1., 0., 0., 1., 0., 0., },	/* matrix */
-      1.0                               /* opacity */
+      1.0,                              /* opacity */
     },
     { 0., 0., 0., 0., 0, 0, 0, 0 },/* color (double rgba, short rgba) */
 };
@@ -244,6 +244,8 @@ _cairo_pattern_init (cairo_pattern_t *pattern, cairo_pattern_type_t type)
     pattern->y_radius = 0;
     pattern->convolution_matrix = NULL;
     pattern->convolution_changed = FALSE;
+
+    memset (&pattern->shadow, 0, sizeof (cairo_shadow_t));
 }
 
 static cairo_status_t

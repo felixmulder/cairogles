@@ -48,6 +48,8 @@
 #include "cairo-error-private.h"
 #include "cairo-image-surface-inline.h"
 #include "cairo-surface-backend-private.h"
+#include "cairo-surface-shadow-private.h"
+#include "cairo-surface-scale-translate-private.h"
 
 static const cairo_surface_backend_t _cairo_gl_surface_backend;
 
@@ -57,6 +59,86 @@ _cairo_gl_surface_flush (void *abstract_surface, unsigned flags);
 static cairo_bool_t _cairo_surface_is_gl (cairo_surface_t *surface)
 {
     return surface->backend == &_cairo_gl_surface_backend;
+}
+
+static cairo_surface_t *
+_cairo_gl_surface_get_shadow_surface (void *surface,
+				      cairo_bool_t glyph_shadow,
+				      int width, int height)
+{
+    int shadow_width, shadow_height;
+    int shadow_size;
+    cairo_gl_surface_t *shadow_surface = NULL;
+
+    cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
+    cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
+    if (ctx == NULL)
+	return NULL;
+
+    if (! glyph_shadow)
+	shadow_surface = ctx->scratch_surfaces[2];
+    else
+	shadow_surface = ctx->scratch_surfaces[3];
+    
+    if (shadow_surface) {
+	shadow_width = shadow_surface->width;
+	shadow_height = shadow_surface->height;
+
+	if ((shadow_width < width &&
+	     shadow_width < MAX_SCRATCH_SIZE) ||
+	    (shadow_height < height &&
+	     shadow_height < MAX_SCRATCH_SIZE)) {
+	   cairo_surface_destroy (&shadow_surface->base);
+	   shadow_surface = NULL;
+	}
+    }
+
+    if (! shadow_surface) {
+	shadow_size = MIN_SCRATCH_SIZE;
+	while (shadow_size < width || shadow_size < height) {
+	    shadow_size *= 2;
+	    if (shadow_size == MAX_SCRATCH_SIZE)
+		break;
+	    else if (shadow_size > MAX_SCRATCH_SIZE) {
+		shadow_size *= 0.5;
+		break;
+	    }
+	}
+	shadow_surface = (cairo_gl_surface_t *)
+		_cairo_gl_surface_create_scratch (ctx, dst->base.content,
+						  shadow_size,
+						  shadow_size);
+	if (unlikely (shadow_surface->base.status)) {
+	    cairo_surface_destroy (&shadow_surface->base);
+	    return NULL;
+	}
+    }
+
+    if (! glyph_shadow)
+	ctx->scratch_surfaces[2] = shadow_surface;
+    else
+	ctx->scratch_surfaces[3] = shadow_surface;
+
+    shadow_surface->needs_to_cache = FALSE;
+    shadow_surface->force_no_cache = TRUE;
+
+    return cairo_surface_reference (&shadow_surface->base);
+}
+	
+static cairo_surface_t *
+_cairo_gl_surface_shadow_surface (void *surface,
+				  int width, int height)
+{
+    return _cairo_gl_surface_get_shadow_surface (surface, FALSE, width,
+						 height);
+}
+
+static cairo_surface_t *
+_cairo_gl_surface_glyph_shadow_surface (void *surface,
+					int width, int height)
+{
+    return _cairo_gl_surface_get_shadow_surface (surface, TRUE, width,
+						 height);
 }
 
 static cairo_bool_t
@@ -362,6 +444,7 @@ _cairo_gl_surface_embedded_operand_init (cairo_gl_surface_t *surface)
     operand->type = CAIRO_GL_OPERAND_TEXTURE;
     operand->texture.surface = surface;
     operand->texture.tex = surface->tex;
+    operand->pass = 0;
 
     if (_cairo_gl_device_requires_power_of_two_textures (surface->base.device)) {
 	cairo_matrix_init_identity (&attributes->matrix);
@@ -1033,13 +1116,11 @@ _cairo_gl_surface_finish (void *abstract_surface)
         return status;
 
     if ((ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_TEXTURE ||
-	 ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_X_GAUSSIAN ||
-	 ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_Y_GAUSSIAN) &&
+	 ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_GAUSSIAN) &&
         ctx->operands[CAIRO_GL_TEX_SOURCE].texture.surface == surface)
         _cairo_gl_context_destroy_operand (ctx, CAIRO_GL_TEX_SOURCE);
     if ((ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_TEXTURE ||
-	 ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_X_GAUSSIAN ||
-	 ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_Y_GAUSSIAN) &&
+	 ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_GAUSSIAN) &&
         ctx->operands[CAIRO_GL_TEX_MASK].texture.surface == surface)
         _cairo_gl_context_destroy_operand (ctx, CAIRO_GL_TEX_MASK);
     if (ctx->current_target == surface)
@@ -1306,12 +1387,10 @@ _cairo_gl_surface_flush (void *abstract_surface, unsigned flags)
         return status;
 
     if (((ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_TEXTURE ||
-	  ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_X_GAUSSIAN ||
-	  ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_Y_GAUSSIAN) &&
+	  ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_GAUSSIAN) &&
          ctx->operands[CAIRO_GL_TEX_SOURCE].texture.surface == surface) ||
         ((ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_TEXTURE ||
-	  ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_X_GAUSSIAN ||
-	  ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_Y_GAUSSIAN) &&
+	  ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_GAUSSIAN) &&
          ctx->operands[CAIRO_GL_TEX_MASK].texture.surface == surface) ||
         (ctx->current_target == surface))
       _cairo_gl_composite_flush (ctx);
@@ -1370,15 +1449,31 @@ _cairo_gl_surface_paint (void			*surface,
     cairo_int_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
 
+    status = cairo_device_acquire (dst->base.device);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_surface_shadow_paint (surface, op, source, clip,
+					  &source->shadow);
+    if (unlikely (status)) {
+ 	cairo_device_release (dst->base.device);
+	return status;
+    }
+
     /* simplify the common case of clearing the surface */
     if (clip == NULL) {
-        if (op == CAIRO_OPERATOR_CLEAR)
-            return _cairo_gl_surface_clear (surface, CAIRO_COLOR_TRANSPARENT);
-       else if (source->type == CAIRO_PATTERN_TYPE_SOLID &&
+        if (op == CAIRO_OPERATOR_CLEAR) {
+            status = _cairo_gl_surface_clear (surface, CAIRO_COLOR_TRANSPARENT);
+	    cairo_device_release (dst->base.device);
+	    return status;
+	}
+	else if (source->type == CAIRO_PATTERN_TYPE_SOLID &&
                 (op == CAIRO_OPERATOR_SOURCE ||
                  (op == CAIRO_OPERATOR_OVER && _cairo_pattern_is_opaque_solid (source)))) {
-            return _cairo_gl_surface_clear (surface,
+            status = _cairo_gl_surface_clear (surface,
                                             &((cairo_solid_pattern_t *) source)->color);
+ 	    cairo_device_release (dst->base.device);
+	    return status;
         }
     }
 
@@ -1386,6 +1481,8 @@ _cairo_gl_surface_paint (void			*surface,
 				      op, source, clip);
     if (likely (status))
 	dst->content_changed = TRUE;
+ 
+    cairo_device_release (dst->base.device);
     return status;
 }
 
@@ -1442,13 +1539,135 @@ _cairo_gl_surface_fill (void			*surface,
 {
     cairo_int_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
+    cairo_device_t *device = cairo_surface_get_device (surface);
 
+    /* lock device, reduce context switch */
+    status = cairo_device_acquire (device);
+    if (unlikely (status))
+	return status;
+
+    /* support for shadow */
+    if (source->shadow.type == CAIRO_SHADOW_DROP) {
+	cairo_path_fixed_t shadow_path;
+	cairo_pattern_union_t shadow_source;
+	cairo_rectangle_int_t shadow_extents;
+	cairo_surface_t *shadow_surface;
+	cairo_pattern_t *shadow_pattern = NULL;
+	cairo_pattern_t *color_pattern;
+	int shadow_width, shadow_height;
+	int x_blur, y_blur;
+
+	cairo_matrix_t matrix;
+	double scale;
+
+	double x_offset = source->shadow.x_offset;
+	double y_offset = source->shadow.y_offset;
+	double x_scale = 1.0;
+	double y_scale = 1.0;
+
+	((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
+
+	x_blur = ceil (source->shadow.x_sigma * 2);
+	y_blur = ceil (source->shadow.y_sigma * 2);
+
+	color_pattern =
+	    cairo_pattern_create_rgba (source->shadow.color.red,
+				       source->shadow.color.green,
+				       source->shadow.color.blue,
+				       source->shadow.color.alpha);
+
+	/* get shadow bounds */
+	status = _cairo_surface_fill_get_offset_extents (surface,
+							 x_offset,
+							 y_offset,
+							 source,
+							 path,
+							 clip,
+							 &shadow_source.base,
+							 &shadow_path,
+							 &shadow_extents);
+	if (unlikely (status))
+	    goto FINISH;
+
+	/* get the shadow surface */
+	x_offset = shadow_extents.x - x_blur;
+	y_offset = shadow_extents.y - y_blur;
+	shadow_width = shadow_extents.width + x_blur * 2;
+	shadow_height = shadow_extents.height + y_blur * 2;
+	shadow_surface = _cairo_gl_surface_shadow_surface (surface,
+							   shadow_width,
+							   shadow_height);
+	if (! shadow_surface)
+	    goto FINISH;
+
+	/* matrix */
+	x_scale = (double) ((cairo_gl_surface_t *)shadow_surface)->width / (double) shadow_width;
+	y_scale = (double) ((cairo_gl_surface_t *)shadow_surface)->height / (double) shadow_height;
+	scale = MIN (x_scale, y_scale);
+	if (scale > 1.0)
+	    scale = 1.0;
+	
+	cairo_matrix_init_scale (&matrix, scale, scale);
+	cairo_matrix_translate (&matrix, -x_offset, -y_offset);
+
+	/* draw fill offset and scale */
+	status = _cairo_surface_scale_translate_fill (shadow_surface,
+						      &matrix,
+						      CAIRO_OPERATOR_SOURCE,
+						      &shadow_source.base,
+						      &shadow_path,
+						      fill_rule,
+						      tolerance,
+						      antialias,
+						      clip);
+	if (unlikely (status))
+	    goto FINISH;
+
+	//cairo_surface_write_to_png (shadow_surface, "./shadow_surface.png");
+	/* create shadow pattern */
+	shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
+	/* set shadow as gaussian */
+	cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
+	cairo_pattern_set_sigma (shadow_pattern,
+				 source->shadow.x_sigma * x_scale,
+				 source->shadow.y_sigma * y_scale);
+	/* compute gaussian matrix */
+	status = _cairo_pattern_create_gaussian_matrix (shadow_pattern);
+	if (unlikely (status))
+	    goto FINISH;
+
+	/* paint back the shadow_surface to dst */
+	cairo_pattern_set_matrix (shadow_pattern, &matrix);
+
+	status = _cairo_gl_surface_mask (surface, op, color_pattern,
+					 shadow_pattern, clip);
+	//cairo_surface_write_to_png (surface, "./surface.png");
+
+FINISH:
+	_cairo_path_fixed_fini (&shadow_path);
+	cairo_pattern_destroy (color_pattern);
+	if (shadow_pattern)
+	    cairo_pattern_destroy (shadow_pattern);
+
+	if (unlikely (status)) {
+	    //((cairo_pattern_t *)source)->shadow.type = saved_type;
+	    cairo_device_release (device);
+	    return status;
+	}
+    }
+
+    //((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
     status = _cairo_compositor_fill (get_compositor (surface), surface,
 				     op, source, path,
 				     fill_rule, tolerance, antialias,
 				     clip);
+    //((cairo_pattern_t *)source)->shadow.type = saved_type;
+	//cairo_surface_write_to_png (surface, "./surface.png");
+
     if (likely (status))
 	dst->content_changed = TRUE;
+
+    cairo_device_release (device);
     return status;
 }
 
@@ -1502,6 +1721,11 @@ static const cairo_surface_backend_t _cairo_gl_surface_backend = {
     _cairo_gl_surface_fill,
     NULL, /* fill/stroke */
     _cairo_gl_surface_glyphs,
+    NULL, /* has_text_glyphs */
+    NULL, /* show_text_glyphs */
+    NULL, /* get_supported_mime_types */
+    _cairo_gl_surface_shadow_surface,
+    _cairo_gl_surface_glyph_shadow_surface,
 };
 
 cairo_status_t

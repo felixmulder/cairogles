@@ -90,6 +90,11 @@ struct _cairo_pattern {
 
     double                      *convolution_matrix;
     cairo_bool_t                convolution_changed;
+
+    /* FIXME:  I don't like to attach shadow to pattern.  However,
+     * cairo does not have a way to pass shadow info to backend.
+     * so we attach shadow info in pattern */
+    cairo_shadow_t		shadow;
 };
 
 struct _cairo_solid_pattern {

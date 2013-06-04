@@ -4025,3 +4025,74 @@ cairo_status (cairo_t *cr)
     return cr->status;
 }
 slim_hidden_def (cairo_status);
+
+void
+cairo_set_shadow (cairo_t *cr, cairo_shadow_type_t shadow)
+{
+    cairo_status_t status;
+
+    if (unlikely (cr->status))
+	return;
+
+    status = cr->backend->set_shadow (cr, shadow);
+    if (unlikely (status))
+	_cairo_set_error (cr, status);
+}
+slim_hidden_def (cairo_set_shadow);
+
+void
+cairo_set_shadow_offset (cairo_t *cr, double x_offset, double y_offset)
+{
+    cairo_status_t status;
+
+    if (unlikely (cr->status))
+	return;
+
+    status = cr->backend->set_shadow_offset (cr, x_offset, y_offset);
+    if (unlikely (status))
+	_cairo_set_error (cr, status);
+}
+slim_hidden_def (cairo_set_shadow_offset);
+
+void
+cairo_set_shadow_rgb (cairo_t *cr, double red, double green, double blue)
+{
+    cairo_status_t status;
+
+    if (unlikely (cr->status))
+	return;
+
+    status = cr->backend->set_shadow_rgba (cr, red, green, blue, 1.0);
+    if (unlikely (status))
+	_cairo_set_error (cr, status);
+}
+slim_hidden_def (cairo_set_shadow_rgb);
+
+void
+cairo_set_shadow_rgba (cairo_t *cr, double red, double green,
+		       double blue, double alpha)
+{
+    cairo_status_t status;
+
+    if (unlikely (cr->status))
+	return;
+
+    status = cr->backend->set_shadow_rgba (cr, red, green, blue, alpha);
+    if (unlikely (status))
+	_cairo_set_error (cr, status);
+}
+slim_hidden_def (cairo_set_shadow_rgba);
+
+void
+cairo_set_shadow_sigma (cairo_t *cr, double x_sigma, double y_sigma)
+{
+    cairo_status_t status;
+
+    if (unlikely (cr->status))
+	return;
+
+    status = cr->backend->set_shadow_sigma (cr, x_sigma, y_sigma);
+    if (unlikely (status))
+	_cairo_set_error (cr, status);
+}
+slim_hidden_def (cairo_set_shadow_sigma);

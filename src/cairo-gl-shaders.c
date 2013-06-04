@@ -62,6 +62,8 @@ _cairo_gl_shader_get_uniform_location (cairo_gl_context_t *ctx,
 	"source_blur_radius",
 	"source_blurs",
 	"source_blur_step",
+	"source_blur_x_axis",
+	"source_blur_y_axis",
 	"mask_texdims",
 	"mask_texgen",
 	"mask_constant",
@@ -72,6 +74,8 @@ _cairo_gl_shader_get_uniform_location (cairo_gl_context_t *ctx,
 	"mask_blur_radius",
 	"mask_blurs",
 	"mask_blur_step",
+	"mask_blur_x_axis",
+	"mask_blur_y_axis",
 	"ModelViewProjectionMatrix"
     };
 
@@ -311,8 +315,7 @@ cairo_gl_operand_get_var_type (cairo_gl_operand_t *operand)
     case CAIRO_GL_OPERAND_RADIAL_GRADIENT_EXT:
         return operand->gradient.texgen ? CAIRO_GL_VAR_TEXGEN : CAIRO_GL_VAR_TEXCOORDS;
     case CAIRO_GL_OPERAND_TEXTURE:
-    case CAIRO_GL_OPERAND_X_GAUSSIAN:
-    case CAIRO_GL_OPERAND_Y_GAUSSIAN:
+    case CAIRO_GL_OPERAND_GAUSSIAN:
         return operand->texture.texgen ? CAIRO_GL_VAR_TEXGEN : CAIRO_GL_VAR_TEXCOORDS;
     }
 }
@@ -398,13 +401,23 @@ cairo_gl_shader_def_use_atlas (cairo_output_stream_t *stream,
                                cairo_gl_var_type_t type,
                                cairo_gl_tex_t name)
 {
-    if (type == CAIRO_GL_VAR_TEXCOORDS) {
-            _cairo_output_stream_printf (stream,
-					 "    %s_start_coords = StartCoords%d.xy;\n"
-					 "    %s_stop_coords = StopCoords%d.xy;\n",
-					 operand_names[name], name,
-					 operand_names[name], name);
-    }
+	_cairo_output_stream_printf (stream,
+				     "    %s_start_coords = StartCoords%d.xy;\n"
+				     "    %s_stop_coords = StopCoords%d.xy;\n",
+				     operand_names[name], name,
+				     operand_names[name], name);
+}
+
+static void
+cairo_gl_shader_emit_varying (cairo_output_stream_t *stream,
+                              cairo_gl_tex_t name)
+{
+    const char *namestr = operand_names[name];
+	    
+    _cairo_output_stream_printf (stream,
+	"varying vec2 %s_start_coords;\n"
+	"varying vec2 %s_stop_coords;\n",
+	namestr, namestr);
 }
 
 static cairo_status_t
@@ -425,6 +438,12 @@ cairo_gl_shader_get_vertex_source (cairo_gl_var_type_t src,
     cairo_gl_shader_emit_variable (stream, mask, CAIRO_GL_TEX_MASK, mask_use_atlas);
     if (use_coverage)
 	cairo_gl_shader_dcl_coverage (stream);
+
+    if (src_use_atlas && src == CAIRO_GL_VAR_TEXGEN)
+	cairo_gl_shader_emit_varying (stream, CAIRO_GL_TEX_SOURCE);
+
+    if (mask_use_atlas && mask == CAIRO_GL_VAR_TEXGEN)
+	cairo_gl_shader_emit_varying (stream, CAIRO_GL_TEX_MASK);
 
     _cairo_output_stream_printf (stream,
 				 "attribute vec4 Vertex;\n"
@@ -470,8 +489,7 @@ _cairo_gl_shader_needs_border_fade (cairo_gl_operand_t *operand)
 
     return extend == CAIRO_EXTEND_NONE &&
 	   (operand->type == CAIRO_GL_OPERAND_TEXTURE ||
-	    operand->type == CAIRO_GL_OPERAND_X_GAUSSIAN ||
-	    operand->type == CAIRO_GL_OPERAND_Y_GAUSSIAN ||
+	    operand->type == CAIRO_GL_OPERAND_GAUSSIAN ||
 	    operand->type == CAIRO_GL_OPERAND_LINEAR_GRADIENT ||
 	    operand->type == CAIRO_GL_OPERAND_RADIAL_GRADIENT_NONE ||
 	    operand->type == CAIRO_GL_OPERAND_RADIAL_GRADIENT_A0);
@@ -520,8 +538,7 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 	}
 	    break;
     case CAIRO_GL_OPERAND_TEXTURE:
-    case CAIRO_GL_OPERAND_X_GAUSSIAN:
-    case CAIRO_GL_OPERAND_Y_GAUSSIAN:
+    case CAIRO_GL_OPERAND_GAUSSIAN:
 	if (! use_atlas) {
 	    _cairo_output_stream_printf (stream,
 		"uniform sampler2D%s %s_sampler;\n"
@@ -542,8 +559,10 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 	    _cairo_output_stream_printf (stream,
 		"uniform int %s_blur_radius;\n"
 		"uniform float %s_blur_step;\n"
-		"uniform float %s_blurs[17];\n",
-		namestr, namestr, namestr);
+		"uniform float %s_blurs[17];\n"
+		"uniform float %s_blur_x_axis;\n"
+		"uniform float %s_blur_y_axis;\n",
+		namestr, namestr, namestr, namestr, namestr);
 	}
 
 	_cairo_output_stream_printf (stream,
@@ -587,7 +606,7 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 		}
 	    }
 	}
-	else if (op->type == CAIRO_GL_OPERAND_X_GAUSSIAN) {
+	else if (op->type == CAIRO_GL_OPERAND_GAUSSIAN) {
 	    _cairo_output_stream_printf (stream,
 		"    int i;\n"
 		"    vec2 texcoords;\n"
@@ -602,7 +621,8 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 		"    for (i = -%s_blur_radius; i <= %s_blur_radius; i++) {\n"
 		"        if (i == 0)\n"
 		"            continue;\n"
-		"        texcoords = %s_texcoords + vec2 (%s_blur_step * float(i), 0.0);\n"
+		"            texcoords = %s_texcoords + vec2 (%s_blur_step * float(i) * %s_blur_x_axis, %s_blur_step * float(i) * %s_blur_y_axis);\n"
+
 		"        wrapped_coords = %s_wrap (texcoords, %s_start_coords, %s_stop_coords);\n"
 		"        if (wrapped_coords == vec2 (-1.0, -1.0))\n"
 		"            texel += vec4 (0.0, 0.0, 0.0, alpha) * %s_blurs[i+%s_blur_radius];\n"
@@ -614,37 +634,8 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 		namestr, namestr, namestr, namestr,
 		rectstr, namestr, namestr, namestr,
 		namestr, namestr, namestr, namestr,
-		namestr, namestr, namestr, namestr, namestr,
-		rectstr, namestr, namestr, namestr);
-	}
-	else {
-	    _cairo_output_stream_printf (stream,
-		"    int i;\n"
-		"    float alpha;\n"
-		"    vec2 texcoords;\n"
-		"    vec4 texel = vec4 (0.0, 0.0, 0.0, 0.0);\n"
-		"    vec2 wrapped_coords = %s_wrap (%s_texcoords, %s_start_coords, %s_stop_coords);\n"
-		"    if (wrapped_coords == vec2 (-1.0, -1.0))\n"
-		"        return texel;\n"
-		"    texel += texture2D%s (%s_sampler, wrapped_coords);\n"
-		"    alpha = texel.a;\n"
-		"    texel = texel * %s_blurs[%s_blur_radius];\n"
-		"    for (i = -%s_blur_radius; i <= %s_blur_radius; i++) {\n"
-		"        if (i == 0)\n"
-		"            continue;\n"
-		"        texcoords = %s_texcoords + vec2 (0.0, %s_blur_step * float(i));\n"
-		"        wrapped_coords = %s_wrap (texcoords, %s_start_coords, %s_stop_coords);\n"
-		"        if (wrapped_coords == vec2 (-1.0, -1.0))\n"
-		"            texel += vec4 (0.0, 0.0, 0.0, alpha) * %s_blurs[i+%s_blur_radius];\n"
-		"        else\n"
-		"            texel += texture2D%s (%s_sampler, wrapped_coords) * %s_blurs[i+%s_blur_radius];\n"
-		"    }\n"
-		"    return texel;\n"
-		"}\n",
 		namestr, namestr, namestr, namestr,
-		rectstr, namestr, namestr, namestr,
 		namestr, namestr, namestr, namestr,
-		namestr, namestr, namestr, namestr, namestr,
 		rectstr, namestr, namestr, namestr);
 	}
         break;

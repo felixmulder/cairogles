@@ -172,6 +172,19 @@ struct _cairo_backend {
 
     cairo_status_t (*copy_page) (void *cr);
     cairo_status_t (*show_page) (void *cr);
+
+    cairo_status_t (*set_shadow) (void *cr, cairo_shadow_type_t shadow);
+    cairo_status_t (*set_shadow_offset) (void *cr,
+					 double x_offset,
+					 double y_offset);
+    cairo_status_t (*set_shadow_rgba) (void *cr,
+				       double red,
+				       double green,
+				       double blue,
+				       double alpha);
+    cairo_status_t (*set_shadow_sigma) (void *cr,
+					double x_sigma,
+					double y_sigma);
 };
 
 static inline void

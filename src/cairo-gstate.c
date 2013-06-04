@@ -74,6 +74,21 @@ _cairo_gstate_transform_glyphs_to_backend (cairo_gstate_t      *gstate,
 					   int			*num_transformed_glyphs,
 					   cairo_text_cluster_t *transformed_clusters);
 
+static cairo_bool_t
+_cairo_gstate_has_shadow (cairo_gstate_t *gstate)
+{
+    if (gstate->shadow.type == CAIRO_SHADOW_NONE)
+	return FALSE;
+
+    if (gstate->shadow.x_sigma == 0.0 &&
+	gstate->shadow.y_sigma == 0.0 &&
+	gstate->shadow.x_offset == 0.0 &&
+	gstate->shadow.y_offset == 0.0)
+	return FALSE;
+
+    return TRUE;
+}
+
 static void
 _cairo_gstate_update_device_transform (cairo_observer_t *observer,
 				       void *arg)
@@ -130,6 +145,8 @@ _cairo_gstate_init (cairo_gstate_t  *gstate,
     gstate->source_ctm_inverse = gstate->ctm;
 
     gstate->source = (cairo_pattern_t *) &_cairo_pattern_black.base;
+
+    memset (&gstate->shadow, 0, sizeof (cairo_shadow_t));
 
     /* Now that the gstate is fully initialized and ready for the eventual
      * _cairo_gstate_fini(), we can check for errors (and not worry about
@@ -190,6 +207,8 @@ _cairo_gstate_init_copy (cairo_gstate_t *gstate, cairo_gstate_t *other)
 
     gstate->source = cairo_pattern_reference (other->source);
 
+    gstate->shadow = other->shadow;
+
     gstate->next = NULL;
 
     return CAIRO_STATUS_SUCCESS;
@@ -224,6 +243,8 @@ _cairo_gstate_fini (cairo_gstate_t *gstate)
 
     cairo_pattern_destroy (gstate->source);
     gstate->source = NULL;
+
+    memset (&gstate->shadow, 0, sizeof (cairo_shadow_t));
 
     VG (VALGRIND_MAKE_MEM_NOACCESS (gstate, sizeof (cairo_gstate_t)));
 }
@@ -1060,12 +1081,17 @@ _cairo_gstate_paint (cairo_gstate_t *gstate)
 	status = _cairo_pattern_create_gaussian_matrix (gstate->source);
 
     op = _reduce_op (gstate);
-    if (op == CAIRO_OPERATOR_CLEAR) {
+    /* do not use static pattern */
+    /*if (op == CAIRO_OPERATOR_CLEAR) {
 	pattern = &_cairo_pattern_clear.base;
-    } else {
+    } else */ {
 	_cairo_gstate_copy_transformed_source (gstate, &source_pattern.base);
 	pattern = &source_pattern.base;
     }
+
+    /* FIXME: I don't like this */
+    if (_cairo_gstate_has_shadow (gstate))
+	((cairo_pattern_t *)pattern)->shadow = gstate->shadow;
 
     return _cairo_surface_paint (gstate->target,
 				 op, pattern,
@@ -1113,12 +1139,17 @@ _cairo_gstate_mask (cairo_gstate_t  *gstate,
     }
 
     op = _reduce_op (gstate);
-    if (op == CAIRO_OPERATOR_CLEAR) {
+    /*if (op == CAIRO_OPERATOR_CLEAR) {
 	source = &_cairo_pattern_clear.base;
-    } else {
+    } else */ {
 	_cairo_gstate_copy_transformed_source (gstate, &source_pattern.base);
 	source = &source_pattern.base;
     }
+
+    /* FIXME: I don't like this */
+    if (_cairo_gstate_has_shadow (gstate))
+	((cairo_pattern_t *)source)->shadow = gstate->shadow;
+
     _cairo_gstate_copy_transformed_mask (gstate, &mask_pattern.base, mask);
 
     if (source->type == CAIRO_PATTERN_TYPE_SOLID &&
@@ -1194,6 +1225,10 @@ _cairo_gstate_stroke (cairo_gstate_t *gstate, cairo_path_fixed_t *path)
 
     _cairo_gstate_copy_transformed_source (gstate, &source_pattern.base);
 
+    /* FIXME: I don't like this */
+    if (_cairo_gstate_has_shadow (gstate))
+	source_pattern.base.shadow = gstate->shadow;
+
     return _cairo_surface_stroke (gstate->target,
 				  gstate->op,
 				  &source_pattern.base,
@@ -1268,6 +1303,7 @@ cairo_status_t
 _cairo_gstate_fill (cairo_gstate_t *gstate, cairo_path_fixed_t *path)
 {
     cairo_status_t status;
+    const cairo_pattern_t *pattern;
 
     status = _cairo_gstate_get_pattern_status (gstate->source);
     if (unlikely (status))
@@ -1288,24 +1324,29 @@ _cairo_gstate_fill (cairo_gstate_t *gstate, cairo_path_fixed_t *path)
 	if (_cairo_operator_bounded_by_mask (gstate->op))
 	    return CAIRO_STATUS_SUCCESS;
 
+	pattern = &_cairo_pattern_clear.base;
 	status = _cairo_surface_paint (gstate->target,
 				       CAIRO_OPERATOR_CLEAR,
-				       &_cairo_pattern_clear.base,
+				       pattern,
 				       gstate->clip);
     } else {
 	cairo_pattern_union_t source_pattern;
-	const cairo_pattern_t *pattern;
 	cairo_operator_t op;
 	cairo_rectangle_int_t extents;
 	cairo_box_t box;
 
 	op = _reduce_op (gstate);
-	if (op == CAIRO_OPERATOR_CLEAR) {
+	/* FIXME: I don't like this */
+	/*if (op == CAIRO_OPERATOR_CLEAR) {
 	    pattern = &_cairo_pattern_clear.base;
-	} else {
+	} else */ {
 	    _cairo_gstate_copy_transformed_source (gstate, &source_pattern.base);
 	    pattern = &source_pattern.base;
 	}
+
+	/* FIXME: I don't like this */
+	if (_cairo_gstate_has_shadow (gstate))
+	    ((cairo_pattern_t *)pattern)->shadow = gstate->shadow;
 
 	/* Toolkits often paint the entire background with a fill */
 	if (_cairo_surface_get_extents (gstate->target, &extents) &&
@@ -2001,6 +2042,10 @@ _cairo_gstate_show_text_glyphs (cairo_gstate_t		   *gstate,
 	pattern = &source_pattern.base;
     }
 
+    /* FIXME: I don't like this */
+    if (_cairo_gstate_has_shadow (gstate))
+	((cairo_pattern_t *)pattern)->shadow = gstate->shadow;
+
     /* For really huge font sizes, we can just do path;fill instead of
      * show_glyphs, as show_glyphs would put excess pressure on the cache,
      * and moreover, not all components below us correctly handle huge font
@@ -2346,4 +2391,53 @@ _cairo_gstate_transform_glyphs_to_backend (cairo_gstate_t	*gstate,
 	    transformed_glyphs[j] = tmp;
 	}
     }
+}
+
+cairo_status_t
+_cairo_gstate_set_shadow (cairo_gstate_t *gstate, cairo_shadow_type_t shadow)
+{
+    gstate->shadow.type = shadow;
+    return CAIRO_STATUS_SUCCESS;
+}
+
+cairo_status_t
+_cairo_gstate_set_shadow_offset (cairo_gstate_t *gstate, double x_offset,
+				 double y_offset)
+{
+    double x = x_offset;
+    double y = y_offset;
+
+    _cairo_gstate_user_to_backend_distance (gstate, &x, &y);
+    gstate->shadow.x_offset = x;
+    gstate->shadow.y_offset = y;
+
+    return CAIRO_STATUS_SUCCESS;
+}
+
+cairo_status_t
+_cairo_gstate_set_shadow_rgba (cairo_gstate_t *gstate, double r, double g,
+			       double b, double a)
+{
+    r = _cairo_restrict_value (r, 0.0, 1.0);
+    g = _cairo_restrict_value (g, 0.0, 1.0);
+    b = _cairo_restrict_value (b, 0.0, 1.0);
+    a = _cairo_restrict_value (a, 0.0, 1.0);
+
+    _cairo_color_init_rgba (&gstate->shadow.color, r, g, b, a);
+
+    return CAIRO_STATUS_SUCCESS;
+}
+
+cairo_status_t
+_cairo_gstate_set_shadow_sigma (cairo_gstate_t *gstate, double x_sigma,
+				double y_sigma)
+{
+    double x = x_sigma;
+    double y = y_sigma;
+
+    _cairo_gstate_user_to_backend_distance (gstate, &x, &y);
+    gstate->shadow.x_sigma = x;
+    gstate->shadow.y_sigma = y;
+
+    return CAIRO_STATUS_SUCCESS;
 }

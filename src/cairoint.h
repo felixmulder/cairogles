@@ -2012,6 +2012,12 @@ slim_hidden_proto (cairo_region_union_rectangle);
 slim_hidden_proto (cairo_region_xor);
 slim_hidden_proto (cairo_region_xor_rectangle);
 
+slim_hidden_proto (cairo_set_shadow);
+slim_hidden_proto (cairo_set_shadow_offset);
+slim_hidden_proto (cairo_set_shadow_rgba);
+slim_hidden_proto (cairo_set_shadow_rgb);
+slim_hidden_proto (cairo_set_shadow_sigma);
+
 #if CAIRO_HAS_PNG_FUNCTIONS
 
 slim_hidden_proto (cairo_surface_write_to_png_stream);

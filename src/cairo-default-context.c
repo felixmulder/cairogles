@@ -1318,6 +1318,43 @@ _cairo_default_context_glyph_extents (void                *abstract_cr,
     return _cairo_gstate_glyph_extents (cr->gstate, glyphs, num_glyphs, extents);
 }
 
+static cairo_status_t
+_cairo_default_context_set_shadow (void		  *abstract_cr,
+				   cairo_shadow_type_t shadow)
+{
+    cairo_default_context_t *cr = abstract_cr;
+
+    return _cairo_gstate_set_shadow (cr->gstate, shadow);
+}
+
+static cairo_status_t
+_cairo_default_context_set_shadow_offset (void *abstract_cr,
+					  double x_offset,
+					  double y_offset)
+{
+    cairo_default_context_t *cr = abstract_cr;
+
+    return _cairo_gstate_set_shadow_offset (cr->gstate, x_offset, y_offset);
+}
+
+static cairo_status_t
+_cairo_default_context_set_shadow_rgba (void *abstract_cr, double red, double green, double blue, double alpha)
+{
+    cairo_default_context_t *cr = abstract_cr;
+
+    return _cairo_gstate_set_shadow_rgba (cr->gstate, red, green, blue, alpha);
+}
+
+static cairo_status_t
+_cairo_default_context_set_shadow_sigma (void *abstract_cr,
+					 double x_sigma,
+					 double y_sigma)
+{
+    cairo_default_context_t *cr = abstract_cr;
+
+    return _cairo_gstate_set_shadow_sigma (cr->gstate, x_sigma, y_sigma);
+}
+
 static const cairo_backend_t _cairo_default_context_backend = {
     CAIRO_TYPE_DEFAULT,
     _cairo_default_context_destroy,
@@ -1435,6 +1472,12 @@ static const cairo_backend_t _cairo_default_context_backend = {
 
     _cairo_default_context_copy_page,
     _cairo_default_context_show_page,
+
+    /* shadow */
+    _cairo_default_context_set_shadow,
+    _cairo_default_context_set_shadow_offset,
+    _cairo_default_context_set_shadow_rgba,
+    _cairo_default_context_set_shadow_sigma,
 };
 
 cairo_status_t

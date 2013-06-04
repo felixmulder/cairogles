@@ -118,6 +118,8 @@ cairo_private = \
 	cairo-surface-observer-inline.h \
 	cairo-surface-observer-private.h \
 	cairo-surface-offset-private.h \
+	cairo-surface-scale-translate-private.h \
+	cairo-surace-shadow-private.h \
 	cairo-surface-subsurface-inline.h \
 	cairo-surface-subsurface-private.h \
 	cairo-surface-snapshot-inline.h \
@@ -221,6 +223,8 @@ cairo_sources = \
 	cairo-surface-fallback.c \
 	cairo-surface-observer.c \
 	cairo-surface-offset.c \
+	cairo-surface-scale-translate.c \
+	cairo-surface-shadow.c \
 	cairo-surface-snapshot.c \
 	cairo-surface-subsurface.c \
 	cairo-surface-wrapper.c \
