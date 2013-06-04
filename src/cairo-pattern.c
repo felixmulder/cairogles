@@ -4512,6 +4512,9 @@ cairo_pattern_set_sigma (cairo_pattern_t *pattern,
                          const double     x_sigma,
                          const double     y_sigma)
 {
+    double transformed_x_sigma = x_sigma;
+    double transformed_y_sigma = y_sigma;
+
     if (pattern->status)
 	return pattern->status;
 
@@ -4521,14 +4524,19 @@ cairo_pattern_set_sigma (cairo_pattern_t *pattern,
     if (pattern->type != CAIRO_PATTERN_TYPE_SURFACE)
 	return CAIRO_STATUS_PATTERN_TYPE_MISMATCH;
 
-    if (x_sigma < 0.0 || y_sigma < 0.0)
+    cairo_matrix_transform_distance ((const cairo_matrix_t *)&pattern->matrix,
+				     &transformed_x_sigma,
+				     &transformed_y_sigma);
+
+    if (transformed_x_sigma < 0.0 || transformed_y_sigma < 0.0)
 	return CAIRO_STATUS_INVALID_SIZE;
 
-    if (pattern->x_sigma == x_sigma && pattern->y_sigma == y_sigma)
+    if (pattern->x_sigma == transformed_x_sigma &&
+	pattern->y_sigma == transformed_y_sigma)
         return CAIRO_STATUS_SUCCESS;
 
-    pattern->x_sigma = x_sigma;
-    pattern->y_sigma = y_sigma;
+    pattern->x_sigma = transformed_x_sigma;
+    pattern->y_sigma = transformed_y_sigma;
     pattern->convolution_changed = TRUE;
 
     return CAIRO_STATUS_SUCCESS;
