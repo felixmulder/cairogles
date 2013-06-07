@@ -1518,12 +1518,29 @@ _cairo_gl_surface_stroke (void			        *surface,
     cairo_int_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
 
+    status = cairo_device_acquire (dst->base.device);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_surface_shadow_stroke (surface, op, source, path,
+					   style, ctm, ctm_inverse,
+					   tolerance, antialias,
+					   clip, &source->shadow);
+
+    if (unlikely (status)) {
+ 	cairo_device_release (dst->base.device);
+	return status;
+    }
+
+
     status = _cairo_compositor_stroke (get_compositor (surface), surface,
 				       op, source, path, style,
 				       ctm, ctm_inverse, tolerance,
 				       antialias, clip);
     if (likely (status))
 	dst->content_changed = TRUE;
+
+    cairo_device_release (dst->base.device);
     return status;
 }
 

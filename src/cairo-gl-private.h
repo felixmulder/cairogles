@@ -367,7 +367,7 @@ typedef void (*cairo_gl_emit_glyph_t) (cairo_gl_context_t *ctx,
 				       GLfloat glyph_x2, GLfloat glyph_y2);
 
 #define cairo_gl_var_type_hash(src,mask,src_atlas_extend,mask_atlas_extend,src_use_atlas,mask_use_atlas,spans,dest) ((spans) << 13) | ((mask) << 10 | (src << 7) | (mask_atlas_extend << 5) | (src_atlas_extend << 3) | (mask_use_atlas << 2) | (src_use_atlas << 1) | (dest))
-#define CAIRO_GL_VAR_TYPE_MAX (1 << 12)
+#define CAIRO_GL_VAR_TYPE_MAX (1 << 14)
 
 typedef void (*cairo_gl_generic_func_t)(void);
 typedef cairo_gl_generic_func_t (*cairo_gl_get_proc_addr_func_t)(const char *procname);

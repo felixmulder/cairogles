@@ -72,7 +72,7 @@ _cairo_surface_scale_translate_paint (cairo_surface_t	    *target,
 				      const cairo_clip_t     *clip)
 {
     cairo_status_t status;
-    cairo_clip_t *temp_clip, *dev_clip;
+    cairo_clip_t *dev_clip = NULL;
     cairo_matrix_t m;
     cairo_pattern_t *clear_pattern;
 
@@ -83,8 +83,10 @@ _cairo_surface_scale_translate_paint (cairo_surface_t	    *target,
 	return CAIRO_STATUS_SUCCESS;
 
     if (! _cairo_matrix_is_identity (matrix)) {
-	temp_clip = _cairo_clip_copy (clip);
-	dev_clip = _cairo_clip_transform (temp_clip, matrix);
+	if (clip) {
+	    dev_clip = _cairo_clip_copy (clip);
+	    dev_clip = _cairo_clip_transform (dev_clip, matrix);
+	}
 
 	m = *matrix;
 	status = cairo_matrix_invert (&m);
@@ -98,10 +100,8 @@ _cairo_surface_scale_translate_paint (cairo_surface_t	    *target,
 
     status = _cairo_surface_paint (target, op, source, dev_clip);
 
-    if (dev_clip != temp_clip)
+    if (dev_clip && dev_clip != clip)
 	_cairo_clip_destroy (dev_clip);
-    if (temp_clip != clip)
-	_cairo_clip_destroy (temp_clip);
 
     return status;
 }
@@ -151,7 +151,7 @@ _cairo_surface_scale_translate_mask (cairo_surface_t *target,
 				     const cairo_clip_t	    *clip)
 {
     cairo_status_t status;
-    cairo_clip_t *dev_clip, *temp_clip;
+    cairo_clip_t *dev_clip = NULL;
     cairo_matrix_t m;
     cairo_pattern_t *clear_pattern;
 
@@ -162,8 +162,10 @@ _cairo_surface_scale_translate_mask (cairo_surface_t *target,
 	return CAIRO_STATUS_SUCCESS;
 
     if (! _cairo_matrix_is_identity (matrix)) {
-	temp_clip = _cairo_clip_copy (clip);
-	dev_clip = _cairo_clip_transform (temp_clip, matrix);
+	if (clip) {
+	    dev_clip = _cairo_clip_copy (clip);
+	    dev_clip = _cairo_clip_transform (dev_clip, matrix);
+	}
 
 	m = *matrix;
 	status = cairo_matrix_invert (&m);
@@ -180,10 +182,8 @@ _cairo_surface_scale_translate_mask (cairo_surface_t *target,
 				  source, mask,
 				  dev_clip);
 
-    if (dev_clip != temp_clip)
+    if (dev_clip && dev_clip != clip)
 	_cairo_clip_destroy (dev_clip);
-    if (temp_clip != clip)
-	_cairo_clip_destroy (temp_clip);
 
     return status;
 }
@@ -244,7 +244,7 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
 				       const cairo_clip_t	*clip)
 {
     cairo_path_fixed_t *dev_path = (cairo_path_fixed_t *) path;
-    cairo_clip_t *dev_clip, *temp_clip;
+    cairo_clip_t *dev_clip = NULL;
     cairo_matrix_t dev_ctm = *ctm;
     cairo_matrix_t dev_ctm_inverse = *ctm_inverse;
     cairo_status_t status;
@@ -258,8 +258,10 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
 	return CAIRO_STATUS_SUCCESS;
 
     if (! _cairo_matrix_is_identity (matrix)) {
-	temp_clip = _cairo_clip_copy (clip);
-	dev_clip = _cairo_clip_transform (temp_clip, matrix);
+	if (clip) {
+	    dev_clip = _cairo_clip_copy (clip);
+	    dev_clip = _cairo_clip_transform (dev_clip, matrix);
+	}
 
 	_cairo_path_fixed_transform (dev_path, matrix);
 
@@ -283,10 +285,8 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
 				    tolerance, antialias,
 				    dev_clip);
 
-    if (dev_clip != temp_clip)
+    if (dev_clip && dev_clip != clip)
 	_cairo_clip_destroy (dev_clip);
-    if (temp_clip != clip)
-	_cairo_clip_destroy (temp_clip);
     return status;
 }
 
@@ -369,7 +369,7 @@ _cairo_surface_scale_translate_fill (cairo_surface_t	*surface,
 {
     cairo_status_t status;
     cairo_path_fixed_t *dev_path = (cairo_path_fixed_t *) path;
-    cairo_clip_t *dev_clip, *temp_clip;
+    cairo_clip_t *dev_clip = NULL;
     cairo_matrix_t m;
     cairo_pattern_t *clear_pattern;
 
@@ -380,8 +380,10 @@ _cairo_surface_scale_translate_fill (cairo_surface_t	*surface,
 	return CAIRO_STATUS_SUCCESS;
 
     if (! _cairo_matrix_is_identity (matrix)) {
-	temp_clip = _cairo_clip_copy (clip);
-	dev_clip = _cairo_clip_transform (temp_clip, matrix);
+	if (clip) {
+	    dev_clip = _cairo_clip_copy (clip);
+	    dev_clip = _cairo_clip_transform (dev_clip, matrix);
+	}
 
 	_cairo_path_fixed_transform (dev_path, matrix);
 
@@ -400,10 +402,8 @@ _cairo_surface_scale_translate_fill (cairo_surface_t	*surface,
 				  tolerance, antialias,
 				  dev_clip);
 
-    if (dev_clip != temp_clip)
+    if (dev_clip && dev_clip != clip)
 	_cairo_clip_destroy (dev_clip);
-    if (temp_clip != clip)
-	_cairo_clip_destroy (temp_clip);
 
     return status;
 }

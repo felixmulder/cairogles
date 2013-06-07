@@ -60,7 +60,7 @@ _cairo_surface_shadow_mask (cairo_surface_t *target,
 			    const cairo_shadow_t  *shadow);
 
 cairo_private cairo_status_t
-_cairo_surface_shadow_stroke (cairo_surface_t *surface,
+_cairo_surface_shadow_stroke (cairo_surface_t *target,
 			      cairo_operator_t		 op,
 			      const cairo_pattern_t	*source,
 			      const cairo_path_fixed_t	*path,
