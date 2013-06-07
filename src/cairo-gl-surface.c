@@ -1537,137 +1537,31 @@ _cairo_gl_surface_fill (void			*surface,
                         cairo_antialias_t	 antialias,
                         const cairo_clip_t	*clip)
 {
-    cairo_int_status_t status;
+    cairo_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
-    cairo_device_t *device = cairo_surface_get_device (surface);
 
-    /* lock device, reduce context switch */
-    status = cairo_device_acquire (device);
+    status = cairo_device_acquire (dst->base.device);
     if (unlikely (status))
 	return status;
 
-    /* support for shadow */
-    if (source->shadow.type == CAIRO_SHADOW_DROP) {
-	cairo_path_fixed_t shadow_path;
-	cairo_pattern_union_t shadow_source;
-	cairo_rectangle_int_t shadow_extents;
-	cairo_surface_t *shadow_surface;
-	cairo_pattern_t *shadow_pattern = NULL;
-	cairo_pattern_t *color_pattern;
-	int shadow_width, shadow_height;
-	int x_blur, y_blur;
+    status = _cairo_surface_shadow_fill (surface, op, source, path,
+					 fill_rule, tolerance, antialias,
+					 clip, &source->shadow);
 
-	cairo_matrix_t matrix;
-	double scale;
-
-	double x_offset = source->shadow.x_offset;
-	double y_offset = source->shadow.y_offset;
-	double x_scale = 1.0;
-	double y_scale = 1.0;
-
-	((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
-
-	x_blur = ceil (source->shadow.x_sigma * 2);
-	y_blur = ceil (source->shadow.y_sigma * 2);
-
-	color_pattern =
-	    cairo_pattern_create_rgba (source->shadow.color.red,
-				       source->shadow.color.green,
-				       source->shadow.color.blue,
-				       source->shadow.color.alpha);
-
-	/* get shadow bounds */
-	status = _cairo_surface_fill_get_offset_extents (surface,
-							 x_offset,
-							 y_offset,
-							 source,
-							 path,
-							 clip,
-							 &shadow_source.base,
-							 &shadow_path,
-							 &shadow_extents);
-	if (unlikely (status))
-	    goto FINISH;
-
-	/* get the shadow surface */
-	x_offset = shadow_extents.x - x_blur;
-	y_offset = shadow_extents.y - y_blur;
-	shadow_width = shadow_extents.width + x_blur * 2;
-	shadow_height = shadow_extents.height + y_blur * 2;
-	shadow_surface = _cairo_gl_surface_shadow_surface (surface,
-							   shadow_width,
-							   shadow_height);
-	if (! shadow_surface)
-	    goto FINISH;
-
-	/* matrix */
-	x_scale = (double) ((cairo_gl_surface_t *)shadow_surface)->width / (double) shadow_width;
-	y_scale = (double) ((cairo_gl_surface_t *)shadow_surface)->height / (double) shadow_height;
-	scale = MIN (x_scale, y_scale);
-	if (scale > 1.0)
-	    scale = 1.0;
-	
-	cairo_matrix_init_scale (&matrix, scale, scale);
-	cairo_matrix_translate (&matrix, -x_offset, -y_offset);
-
-	/* draw fill offset and scale */
-	status = _cairo_surface_scale_translate_fill (shadow_surface,
-						      &matrix,
-						      CAIRO_OPERATOR_SOURCE,
-						      &shadow_source.base,
-						      &shadow_path,
-						      fill_rule,
-						      tolerance,
-						      antialias,
-						      clip);
-	if (unlikely (status))
-	    goto FINISH;
-
-	//cairo_surface_write_to_png (shadow_surface, "./shadow_surface.png");
-	/* create shadow pattern */
-	shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
-	/* set shadow as gaussian */
-	cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
-	cairo_pattern_set_sigma (shadow_pattern,
-				 source->shadow.x_sigma * x_scale,
-				 source->shadow.y_sigma * y_scale);
-	/* compute gaussian matrix */
-	status = _cairo_pattern_create_gaussian_matrix (shadow_pattern);
-	if (unlikely (status))
-	    goto FINISH;
-
-	/* paint back the shadow_surface to dst */
-	cairo_pattern_set_matrix (shadow_pattern, &matrix);
-
-	status = _cairo_gl_surface_mask (surface, op, color_pattern,
-					 shadow_pattern, clip);
-	//cairo_surface_write_to_png (surface, "./surface.png");
-
-FINISH:
-	_cairo_path_fixed_fini (&shadow_path);
-	cairo_pattern_destroy (color_pattern);
-	if (shadow_pattern)
-	    cairo_pattern_destroy (shadow_pattern);
-
-	if (unlikely (status)) {
-	    //((cairo_pattern_t *)source)->shadow.type = saved_type;
-	    cairo_device_release (device);
-	    return status;
-	}
+    if (unlikely (status)) {
+ 	cairo_device_release (dst->base.device);
+	return status;
     }
 
-    //((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
     status = _cairo_compositor_fill (get_compositor (surface), surface,
 				     op, source, path,
 				     fill_rule, tolerance, antialias,
 				     clip);
-    //((cairo_pattern_t *)source)->shadow.type = saved_type;
-	//cairo_surface_write_to_png (surface, "./surface.png");
 
     if (likely (status))
 	dst->content_changed = TRUE;
 
-    cairo_device_release (device);
+    cairo_device_release (dst->base.device);
     return status;
 }
 
