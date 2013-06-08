@@ -677,6 +677,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 	ctx->scratch_surfaces[n] = scratches[n];
         scratches[n]->needs_to_cache = FALSE;
 	scratches[n]->force_no_cache = TRUE;
+	scratches[n]->supports_msaa = FALSE;
     }
 
     /* we have created two scratch surfaces */
@@ -717,24 +718,18 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
     if (unlikely (status))
 	return (cairo_gl_surface_t *)cairo_surface_reference (&src->base);
 
-    if (pattern->base.extend == CAIRO_EXTEND_REPEAT ||
-	pattern->base.extend == CAIRO_EXTEND_REFLECT) {
-	status = gaussian_filter_stage_1 (FALSE, pattern, &temp_pattern,
-					  scratches[1], scratches[0],
-					  width, height, &ctx_out);
-	if (ctx_out)
-	    status = _cairo_gl_context_release (ctx_out, status);
-	if (unlikely (status))
-	    return (cairo_gl_surface_t *)cairo_surface_reference (&src->base);
+    /* y-axis pass */
+    status = gaussian_filter_stage_1 (FALSE, pattern, &temp_pattern,
+				      scratches[1], scratches[0],
+				      width, height, &ctx_out);
+    if (ctx_out)
+	status = _cairo_gl_context_release (ctx_out, status);
+    if (unlikely (status))
+	return (cairo_gl_surface_t *)cairo_surface_reference (&src->base);
 
-	status = gaussian_filter_stage_2 (FALSE, pattern,
-				          scratches[1], scratches[0],
-					  width, height);
-    }
-    else
-	status = gaussian_filter_stage_2 (TRUE, pattern,
-				          scratches[0], scratches[1],
-					  width, height);
+    status = gaussian_filter_stage_2 (FALSE, pattern,
+				      scratches[1], scratches[0],
+				      width, height);
 
     extents_out->x = 0;
     extents_out->y = 0;
@@ -743,10 +738,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 
     status = _cairo_gl_context_release (ctx, status);
 
-    if (pattern->base.extend == CAIRO_EXTEND_REPEAT ||
-	pattern->base.extend == CAIRO_EXTEND_REFLECT)
-	return (cairo_gl_surface_t *) cairo_surface_reference (&scratches[0]->base);
-    return (cairo_gl_surface_t *) cairo_surface_reference (&scratches[1]->base);
+    return (cairo_gl_surface_t *) cairo_surface_reference (&scratches[0]->base);
 }
 
 static cairo_status_t
