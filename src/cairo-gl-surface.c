@@ -76,9 +76,9 @@ _cairo_gl_surface_get_shadow_surface (void *surface,
 	return NULL;
 
     if (! glyph_shadow)
-	shadow_surface = ctx->scratch_surfaces[2];
+	shadow_surface = ctx->shadow_scratch_surfaces[0];
     else
-	shadow_surface = ctx->scratch_surfaces[3];
+	shadow_surface = ctx->shadow_scratch_surfaces[1];
     
     if (shadow_surface) {
 	shadow_width = shadow_surface->width;
@@ -115,12 +115,14 @@ _cairo_gl_surface_get_shadow_surface (void *surface,
     }
 
     if (! glyph_shadow)
-	ctx->scratch_surfaces[2] = shadow_surface;
+	ctx->shadow_scratch_surfaces[0] = shadow_surface;
     else
-	ctx->scratch_surfaces[3] = shadow_surface;
+	ctx->shadow_scratch_surfaces[1] = shadow_surface;
 
     shadow_surface->needs_to_cache = FALSE;
     shadow_surface->force_no_cache = TRUE;
+    shadow_surface->force_no_msaa = TRUE;
+    shadow_surface->supports_msaa = FALSE;
 
     return cairo_surface_reference (&shadow_surface->base);
 }
@@ -477,6 +479,7 @@ _cairo_gl_surface_init (cairo_device_t *device,
     surface->needs_to_cache = FALSE;
     surface->image_node = NULL;
     surface->force_no_cache = FALSE;
+    surface->force_no_msaa = FALSE;
 
     surface->image_content_scale_x = 1.0;
     surface->image_content_scale_y = 1.0;
@@ -1448,6 +1451,7 @@ _cairo_gl_surface_paint (void			*surface,
 {
     cairo_int_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
+    cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
 
     status = cairo_device_acquire (dst->base.device);
     if (unlikely (status))
@@ -1455,10 +1459,12 @@ _cairo_gl_surface_paint (void			*surface,
 
     status = _cairo_surface_shadow_paint (surface, op, source, clip,
 					  &source->shadow);
+    ctx->source_scratch_in_use = FALSE;
     if (unlikely (status)) {
  	cairo_device_release (dst->base.device);
 	return status;
     }
+
 
     /* simplify the common case of clearing the surface */
     if (clip == NULL) {
@@ -1482,6 +1488,7 @@ _cairo_gl_surface_paint (void			*surface,
     if (likely (status))
 	dst->content_changed = TRUE;
  
+    ctx->source_scratch_in_use = FALSE;
     cairo_device_release (dst->base.device);
     return status;
 }
@@ -1495,11 +1502,13 @@ _cairo_gl_surface_mask (void			 *surface,
 {
     cairo_int_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *) surface;
+    cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
 
     status = _cairo_compositor_mask (get_compositor (surface), surface,
 				     op, source, mask, clip);
     if (likely (status))
 	dst->content_changed = TRUE;
+    ctx->source_scratch_in_use = FALSE;
     return status;
 }
 
@@ -1517,6 +1526,7 @@ _cairo_gl_surface_stroke (void			        *surface,
 {
     cairo_int_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
+    cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
 
     status = cairo_device_acquire (dst->base.device);
     if (unlikely (status))
@@ -1527,6 +1537,7 @@ _cairo_gl_surface_stroke (void			        *surface,
 					   tolerance, antialias,
 					   clip, &source->shadow);
 
+    ctx->source_scratch_in_use = FALSE;
     if (unlikely (status)) {
  	cairo_device_release (dst->base.device);
 	return status;
@@ -1540,6 +1551,7 @@ _cairo_gl_surface_stroke (void			        *surface,
     if (likely (status))
 	dst->content_changed = TRUE;
 
+    ctx->source_scratch_in_use = FALSE;
     cairo_device_release (dst->base.device);
     return status;
 }
@@ -1556,6 +1568,7 @@ _cairo_gl_surface_fill (void			*surface,
 {
     cairo_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
+    cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
 
     status = cairo_device_acquire (dst->base.device);
     if (unlikely (status))
@@ -1565,6 +1578,7 @@ _cairo_gl_surface_fill (void			*surface,
 					 fill_rule, tolerance, antialias,
 					 clip, &source->shadow);
 
+    ctx->source_scratch_in_use = FALSE;
     if (unlikely (status)) {
  	cairo_device_release (dst->base.device);
 	return status;
@@ -1578,6 +1592,7 @@ _cairo_gl_surface_fill (void			*surface,
     if (likely (status))
 	dst->content_changed = TRUE;
 
+    ctx->source_scratch_in_use = FALSE;
     cairo_device_release (dst->base.device);
     return status;
 }
@@ -1593,12 +1608,14 @@ _cairo_gl_surface_glyphs (void			*surface,
 {
     cairo_int_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
+    cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
 
     status = _cairo_compositor_glyphs (get_compositor (surface), surface,
 				       op, source, glyphs, num_glyphs,
 				       font, clip);
     if (likely (status))
 	dst->content_changed = TRUE;
+    ctx->source_scratch_in_use = FALSE;
     return status;
 }
 

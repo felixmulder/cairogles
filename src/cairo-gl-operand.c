@@ -612,6 +612,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
     cairo_gl_operand_type_t saved_type = src->operand.type;
 
     cairo_surface_pattern_t temp_pattern;
+    cairo_bool_t is_source;
 
     int n;
 
@@ -640,7 +641,14 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 	return (cairo_gl_surface_t *)cairo_surface_reference (&src->base);
 
     for (n = 0; n < 2; n++) {
-	scratches[n] = ctx->scratch_surfaces[n];
+	if (ctx->source_scratch_in_use) {
+	    scratches[n] = ctx->mask_scratch_surfaces[n];
+	    is_source = FALSE;
+	}
+	else {
+	    scratches[n] = ctx->source_scratch_surfaces[n];
+	    is_source = TRUE;
+	}
     
 	if (scratches[n]) {
 	    scratch_width = cairo_gl_surface_get_width (&scratches[n]->base);
@@ -674,11 +682,19 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 							scratch_size);
 	}
 
-	ctx->scratch_surfaces[n] = scratches[n];
+	if (ctx->source_scratch_in_use)
+	    ctx->mask_scratch_surfaces[n] = scratches[n];
+	else
+	    ctx->source_scratch_surfaces[n] = scratches[n];
+
         scratches[n]->needs_to_cache = FALSE;
 	scratches[n]->force_no_cache = TRUE;
-	scratches[n]->supports_msaa = FALSE;
+	scratches[n]->force_no_msaa = TRUE;
+        scratches[n]->supports_msaa = FALSE;
     }
+
+    if (is_source)
+	ctx->source_scratch_in_use = TRUE;
 
     /* we have created two scratch surfaces */
     /* shrink surface to scratches[0] */

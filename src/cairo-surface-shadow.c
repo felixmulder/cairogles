@@ -247,6 +247,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
+
     x_offset = shadow_extents.x - x_blur;
     y_offset = shadow_extents.y - y_blur;
 
@@ -288,7 +289,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 						    &shadow_ctm,
 						    &shadow_ctm_inverse,
 						    tolerance,
-						    antialias,
+						    CAIRO_ANTIALIAS_NONE,
 						    clip);
 
     if (unlikely (status))
@@ -421,7 +422,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 						  &shadow_path,
 						  fill_rule,
 						  tolerance,
-						  antialias,
+						  CAIRO_ANTIALIAS_NONE,
 						  clip);
 
     if (unlikely (status))

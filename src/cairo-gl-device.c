@@ -174,9 +174,13 @@ _gl_destroy (void *device)
 	ctx->glyph_mask = NULL;
     }
 
-    for (n = 0; n < 4; n++) {
-	if (ctx->scratch_surfaces[n])
-	    cairo_surface_destroy (&ctx->scratch_surfaces[n]->base);
+    for (n = 0; n < 2; n++) {
+	if (ctx->source_scratch_surfaces[n])
+	    cairo_surface_destroy (&ctx->source_scratch_surfaces[n]->base);
+	if (ctx->mask_scratch_surfaces[n])
+	    cairo_surface_destroy (&ctx->mask_scratch_surfaces[n]->base);
+	if (ctx->shadow_scratch_surfaces[n])
+	    cairo_surface_destroy (&ctx->shadow_scratch_surfaces[n]->base);
     }
 
     while (! cairo_list_is_empty (&ctx->fonts)) {
@@ -378,8 +382,12 @@ _cairo_gl_context_init (cairo_gl_context_t *ctx)
 
     ctx->image_cache = NULL;
 
-    for (n = 0; n < 4; n++)
-	ctx->scratch_surfaces[n] = NULL;
+    for (n = 0; n < 2; n++) {
+	ctx->source_scratch_surfaces[n] = NULL;
+	ctx->mask_scratch_surfaces[n] = NULL;
+	ctx->shadow_scratch_surfaces[n] = NULL;
+    }
+    ctx->source_scratch_in_use = FALSE;
 
     _cairo_gl_context_reset (ctx);
 

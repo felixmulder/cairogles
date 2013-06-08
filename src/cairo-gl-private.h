@@ -253,6 +253,7 @@ struct _cairo_gl_surface {
     cairo_bool_t stencil_and_msaa_caps_initialized;
     cairo_bool_t supports_stencil; /* Stencil support for for non-texture surfaces. */
     cairo_bool_t supports_msaa;
+    cairo_bool_t force_no_msaa;
     cairo_bool_t msaa_active; /* Whether the multisampling
 			         framebuffer is active or not. */
     cairo_clip_t *clip_on_stencil_buffer;
@@ -535,7 +536,10 @@ struct _cairo_gl_context {
     /* Intermediate mask surface for glyph rendering. Created on first access, enlarged on demand. */
     cairo_gl_surface_t *glyph_mask;
     /* Intermediate blur surface for gaussian blur. Created on first access, enlarged on demand. */
-    cairo_gl_surface_t *scratch_surfaces[4];
+    cairo_gl_surface_t *source_scratch_surfaces[2];
+    cairo_gl_surface_t *mask_scratch_surfaces[2];
+    cairo_gl_surface_t *shadow_scratch_surfaces[2];
+    cairo_bool_t source_scratch_in_use;
 
     void (*acquire) (void *ctx);
     void (*release) (void *ctx);
