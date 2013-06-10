@@ -485,6 +485,8 @@ _cairo_gl_surface_init (cairo_device_t *device,
     surface->image_content_scale_y = 1.0;
     surface->blur_stage = CAIRO_GL_BLUR_STAGE_NONE;
 
+    surface->clip_on_stencil_buffer = NULL;
+
     _cairo_gl_surface_embedded_operand_init (surface);
 }
 
@@ -1150,6 +1152,9 @@ _cairo_gl_surface_finish (void *abstract_surface)
 	_cairo_rtree_node_remove (&ctx->image_cache->rtree,
 				  &surface->image_node->node);
     }
+
+    if (surface->clip_on_stencil_buffer)
+        _cairo_clip_destroy (surface->clip_on_stencil_buffer);
 
     return _cairo_gl_context_release (ctx, status);
 }
