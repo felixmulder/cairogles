@@ -585,10 +585,14 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 		else {
 		    _cairo_output_stream_printf (stream,
 			"    vec2 border_fade = %s_border_fade (%s_texcoords, %s_texdims);\n"
-			"    vec4 texel = texture2D%s (%s_sampler, %s_wrap (%s_texcoords, %s_start_coords, %s_stop_coords));\n"
+			"    vec2 co = %s_wrap (%s_texcoords, %s_start_coords, %s_stop_coords);\n"
+			"    if (co.x == -1.0 && co.y == -1.0)\n"
+		        "        return vec4(0.0, 0.0, 0.0, 0.0);\n"
+			"    vec4 texel = texture2D%s (%s_sampler, co);\n"
 			"    return texel * border_fade.x * border_fade.y;\n"
 			"}\n",
-			namestr, namestr, namestr, rectstr, namestr, namestr, namestr, namestr, namestr);
+			namestr, namestr, namestr, namestr,
+			namestr, namestr, namestr, rectstr, namestr);
 		}
 	    }
 	    else
