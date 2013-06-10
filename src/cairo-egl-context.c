@@ -49,8 +49,10 @@ typedef struct _cairo_egl_context {
     EGLContext context;
 
     EGLSurface dummy_surface;
+    EGLSurface current_surface;
 
     EGLContext previous_context;
+
 } cairo_egl_context_t;
 
 typedef struct _cairo_egl_surface {
@@ -97,6 +99,8 @@ _egl_acquire (void *abstract_ctx)
     _cairo_gl_context_reset (&ctx->base);
     eglMakeCurrent (ctx->display,
 		    current_surface, current_surface, ctx->context);
+
+    ctx->current_surface = current_surface;
 }
 
 static void
@@ -111,6 +115,7 @@ _egl_release (void *abstract_ctx)
 
     eglMakeCurrent (ctx->display,
 		    EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    ctx->current_surface = EGL_NO_SURFACE;
 }
 
 static void
@@ -120,7 +125,8 @@ _egl_make_current (void *abstract_ctx,
     cairo_egl_context_t *ctx = abstract_ctx;
     cairo_egl_surface_t *surface = (cairo_egl_surface_t *) abstract_surface;
 
-    eglMakeCurrent(ctx->display, surface->egl, surface->egl, ctx->context);
+    if (surface->egl != ctx->current_surface)
+	eglMakeCurrent(ctx->display, surface->egl, surface->egl, ctx->context);
 }
 
 static void
@@ -234,6 +240,8 @@ cairo_egl_device_create (EGLDisplay dpy, EGLContext egl)
     }
 
     eglMakeCurrent (dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
+    ctx->current_surface = EGL_NO_SURFACE;
 
     return &ctx->base.base;
 }
