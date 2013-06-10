@@ -101,6 +101,9 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
+    if (shadow_extents.width == 0 && shadow_extents.height == 0)
+	goto FINISH;
+
     x_offset = shadow_extents.x - x_blur;
     y_offset = shadow_extents.y - y_blur;
 
@@ -247,6 +250,8 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
+    if (shadow_extents.width == 0 || shadow_extents.height == 0)
+	goto FINISH;
 
     x_offset = shadow_extents.x - x_blur;
     y_offset = shadow_extents.y - y_blur;
@@ -381,6 +386,9 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 						     &shadow_path,
 						     &shadow_extents);
     if (unlikely (status))
+	goto FINISH;
+
+    if (shadow_extents.width == 0 && shadow_extents.height == 0)
 	goto FINISH;
 
     x_offset = shadow_extents.x - x_blur;

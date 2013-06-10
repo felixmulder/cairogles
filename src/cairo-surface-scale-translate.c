@@ -250,12 +250,16 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
     cairo_status_t status;
     cairo_matrix_t m;
     cairo_pattern_t *clear_pattern;
+    cairo_stroke_style_t style_copy;
+    double dash[2];
 
     if (unlikely (surface->status))
 	return surface->status;
 
     if (_cairo_clip_is_all_clipped (clip))
 	return CAIRO_STATUS_SUCCESS;
+
+    memcpy (&style_copy, stroke_style, sizeof (cairo_stroke_style_t));
 
     if (! _cairo_matrix_is_identity (matrix)) {
 	if (clip) {
@@ -272,6 +276,15 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
 
 	_transformed_pattern (source, &m);
 	cairo_matrix_multiply (&dev_ctm_inverse, &m, &dev_ctm_inverse);
+
+	if (_cairo_stroke_style_dash_can_approximate (&style_copy, matrix, tolerance)) {
+	    style_copy.dash = dash;
+	    _cairo_stroke_style_dash_approximate (stroke_style, matrix,
+						  tolerance, 
+						  &style_copy.dash_offset,
+						  style_copy.dash,
+						  &style_copy.num_dashes);
+	}
     }
 
     clear_pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
@@ -280,7 +293,7 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
     cairo_pattern_destroy (clear_pattern);
 
     status = _cairo_surface_stroke (surface, op, source,
-				    dev_path, stroke_style,
+				    dev_path, &style_copy,
 				    &dev_ctm, &dev_ctm_inverse,
 				    tolerance, antialias,
 				    dev_clip);
