@@ -84,7 +84,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 			    const cairo_shadow_t *shadow);
 
 cairo_private cairo_status_t
-_cairo_surface_shadow_glyphs (cairo_surface_t		*surface,
+_cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 			      cairo_operator_t		 op,
 			      const cairo_pattern_t	*source,
 			      cairo_scaled_font_t	*scaled_font,

@@ -62,9 +62,8 @@ static cairo_bool_t _cairo_surface_is_gl (cairo_surface_t *surface)
 }
 
 static cairo_surface_t *
-_cairo_gl_surface_get_shadow_surface (void *surface,
-				      cairo_bool_t glyph_shadow,
-				      int width, int height)
+_cairo_gl_surface_shadow_surface (void *surface,
+				  int width, int height)
 {
     int shadow_width, shadow_height;
     int shadow_size;
@@ -75,10 +74,7 @@ _cairo_gl_surface_get_shadow_surface (void *surface,
     if (ctx == NULL)
 	return NULL;
 
-    if (! glyph_shadow)
-	shadow_surface = ctx->shadow_scratch_surfaces[0];
-    else
-	shadow_surface = ctx->shadow_scratch_surfaces[1];
+    shadow_surface = ctx->shadow_scratch_surfaces[0];
     
     if (shadow_surface) {
 	shadow_width = shadow_surface->width;
@@ -114,10 +110,7 @@ _cairo_gl_surface_get_shadow_surface (void *surface,
 	}
     }
 
-    if (! glyph_shadow)
-	ctx->shadow_scratch_surfaces[0] = shadow_surface;
-    else
-	ctx->shadow_scratch_surfaces[1] = shadow_surface;
+    ctx->shadow_scratch_surfaces[0] = shadow_surface;
 
     shadow_surface->needs_to_cache = FALSE;
     shadow_surface->force_no_cache = TRUE;
@@ -126,21 +119,57 @@ _cairo_gl_surface_get_shadow_surface (void *surface,
 
     return cairo_surface_reference (&shadow_surface->base);
 }
-	
-static cairo_surface_t *
-_cairo_gl_surface_shadow_surface (void *surface,
-				  int width, int height)
-{
-    return _cairo_gl_surface_get_shadow_surface (surface, FALSE, width,
-						 height);
-}
 
 static cairo_surface_t *
 _cairo_gl_surface_glyph_shadow_surface (void *surface,
-					int width, int height)
+					int width, int height,
+					cairo_bool_t for_source)
 {
-    return _cairo_gl_surface_get_shadow_surface (surface, TRUE, width,
-						 height);
+    int shadow_width, shadow_height;
+    cairo_gl_surface_t *shadow_surface = NULL;
+
+    cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
+    cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
+    if (ctx == NULL)
+	return NULL;
+
+    if (! for_source)
+	shadow_surface = ctx->shadow_scratch_surfaces[1];
+    else
+	shadow_surface = ctx->shadow_scratch_surfaces[2];
+    
+    if (shadow_surface) {
+	shadow_width = shadow_surface->width;
+	shadow_height = shadow_surface->height;
+
+	if (shadow_width < width ||
+	    shadow_height < height) {
+	   cairo_surface_destroy (&shadow_surface->base);
+	   shadow_surface = NULL;
+	}
+    }
+
+    if (! shadow_surface) {
+	shadow_surface = (cairo_gl_surface_t *)
+		_cairo_gl_surface_create_scratch (ctx, dst->base.content,
+						  width, height);
+	if (unlikely (shadow_surface->base.status)) {
+	    cairo_surface_destroy (&shadow_surface->base);
+	    return NULL;
+	}
+    }
+
+    if (! for_source)
+	ctx->shadow_scratch_surfaces[1] = shadow_surface;
+    else
+	ctx->shadow_scratch_surfaces[2] = shadow_surface;
+
+    shadow_surface->needs_to_cache = FALSE;
+    shadow_surface->force_no_cache = TRUE;
+    shadow_surface->force_no_msaa = TRUE;
+    shadow_surface->supports_msaa = FALSE;
+
+    return cairo_surface_reference (&shadow_surface->base);
 }
 
 static cairo_bool_t
@@ -1524,7 +1553,9 @@ _cairo_gl_surface_mask (void			 *surface,
 				     op, source, mask, clip);
     if (likely (status))
 	dst->content_changed = TRUE;
+
     ctx->source_scratch_in_use = FALSE;
+    cairo_device_release (dst->base.device);
     return status;
 }
 
@@ -1626,12 +1657,31 @@ _cairo_gl_surface_glyphs (void			*surface,
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
     cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
 
+    status = cairo_device_acquire (dst->base.device);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_surface_shadow_glyphs (surface, op, source,
+					   font,
+					   glyphs, num_glyphs,
+					   clip, &source->shadow);
+
+    ctx->source_scratch_in_use = FALSE;
+    if (unlikely (status)) {
+ 	cairo_device_release (dst->base.device);
+	return status;
+    }
+
+
     status = _cairo_compositor_glyphs (get_compositor (surface), surface,
 				       op, source, glyphs, num_glyphs,
 				       font, clip);
     if (likely (status))
 	dst->content_changed = TRUE;
+
     ctx->source_scratch_in_use = FALSE;
+    cairo_device_release (dst->base.device);
+
     return status;
 }
 

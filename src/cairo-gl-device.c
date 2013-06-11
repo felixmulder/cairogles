@@ -182,6 +182,8 @@ _gl_destroy (void *device)
 	if (ctx->shadow_scratch_surfaces[n])
 	    cairo_surface_destroy (&ctx->shadow_scratch_surfaces[n]->base);
     }
+    if (ctx->shadow_scratch_surfaces[2])
+	cairo_surface_destroy (&ctx->shadow_scratch_surfaces[2]->base);
 
     while (! cairo_list_is_empty (&ctx->fonts)) {
 	cairo_gl_font_t *font;

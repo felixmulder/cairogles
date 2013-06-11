@@ -512,7 +512,7 @@ _cairo_surface_translate_glyphs (cairo_surface_t 	*surface,
 
     clear_pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
     status = _cairo_surface_paint (surface, CAIRO_OPERATOR_SOURCE,
-				   clear_pattern, dev_clip);
+				   clear_pattern, NULL);
     cairo_pattern_destroy (clear_pattern);
 
     status = _cairo_surface_show_text_glyphs (surface, op, source,
@@ -540,11 +540,11 @@ _cairo_surface_glyphs_get_offset_extents (cairo_surface_t *target,
 					  cairo_glyph_t *glyphs_out,
 					  cairo_rectangle_int_t *extents)
 {
-    cairo_status_t status;
     cairo_matrix_t m;
     cairo_rectangle_int_t rect, temp;
     const cairo_rectangle_int_t *clip_rect;
     int i;
+    cairo_bool_t result;
 
     if (unlikely (target->status))
 	return target->status;
@@ -577,12 +577,12 @@ _cairo_surface_glyphs_get_offset_extents (cairo_surface_t *target,
     _cairo_pattern_get_extents (source_out, &temp);
     _cairo_rectangle_intersect (&rect, &temp);
 
-    status = _cairo_scaled_font_glyph_approximate_extents (scaled_font,
+    result = _cairo_scaled_font_glyph_approximate_extents (scaled_font,
 							   glyphs_out,
 							   num_glyphs,
 							   &temp);
-    if (unlikely (status))
-	return status;
+    if (! result)
+	return CAIRO_STATUS_USER_FONT_ERROR;
 
     _cairo_rectangle_intersect (&rect, &temp);
 
