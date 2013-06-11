@@ -125,8 +125,10 @@ _egl_make_current (void *abstract_ctx,
     cairo_egl_context_t *ctx = abstract_ctx;
     cairo_egl_surface_t *surface = (cairo_egl_surface_t *) abstract_surface;
 
-    if (surface->egl != ctx->current_surface)
+    if (surface->egl != ctx->current_surface) {
 	eglMakeCurrent(ctx->display, surface->egl, surface->egl, ctx->context);
+	ctx->current_surface = surface->egl;
+    }
 }
 
 static void
