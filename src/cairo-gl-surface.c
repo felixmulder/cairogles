@@ -1470,7 +1470,6 @@ _cairo_gl_surface_paint (void			*surface,
 	return status;
     }
 
-
     /* simplify the common case of clearing the surface */
     if (clip == NULL) {
         if (op == CAIRO_OPERATOR_CLEAR) {
@@ -1508,6 +1507,18 @@ _cairo_gl_surface_mask (void			 *surface,
     cairo_int_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *) surface;
     cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
+
+    status = cairo_device_acquire (dst->base.device);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_surface_shadow_mask (surface, op, source, mask, clip,
+					  &source->shadow);
+    ctx->source_scratch_in_use = FALSE;
+    if (unlikely (status)) {
+ 	cairo_device_release (dst->base.device);
+	return status;
+    }
 
     status = _cairo_compositor_mask (get_compositor (surface), surface,
 				     op, source, mask, clip);
