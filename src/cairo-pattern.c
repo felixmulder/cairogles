@@ -4574,6 +4574,7 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
     double *buffer;
     int i, x, y;
     double u, v;
+    double u1, v1;
     double sum = 0.0;
     cairo_rectangle_int_t extents;
     int width = CAIRO_MIN_SHRINK_SIZE;
@@ -4606,7 +4607,7 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
         return CAIRO_STATUS_SUCCESS;
 
     if (x_sigma == 0.0)
-        pattern->x_radius = 1;
+        pattern->x_radius = 0;
     else {
 	while (x_sigma > CAIRO_MAX_SIGMA) {
 	    if (width < CAIRO_MIN_SHRINK_SIZE)
@@ -4624,7 +4625,7 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
     pattern->shrink_factor_x = x_factor;
 
     if (y_sigma == 0.0)
-        pattern->y_radius = 1;
+        pattern->y_radius = 0;
     else {
 	while (y_sigma > CAIRO_MAX_SIGMA) {
 	    if (height < CAIRO_MIN_SHRINK_SIZE)
@@ -4661,7 +4662,16 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
         for (x = - col; x <= col; x++) {
             u = x * x;
             v = y * y;
-            buffer[i] = exp (-(u/x_sigma_sq + v/y_sigma_sq));
+	    if (u == 0.0)
+		u1 = 0.0;
+	    else
+		u1 = u / x_sigma_sq;
+
+	    if (v == 0.0)
+		v1 = 0.0;
+	    else
+		v1 = v / y_sigma_sq;
+            buffer[i] = exp (-(u1 + v1));
             sum += buffer[i];
             i++;
         }
