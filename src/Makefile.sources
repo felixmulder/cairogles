@@ -73,6 +73,7 @@ cairo_private = \
 	cairo-device-private.h \
 	cairo-error-inline.h \
 	cairo-error-private.h \
+	cairo-filters-private.h \
 	cairo-fixed-private.h \
 	cairo-fixed-type-private.h \
 	cairo-freelist-private.h \
@@ -163,6 +164,7 @@ cairo_sources = \
 	cairo-device.c \
 	cairo-error.c \
 	cairo-fallback-compositor.c \
+	cairo-filters.c \
 	cairo-fixed.c \
 	cairo-font-face.c \
 	cairo-font-face-twin.c \
@@ -396,6 +398,7 @@ cairo_gl_sources = cairo-gl-composite.c \
 		   cairo-gl-info.c \
 		   cairo-gl-operand.c \
 		   cairo-gl-shaders.c \
+		   cairo-gl-filters.c \
 		   cairo-gl-hairline-stroke.c \
 		   cairo-gl-msaa-compositor.c \
 		   cairo-gl-spans-compositor.c \

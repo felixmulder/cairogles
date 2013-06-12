@@ -1129,6 +1129,12 @@ _cairo_gl_path_fixed_stroke_to_hairline (const cairo_path_fixed_t *path,
                                          cairo_path_fixed_curve_to_func_t *curve_to,
                                          cairo_path_fixed_close_path_func_t *close_path);
 
+cairo_private cairo_gl_surface_t *
+_cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
+			   const cairo_surface_pattern_t *pattern,
+			   cairo_gl_surface_t *src,
+			   cairo_rectangle_int_t *extents_out);
+
 slim_hidden_proto (cairo_gl_surface_create);
 slim_hidden_proto (cairo_gl_surface_create_for_texture);
 
