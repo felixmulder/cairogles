@@ -124,7 +124,7 @@ gaussian_filter_stage_1 (cairo_bool_t x_axis,
 
     src->blur_stage = CAIRO_GL_BLUR_STAGE_1;
     _cairo_pattern_init_for_surface (pattern, &src->base);
-    pattern->base.filter = CAIRO_FILTER_BILINEAR;
+    pattern->base.filter = CAIRO_FILTER_NEAREST;
 
     if (x_axis) {
 	src->operand.type = CAIRO_GL_OPERAND_GAUSSIAN;
