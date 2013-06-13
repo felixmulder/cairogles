@@ -165,7 +165,7 @@ _cairo_image_gaussian_filter (cairo_surface_t *src,  const cairo_pattern_t *patt
 
 	/* if scale, we need to shrink it to scratch 0 */
 	/* paint temp to temp_surface */
-	if (width != src_width && height != src_height) {
+	if (width != src_width || height != src_height) {
 	    pixman_image_set_filter (temp_image, PIXMAN_FILTER_NEAREST, NULL, 0);
 	    /* set up transform matrix */
  	    cairo_matrix_init_scale (&matrix, 
