@@ -4603,8 +4603,13 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
     y_sigma = pattern->y_sigma;
 
     /* no blur */
-    if (x_sigma == 0.0 && y_sigma == 0.0)
+    if (x_sigma == 0.0 && y_sigma == 0.0) {
+	if (pattern->convolution_matrix)
+	    free (pattern->convolution_matrix);
+	pattern->convolution_matrix = NULL;
+
         return CAIRO_STATUS_SUCCESS;
+    }
 
     if (x_sigma == 0.0)
         pattern->x_radius = 0;

@@ -82,6 +82,7 @@ cairo_private = \
 	cairo-fontconfig-private.h \
 	cairo-gstate-private.h \
 	cairo-hash-private.h \
+	cairo-image-filters-private.h \
 	cairo-image-info-private.h \
 	cairo-image-surface-inline.h \
 	cairo-image-surface-private.h \
@@ -176,6 +177,7 @@ cairo_sources = \
 	cairo-hash.c \
 	cairo-hull.c \
 	cairo-image-compositor.c \
+	cairo-image-filters.c \
 	cairo-image-info.c \
 	cairo-image-source.c \
 	cairo-image-surface.c \
