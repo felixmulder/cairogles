@@ -513,7 +513,6 @@ struct _cairo_gl_context {
     unsigned int vb_offset;
     unsigned int vertex_size;
     cairo_region_t *clip_region;
-    cairo_clip_t *clip;
 
     cairo_gl_primitive_type_t primitive_type;
     cairo_array_t tristrip_indices;

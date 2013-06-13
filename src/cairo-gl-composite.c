@@ -690,16 +690,14 @@ _cairo_gl_composite_setup_clipping (cairo_gl_composite_t *setup,
 				    cairo_gl_context_t *ctx,
 				    int vertex_size)
 {
-    cairo_bool_t clip_changing = TRUE;
     cairo_bool_t clip_region_changing = TRUE;
 
-    if (! ctx->clip && ! setup->clip && ! setup->clip_region && ! ctx->clip_region)
+    if (! setup->clip && ! setup->clip_region && ! ctx->clip_region)
 	goto disable_all_clipping;
 
-    clip_changing = ! _cairo_clip_equal (ctx->clip, setup->clip);
     clip_region_changing = ! cairo_region_equal (ctx->clip_region, setup->clip_region);
     if (! _cairo_gl_context_is_flushed (ctx) &&
-	(clip_region_changing || clip_changing))
+	clip_region_changing)
 	_cairo_gl_composite_flush (ctx);
 
     assert (!setup->clip_region || !setup->clip);
@@ -710,10 +708,6 @@ _cairo_gl_composite_setup_clipping (cairo_gl_composite_t *setup,
     if (clip_region_changing) {
 	cairo_region_destroy (ctx->clip_region);
 	ctx->clip_region = cairo_region_reference (setup->clip_region);
-    }
-    if (clip_changing) {
-	_cairo_clip_destroy (ctx->clip);
-	ctx->clip = _cairo_clip_copy (setup->clip);
     }
 
     /* For clip regions, we scissor right before drawing. */

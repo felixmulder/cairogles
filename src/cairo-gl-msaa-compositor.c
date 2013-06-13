@@ -417,7 +417,7 @@ _cairo_gl_msaa_compositor_mask_source_operator (const cairo_compositor_t *compos
 	status = _draw_traps (ctx, &setup, &traps);
 
     /* Now draw the second pass. */
-    _cairo_gl_composite_set_operator (&setup, CAIRO_OPERATOR_ADD,
+    status = _cairo_gl_composite_set_operator (&setup, CAIRO_OPERATOR_ADD,
 				      FALSE /* assume_component_alpha */);
     if (unlikely (status))
         goto finish;
