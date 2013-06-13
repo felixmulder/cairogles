@@ -1267,11 +1267,11 @@ _cairo_gl_surface_map_to_image (void      *abstract_surface,
 
     /* If the original surface has not been modified or
      * is clear, we can avoid downloading data. */
-/*    if (surface->base.is_clear || surface->base.serial == 0) {
+    if (surface->base.is_clear || surface->base.serial == 0) {
 	status = _cairo_gl_context_release (ctx, status);
 	return image;
     }
-*/
+
     /* This is inefficient, as we'd rather just read the thing without making
      * it the destination.  But then, this is the fallback path, so let's not
      * fall back instead.
