@@ -191,7 +191,7 @@ _cairo_image_gaussian_filter (cairo_surface_t *src,  const cairo_pattern_t *patt
 
 	    if (pattern->has_component_alpha)
 	        pixman_image_set_component_alpha (temp_image, TRUE);
-	    pixman_image_set_filter (temp_image, PIXMAN_FILTER_NEAREST, NULL, 0);
+	    pixman_image_set_filter (temp_image, PIXMAN_FILTER_BILINEAR, NULL, 0);
             pixman_image_composite32 (PIXMAN_OP_SRC,
 				      temp_image,
 				      NULL,
@@ -273,7 +273,7 @@ _cairo_image_gaussian_filter (cairo_surface_t *src,  const cairo_pattern_t *patt
 
 	if (pattern->has_component_alpha)
 	    pixman_image_set_component_alpha (scratch_images[0], TRUE);
-	pixman_image_set_filter (scratch_images[0], PIXMAN_FILTER_NEAREST, NULL, 0);
+	pixman_image_set_filter (scratch_images[0], PIXMAN_FILTER_BILINEAR, NULL, 0);
 
         pixman_image_composite32 (PIXMAN_OP_SRC,
 				  scratch_images[0],
