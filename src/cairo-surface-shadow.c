@@ -140,7 +140,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 						   &m,
 						   CAIRO_OPERATOR_OVER,
 						   &shadow_source.base,
-						   clip);
+						   NULL);
 
     if (unlikely (status))
 	goto FINISH;
@@ -269,7 +269,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 						   CAIRO_OPERATOR_OVER,
 						   &shadow_source.base,
 						   &shadow_mask.base,
-						   clip);
+						   NULL);
 
     if (unlikely (status))
 	goto FINISH;
@@ -414,7 +414,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 						    &shadow_ctm_inverse,
 						    tolerance,
 						    CAIRO_ANTIALIAS_NONE,
-						    clip);
+						    NULL);
 
     if (unlikely (status))
 	goto FINISH;
@@ -550,7 +550,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 						  fill_rule,
 						  tolerance,
 						  CAIRO_ANTIALIAS_NONE,
-						  clip);
+						  NULL);
 
     if (unlikely (status))
 	goto FINISH;
@@ -681,7 +681,7 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 					      scaled_font,
 					      shadow_glyphs,
 					      num_glyphs,
-					      clip);
+					      NULL);
 
     if (unlikely (status))
 	goto FINISH;
