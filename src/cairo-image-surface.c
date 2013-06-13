@@ -53,6 +53,7 @@
 #include "cairo-scaled-font-private.h"
 #include "cairo-surface-snapshot-private.h"
 #include "cairo-surface-subsurface-private.h"
+#include "cairo-surface-shadow-private.h"
 
 /* Limit on the width / height of an image surface in pixels.  This is
  * mainly determined by coordinates of things sent to pixman at the
@@ -911,12 +912,27 @@ _cairo_image_surface_paint (void			*abstract_surface,
 			    const cairo_clip_t		*clip)
 {
     cairo_image_surface_t *surface = abstract_surface;
+    cairo_int_status_t status; 
 
     TRACE ((stderr, "%s (surface=%d)\n",
 	    __FUNCTION__, surface->base.unique_id));
 
-    return _cairo_compositor_paint (surface->compositor,
-				    &surface->base, op, source, clip);
+    status = cairo_device_acquire (surface->base.device);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_surface_shadow_paint (abstract_surface, op, source,
+					  clip, &source->shadow);
+
+    if (unlikely (status)) {
+	cairo_device_release (surface->base.device);
+	return status;
+    }
+
+    status = _cairo_compositor_paint (surface->compositor,
+				      &surface->base, op, source, clip);
+    cairo_device_release (surface->base.device);
+    return status;
 }
 
 cairo_int_status_t
@@ -927,12 +943,27 @@ _cairo_image_surface_mask (void				*abstract_surface,
 			   const cairo_clip_t		*clip)
 {
     cairo_image_surface_t *surface = abstract_surface;
+    cairo_int_status_t status;
 
     TRACE ((stderr, "%s (surface=%d)\n",
 	    __FUNCTION__, surface->base.unique_id));
 
-    return _cairo_compositor_mask (surface->compositor,
-				   &surface->base, op, source, mask, clip);
+    status = cairo_device_acquire (surface->base.device);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_surface_shadow_mask (abstract_surface, op, source,
+					 mask, clip, &source->shadow);
+
+    if (unlikely (status)) {
+	cairo_device_release (surface->base.device);
+	return status;
+    }
+
+    status = _cairo_compositor_mask (surface->compositor,
+				     &surface->base, op, source, mask, clip);
+    cairo_device_release (surface->base.device);
+    return status;
 }
 
 cairo_int_status_t
@@ -947,15 +978,33 @@ _cairo_image_surface_stroke (void			*abstract_surface,
 			     cairo_antialias_t		 antialias,
 			     const cairo_clip_t		*clip)
 {
+    cairo_int_status_t status;
     cairo_image_surface_t *surface = abstract_surface;
 
     TRACE ((stderr, "%s (surface=%d)\n",
 	    __FUNCTION__, surface->base.unique_id));
 
-    return _cairo_compositor_stroke (surface->compositor, &surface->base,
-				     op, source, path,
-				     style, ctm, ctm_inverse,
-				     tolerance, antialias, clip);
+    status = cairo_device_acquire (surface->base.device);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_surface_shadow_stroke (abstract_surface, op, source,
+					   path, style, ctm, ctm_inverse,
+					   tolerance, antialias, clip,
+					   &source->shadow);
+
+    if (unlikely (status)) {
+	cairo_device_release (surface->base.device);
+	return status;
+    }
+
+    status = _cairo_compositor_stroke (surface->compositor, &surface->base,
+				       op, source, path,
+				       style, ctm, ctm_inverse,
+				       tolerance, antialias, clip);
+
+    cairo_device_release (surface->base.device);
+    return status;
 }
 
 cairo_int_status_t
@@ -968,15 +1017,33 @@ _cairo_image_surface_fill (void				*abstract_surface,
 			   cairo_antialias_t		 antialias,
 			   const cairo_clip_t		*clip)
 {
+    cairo_int_status_t status;
     cairo_image_surface_t *surface = abstract_surface;
 
     TRACE ((stderr, "%s (surface=%d)\n",
 	    __FUNCTION__, surface->base.unique_id));
 
-    return _cairo_compositor_fill (surface->compositor, &surface->base,
-				   op, source, path,
-				   fill_rule, tolerance, antialias,
-				   clip);
+    status = cairo_device_acquire (surface->base.device);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_surface_shadow_fill (abstract_surface, op, source,
+					 path, fill_rule,
+					 tolerance, antialias, clip,
+					 &source->shadow);
+
+    if (unlikely (status)) {
+	cairo_device_release (surface->base.device);
+	return status;
+    }
+
+    status = _cairo_compositor_fill (surface->compositor, &surface->base,
+				     op, source, path,
+				     fill_rule, tolerance, antialias,
+				     clip);
+
+    cairo_device_release (surface->base.device);
+    return status;
 }
 
 cairo_int_status_t
@@ -988,15 +1055,35 @@ _cairo_image_surface_glyphs (void			*abstract_surface,
 			     cairo_scaled_font_t	*scaled_font,
 			     const cairo_clip_t		*clip)
 {
+    cairo_int_status_t status;
     cairo_image_surface_t *surface = abstract_surface;
 
     TRACE ((stderr, "%s (surface=%d)\n",
 	    __FUNCTION__, surface->base.unique_id));
 
-    return _cairo_compositor_glyphs (surface->compositor, &surface->base,
-				     op, source,
-				     glyphs, num_glyphs, scaled_font,
-				     clip);
+    status = cairo_device_acquire (surface->base.device);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_surface_shadow_glyphs (abstract_surface, op, source,
+					   scaled_font,
+					   glyphs, num_glyphs,
+					   clip,
+					   &source->shadow);
+
+    if (unlikely (status)) {
+	cairo_device_release (surface->base.device);
+	return status;
+    }
+
+
+    status = _cairo_compositor_glyphs (surface->compositor, &surface->base,
+				       op, source,
+				       glyphs, num_glyphs, scaled_font,
+				       clip);
+
+    cairo_device_release (surface->base.device);
+    return status;
 }
 
 void
