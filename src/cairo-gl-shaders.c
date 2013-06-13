@@ -1132,8 +1132,6 @@ _cairo_gl_shader_compile_and_link (cairo_gl_context_t *ctx,
         if (unlikely (status))
             goto FAILURE;
 
-	printf ("\n\n======= vertex source ========\n%s\n\n", source);
-
 	compile_shader (ctx, &ctx->vertex_shaders[vertex_shader],
 			GL_VERTEX_SHADER, source);
         free (source);
@@ -1374,8 +1372,6 @@ _cairo_gl_get_shader_by_type (cairo_gl_context_t *ctx,
 						  &fs_source);
     if (unlikely (status))
 	return status;
-
-    printf ("\n\n======= fragment source ========\n%s\n\n", fs_source);
 
     entry = malloc (sizeof (cairo_shader_cache_entry_t));
     if (unlikely (entry == NULL)) {
