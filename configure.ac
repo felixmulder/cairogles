@@ -461,15 +461,28 @@ CAIRO_ENABLE_FUNCTIONS(wgl, WGL, auto, [
 
 dnl ===========================================================================
 
+AU_DEFUN([AC_LANG_OBJC], [AC_LANG(Objective C)])
+
 CAIRO_ENABLE_FUNCTIONS(nsgl, NSOpenGL, auto, [
   if test "x$need_nsgl_functions" = "xyes"; then
-    AC_LANG_PUSH([Objective C])
     dnl There is no pkgconfig for NSOpenGL; lets do a header check
-    AC_CHECK_HEADERS([OpenGL/gl.h], [], [use_nsgl="no (requires AppKit and OpenGL framework)"], [])
-    nsgl_LIBS="-Xlinker -framework -Xlinker OpenGL -Xlinker -framework -Xlinker AppKit"
+    AC_REQUIRE([AC_PROG_OBJC])
+
+    rm -f conftest.$ac_ext
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+#include <OpenGL/gl.h>
+_ACEOF
+
+    if ac_fn_objc_try_compile "$LINENO"; then :
+      nsgl_LIBS="-Xlinker -framework -Xlinker OpenGL -Xlinker -framework -Xlinker AppKit"
       gl_NONPKGCONFIG_CFLAGS=
       gl_NONPKGCONFIG_LIBS=
-    AC_LANG_POP([Objective C])
+      use_nsgl="yes"
+    else
+      use_nsgl="no (requires AppKit and OpenGL framework)"
+    fi
   else
       use_nsgl="no (use enable-nsgl=yes to enable)"
   fi
