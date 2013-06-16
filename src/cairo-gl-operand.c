@@ -1319,7 +1319,6 @@ _cairo_gl_operand_bind_to_shader (cairo_gl_context_t *ctx,
     }
 }
 
-
 cairo_bool_t
 _cairo_gl_operand_needs_setup (cairo_gl_operand_t *dest,
                                cairo_gl_operand_t *source,
@@ -1376,12 +1375,16 @@ _cairo_gl_operand_get_vertex_size (const cairo_gl_operand_t *operand)
         return operand->constant.encode_as_attribute ? 4 * sizeof (GLfloat) : 0;
     case CAIRO_GL_OPERAND_TEXTURE:
     case CAIRO_GL_OPERAND_GAUSSIAN:
-	if (operand->texture.texgen)
+	if (operand->texture.texgen) {
+	    if (operand->texture.use_atlas)
+		return 4 * sizeof (GLfloat);
 	    return 0;
-	else if (operand->texture.use_atlas)
-	    return 6 * sizeof (GLfloat);
-	else
+	}
+	else {
+	    if (operand->texture.use_atlas)
+		return 6 * sizeof (GLfloat);
 	    return 2 * sizeof (GLfloat);
+    }
     case CAIRO_GL_OPERAND_LINEAR_GRADIENT:
     case CAIRO_GL_OPERAND_RADIAL_GRADIENT_A0:
     case CAIRO_GL_OPERAND_RADIAL_GRADIENT_NONE:
@@ -1435,13 +1438,13 @@ _cairo_gl_operand_emit (cairo_gl_operand_t *operand,
             cairo_matrix_transform_point (&src_attributes->matrix, &s, &t);
             *(*vb)++ = s;
             *(*vb)++ = t;
+	}
 
-	    if (operand->texture.use_atlas) {
-		*(*vb)++ = operand->texture.p1.x;
-		*(*vb)++ = operand->texture.p1.y;
-		*(*vb)++ = operand->texture.p2.x;
-		*(*vb)++ = operand->texture.p2.y;
-	    }
+	if (operand->texture.use_atlas) {
+	    *(*vb)++ = operand->texture.p1.x;
+	    *(*vb)++ = operand->texture.p1.y;
+	    *(*vb)++ = operand->texture.p2.x;
+	    *(*vb)++ = operand->texture.p2.y;
         }
         break;
     }

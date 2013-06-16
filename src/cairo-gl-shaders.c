@@ -349,6 +349,12 @@ cairo_gl_shader_emit_variable (cairo_output_stream_t *stream,
                                      "varying vec2 %s_texcoords;\n",
                                      operand_names[name],
                                      operand_names[name]);
+        /*if (use_atlas)
+            _cairo_output_stream_printf (stream,
+                                         "varying vec2 %s_start_coords;\n"
+                                         "varying vec2 %s_stop_coords;\n",
+                                         operand_names[name], operand_names[name]);
+*/
         break;
     case CAIRO_GL_VAR_COLOR:
         _cairo_output_stream_printf (stream,

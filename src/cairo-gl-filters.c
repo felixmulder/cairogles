@@ -188,7 +188,6 @@ gaussian_filter_stage_1 (cairo_bool_t x_axis,
 
     *ctx = ctx_out;
     _cairo_pattern_fini (&pattern->base);
-    //cairo_surface_write_to_png (&dst->base, "./scratch_0.png");
     return status;
 }
 
@@ -231,7 +230,6 @@ gaussian_filter_stage_2 (cairo_bool_t y_axis,
 
     status = _cairo_gl_surface_resolve_multisampling (stage_2_src);
 
-    //cairo_surface_write_to_png (&ctx->scratch_surfaces[1]->base, "./scratch_1.png");
     return CAIRO_INT_STATUS_SUCCESS;
 }
 
