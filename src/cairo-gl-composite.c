@@ -217,6 +217,7 @@ _cairo_gl_context_setup_operand (cairo_gl_context_t *ctx,
 {
     cairo_gl_dispatch_t *dispatch = &ctx->dispatch;
     cairo_bool_t needs_setup;
+    unsigned int offset = vertex_offset;
 
     /* XXX: we need to do setup when switching from shaders
      * to no shaders (or back) */
@@ -266,21 +267,22 @@ _cairo_gl_context_setup_operand (cairo_gl_context_t *ctx,
 	if (! operand->texture.texgen) {
 	    dispatch->VertexAttribPointer (CAIRO_GL_TEXCOORD0_ATTRIB_INDEX + tex_unit, 2,
 					   GL_FLOAT, GL_FALSE, ctx->vertex_size,
-					   ctx->vb + vertex_offset);
+					   ctx->vb + offset);
 	    dispatch->EnableVertexAttribArray (CAIRO_GL_TEXCOORD0_ATTRIB_INDEX + tex_unit);
+	    offset += 2 * sizeof (GLfloat);
+	}
 
-	    if (operand->texture.use_atlas) {
-		dispatch->VertexAttribPointer (CAIRO_GL_START_COORD0_ATTRIB_INDEX + tex_unit,
-					       2, GL_FLOAT, GL_FALSE,
-					       ctx->vertex_size,
-					       ctx->vb + vertex_offset + 2 * sizeof (float));
-		dispatch->EnableVertexAttribArray (CAIRO_GL_START_COORD0_ATTRIB_INDEX + tex_unit);
-		dispatch->VertexAttribPointer (CAIRO_GL_STOP_COORD0_ATTRIB_INDEX + tex_unit,
-					       2, GL_FLOAT, GL_FALSE,
-					       ctx->vertex_size,
-					       ctx->vb + vertex_offset + 4 * sizeof (float));
-		dispatch->EnableVertexAttribArray (CAIRO_GL_STOP_COORD0_ATTRIB_INDEX + tex_unit);
-	    }
+	if (operand->texture.use_atlas) {
+	    dispatch->VertexAttribPointer (CAIRO_GL_START_COORD0_ATTRIB_INDEX + tex_unit,
+					   2, GL_FLOAT, GL_FALSE,
+					   ctx->vertex_size,
+					   ctx->vb + offset);
+	    dispatch->EnableVertexAttribArray (CAIRO_GL_START_COORD0_ATTRIB_INDEX + tex_unit);
+	    dispatch->VertexAttribPointer (CAIRO_GL_STOP_COORD0_ATTRIB_INDEX + tex_unit,
+					   2, GL_FLOAT, GL_FALSE,
+					   ctx->vertex_size,
+					   ctx->vb + offset + 2 * sizeof (float));
+	    dispatch->EnableVertexAttribArray (CAIRO_GL_STOP_COORD0_ATTRIB_INDEX + tex_unit);
 	}
         break;
     case CAIRO_GL_OPERAND_LINEAR_GRADIENT:
@@ -1085,6 +1087,8 @@ _cairo_gl_composite_emit_solid_span (cairo_gl_context_t *ctx,
 				     uint8_t alpha)
 {
     GLfloat *v;
+    int src_use_atlas = 0;
+    int mask_use_atlas = 0;
     union fi {
 	float f;
 	GLbyte bytes[4];
@@ -1092,20 +1096,111 @@ _cairo_gl_composite_emit_solid_span (cairo_gl_context_t *ctx,
 
     _cairo_gl_composite_prepare_buffer (ctx, 6,
 					CAIRO_GL_PRIMITIVE_TYPE_TRIANGLES);
+
+    if ((ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_TEXTURE ||
+	ctx->operands[CAIRO_GL_TEX_SOURCE].type == CAIRO_GL_OPERAND_GAUSSIAN) &&
+	ctx->operands[CAIRO_GL_TEX_SOURCE].texture.use_atlas)
+	src_use_atlas = TRUE;
+    if ((ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_TEXTURE ||
+	ctx->operands[CAIRO_GL_TEX_MASK].type == CAIRO_GL_OPERAND_GAUSSIAN) &&
+	ctx->operands[CAIRO_GL_TEX_MASK].texture.use_atlas)
+	mask_use_atlas = TRUE;
+
     v = (GLfloat *) (void *) &ctx->vb[ctx->vb_offset];
 
-    v[15] = v[ 6] = v[0] = x1;
-    v[10] = v[ 4] = v[1] = y1;
-    v[12] = v[ 9] = v[3] = x2;
-    v[16] = v[13] = v[7] = y2;
+    v[15 + 20*src_use_atlas + 20*mask_use_atlas] = 
+    v[ 6 +  8*src_use_atlas +  8*mask_use_atlas] =
+    v[ 0                                       ] = x1;
+    v[10 + 12*src_use_atlas + 12*mask_use_atlas] =
+    v[ 4 +  4*src_use_atlas +  4*mask_use_atlas] =
+    v[ 1                                       ] = y1;
+    v[12 + 16*src_use_atlas + 16*mask_use_atlas] =
+    v[ 9 + 12*src_use_atlas + 12*mask_use_atlas] = 
+    v[ 3 +  4*src_use_atlas +  4*mask_use_atlas] = x2;
+    v[16 + 20*src_use_atlas + 20*mask_use_atlas] = 
+    v[13 + 16*src_use_atlas + 16*mask_use_atlas] = 
+    v[ 7 +  8*src_use_atlas +  8*mask_use_atlas] = y2;
 
     fi.bytes[0] = 0;
     fi.bytes[1] = 0;
     fi.bytes[2] = 0;
     fi.bytes[3] = alpha;
-    v[17] =v[14] = v[11] = v[8] = v[5] = v[2] = fi.f;
+    v[17 + 24*src_use_atlas + 24*mask_use_atlas] =
+    v[14 + 20*src_use_atlas + 20*mask_use_atlas] = 
+    v[11 + 16*src_use_atlas + 16*mask_use_atlas] = 
+    v[ 8 + 12*src_use_atlas + 12*mask_use_atlas] = 
+    v[ 5 +  8*src_use_atlas +  8*mask_use_atlas] = 
+    v[ 2 +  4*src_use_atlas +  4*mask_use_atlas ] = fi.f;
 
-    ctx->vb_offset += 6*3 * sizeof(GLfloat);
+    if (src_use_atlas) {
+	v[ 2                                       ] =
+        v[ 5 +  4*src_use_atlas +  4*mask_use_atlas] = 
+        v[ 8 +  8*src_use_atlas +  8*mask_use_atlas] = 
+ 	v[11 + 12*src_use_atlas + 12*mask_use_atlas] =
+	v[14 + 16*src_use_atlas + 16*mask_use_atlas] =
+	v[17 + 20*src_use_atlas + 20*mask_use_atlas] = 
+	ctx->operands[CAIRO_GL_TEX_SOURCE].texture.p1.x;
+
+	v[ 3                                       ] =
+        v[ 6 +  4*src_use_atlas +  4*mask_use_atlas] = 
+        v[ 9 +  8*src_use_atlas +  8*mask_use_atlas] = 
+ 	v[12 + 12*src_use_atlas + 12*mask_use_atlas] =
+	v[15 + 16*src_use_atlas + 16*mask_use_atlas] =
+	v[18 + 20*src_use_atlas + 20*mask_use_atlas] = 
+	ctx->operands[CAIRO_GL_TEX_SOURCE].texture.p1.y;
+	
+	v[ 4                                       ] =
+        v[ 7 +  4*src_use_atlas +  4*mask_use_atlas] = 
+        v[10 +  8*src_use_atlas +  8*mask_use_atlas] = 
+ 	v[13 + 12*src_use_atlas + 12*mask_use_atlas] =
+	v[16 + 16*src_use_atlas + 16*mask_use_atlas] =
+	v[19 + 20*src_use_atlas + 20*mask_use_atlas] = 
+	ctx->operands[CAIRO_GL_TEX_SOURCE].texture.p2.x;
+
+	v[ 5                                       ] =
+        v[ 8 +  4*src_use_atlas +  4*mask_use_atlas] = 
+        v[11 +  8*src_use_atlas +  8*mask_use_atlas] = 
+ 	v[14 + 12*src_use_atlas + 12*mask_use_atlas] =
+	v[17 + 16*src_use_atlas + 16*mask_use_atlas] =
+	v[20 + 20*src_use_atlas + 20*mask_use_atlas] = 
+	ctx->operands[CAIRO_GL_TEX_SOURCE].texture.p2.y;
+    }
+
+    if (mask_use_atlas) {
+	v[ 2 +  4*src_use_atlas                    ] =
+        v[ 5 +  8*src_use_atlas +  4*mask_use_atlas] = 
+        v[ 8 + 12*src_use_atlas +  8*mask_use_atlas] = 
+ 	v[11 + 16*src_use_atlas + 12*mask_use_atlas] =
+	v[14 + 20*src_use_atlas + 16*mask_use_atlas] =
+	v[17 + 24*src_use_atlas + 20*mask_use_atlas] = 
+	ctx->operands[CAIRO_GL_TEX_MASK].texture.p1.x;
+
+	v[ 3 +  4*src_use_atlas                    ] =
+        v[ 6 +  4*src_use_atlas +  4*mask_use_atlas] = 
+        v[ 9 +  8*src_use_atlas +  8*mask_use_atlas] = 
+ 	v[12 + 12*src_use_atlas + 12*mask_use_atlas] =
+	v[15 + 16*src_use_atlas + 16*mask_use_atlas] =
+	v[18 + 20*src_use_atlas + 20*mask_use_atlas] = 
+	ctx->operands[CAIRO_GL_TEX_MASK].texture.p1.y;
+	
+	v[ 4 +  4*src_use_atlas                    ] =
+        v[ 7 +  4*src_use_atlas +  4*mask_use_atlas] = 
+        v[10 +  8*src_use_atlas +  8*mask_use_atlas] = 
+ 	v[13 + 12*src_use_atlas + 12*mask_use_atlas] =
+	v[16 + 16*src_use_atlas + 16*mask_use_atlas] =
+	v[19 + 20*src_use_atlas + 20*mask_use_atlas] = 
+	ctx->operands[CAIRO_GL_TEX_MASK].texture.p2.x;
+
+	v[ 5 +  4*src_use_atlas                    ] =
+        v[ 8 +  4*src_use_atlas +  4*mask_use_atlas] = 
+        v[11 +  8*src_use_atlas +  8*mask_use_atlas] = 
+ 	v[14 + 12*src_use_atlas + 12*mask_use_atlas] =
+	v[17 + 16*src_use_atlas + 16*mask_use_atlas] =
+	v[20 + 20*src_use_atlas + 20*mask_use_atlas] = 
+	ctx->operands[CAIRO_GL_TEX_MASK].texture.p2.y;
+    }
+
+    ctx->vb_offset += 6*(3 + 4*src_use_atlas + 4*mask_use_atlas) * sizeof(GLfloat);
 }
 
 cairo_gl_emit_span_t
