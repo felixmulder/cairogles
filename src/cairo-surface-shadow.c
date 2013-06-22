@@ -150,7 +150,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,
 			     shadow_copy.y_sigma * scale);
 
-    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern);
+    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))
 	goto FINISH;
 
@@ -279,7 +279,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,
 			     shadow_copy.y_sigma * scale);
 
-    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern);
+    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))
 	goto FINISH;
 
@@ -424,7 +424,8 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,
 			     shadow_copy.y_sigma * scale);
 
-    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern);
+    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern,
+						    stroke_style->line_width);
     if (unlikely (status))
 	goto FINISH;
 
@@ -560,7 +561,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,
 			     shadow_copy.y_sigma * scale);
 
-    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern);
+    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))
 	goto FINISH;
 
@@ -691,7 +692,7 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
     cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma,
 			     shadow_copy.y_sigma);
 
-    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern);
+    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))
 	goto FINISH;
 

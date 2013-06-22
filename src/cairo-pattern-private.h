@@ -46,6 +46,7 @@
 #define CAIRO_MAX_SIGMA 2  /* 4 defined in skia */
 #define CAIRO_DEFAULT_SIGMA 0
 #define CAIRO_MIN_SHRINK_SIZE 32
+#define CAIRO_MIN_LINE_WIDTH 1.0
 
 CAIRO_BEGIN_DECLS
 
@@ -375,7 +376,8 @@ cairo_private void
 _cairo_raster_source_pattern_finish (cairo_pattern_t *abstract_pattern);
 
 cairo_private cairo_status_t 
-_cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern);
+_cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern,
+				       double		line_width);
 
 cairo_private void
 _cairo_debug_print_pattern (FILE *file, const cairo_pattern_t *pattern);
