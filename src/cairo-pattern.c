@@ -4564,7 +4564,8 @@ cairo_pattern_get_sigma (cairo_pattern_t *pattern,
 }
 
 cairo_status_t
-_cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
+_cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern,
+				       double		line_width)
 {
     double x_sigma, y_sigma;
     unsigned int x_factor, y_factor;
@@ -4579,6 +4580,9 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
     cairo_rectangle_int_t extents;
     int width = CAIRO_MIN_SHRINK_SIZE;
     int height = CAIRO_MIN_SHRINK_SIZE;
+    double min_line_width = (line_width >= 1.0) ? CAIRO_MIN_LINE_WIDTH : line_width;
+    double max_sigma = CAIRO_MAX_SIGMA;
+    double test_line_width = line_width;
 
     if (pattern->status)
 	return pattern->status;
@@ -4614,34 +4618,37 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern)
     if (x_sigma == 0.0)
         pattern->x_radius = 0;
     else {
-	while (x_sigma > CAIRO_MAX_SIGMA) {
+	while (x_sigma > max_sigma && test_line_width > min_line_width) {
 	    if (width < CAIRO_MIN_SHRINK_SIZE)
 		break;
 
 	    x_sigma /= 2.0;
  	    x_factor *= 2;
 	    width *= 0.5;
+	    test_line_width *= 0.5;
 	}
-	if (x_sigma > CAIRO_MAX_SIGMA)
-	    x_sigma = CAIRO_MAX_SIGMA;
+	if (x_sigma > max_sigma)
+	    x_sigma = max_sigma;
         /* XXX: skia uses 3, we follow css spec which is 2 */
 	pattern->x_radius = ceil (x_sigma * 2);
     }
     pattern->shrink_factor_x = x_factor;
+    test_line_width = line_width;
 
     if (y_sigma == 0.0)
         pattern->y_radius = 0;
     else {
-	while (y_sigma > CAIRO_MAX_SIGMA) {
+	while (y_sigma > max_sigma && test_line_width > min_line_width) {
 	    if (height < CAIRO_MIN_SHRINK_SIZE)
 		break;
 
 	    y_sigma *= 0.5;
 	    y_factor *= 2;
 	    height *= 0.5;
+	    test_line_width *= 0.5;
 	}
-	if (y_sigma > CAIRO_MAX_SIGMA)
-	    y_sigma = CAIRO_MAX_SIGMA;
+	if (y_sigma > max_sigma)
+	    y_sigma = max_sigma;
 	pattern->y_radius = ceil (y_sigma * 2);
     }
     pattern->shrink_factor_y = y_factor;
