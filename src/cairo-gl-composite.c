@@ -622,9 +622,9 @@ _cairo_gl_composite_setup_painted_clipping (cairo_gl_composite_t *setup,
     cairo_clip_t *old_clip = setup->dst->clip_on_stencil_buffer;
 
     if (clip->num_boxes == 1 && clip->path == NULL) {
-    _scissor_to_box (dst, &clip->boxes[0]);
-    _enable_scissor_buffer (ctx);
-    goto disable_stencil_buffer_and_return;
+	_scissor_to_box (dst, &clip->boxes[0]);
+	_enable_scissor_buffer (ctx);
+	goto disable_stencil_buffer_and_return;
     }
 
     if (! _cairo_gl_ensure_stencil (ctx, setup->dst)) {
@@ -639,8 +639,8 @@ _cairo_gl_composite_setup_painted_clipping (cairo_gl_composite_t *setup,
     }
 
     _enable_stencil_buffer (ctx);
-
-    _disable_scissor_buffer (ctx);
+    _enable_scissor_buffer (ctx);
+    _cairo_gl_scissor_to_rectangle (dst, _cairo_clip_get_extents (clip));
 
     if (_cairo_clip_equal (old_clip, setup->clip))
         goto activate_stencil_buffer_and_return;
@@ -648,16 +648,13 @@ _cairo_gl_composite_setup_painted_clipping (cairo_gl_composite_t *setup,
       /* Clear the stencil buffer, but only the areas that we are
        * going to be drawing to. */
     if (old_clip) {
-        _cairo_gl_scissor_to_rectangle (dst, _cairo_clip_get_extents (old_clip));
 	_cairo_clip_destroy (setup->dst->clip_on_stencil_buffer);
     }
-    _enable_scissor_buffer (ctx);
 
     setup->dst->clip_on_stencil_buffer = _cairo_clip_copy (setup->clip);
 
     glClearStencil (0);
     glClear (GL_STENCIL_BUFFER_BIT);
-    _disable_scissor_buffer (ctx);
 
     glStencilOp (GL_REPLACE, GL_REPLACE, GL_REPLACE);
     glStencilFunc (GL_EQUAL, 1, 0xffffffff);
