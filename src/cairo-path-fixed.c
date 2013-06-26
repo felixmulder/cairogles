@@ -95,6 +95,8 @@ _cairo_path_fixed_init (cairo_path_fixed_t *path)
     path->fill_is_rectilinear = TRUE;
     path->fill_maybe_region = TRUE;
     path->fill_is_empty = TRUE;
+    path->is_single_arc = FALSE;
+    path->might_be_single_arc = FALSE;
 
     path->extents.p1.x = path->extents.p1.y = 0;
     path->extents.p2.x = path->extents.p2.y = 0;
@@ -127,6 +129,7 @@ _cairo_path_fixed_init_copy (cairo_path_fixed_t *path,
     path->fill_is_rectilinear = other->fill_is_rectilinear;
     path->fill_maybe_region = other->fill_maybe_region;
     path->fill_is_empty = other->fill_is_empty;
+    path->is_single_arc = other->is_single_arc;
 
     path->extents = other->extents;
 
@@ -546,6 +549,9 @@ _cairo_path_fixed_line_to (cairo_path_fixed_t *path,
 
     path->current_point = point;
 
+    if (! path->might_be_single_arc)
+	path->is_single_arc = FALSE;
+
     _cairo_box_add_point (&path->extents, &point);
 
     return _cairo_path_fixed_add (path, CAIRO_PATH_OP_LINE_TO, &point, 1);
@@ -620,7 +626,32 @@ _cairo_path_fixed_curve_to (cairo_path_fixed_t	*path,
     path->fill_maybe_region = FALSE;
     path->fill_is_empty = FALSE;
 
+    if (! path->might_be_single_arc)
+	path->is_single_arc = FALSE;
+
     return _cairo_path_fixed_add (path, CAIRO_PATH_OP_CURVE_TO, point, 3);
+}
+
+static cairo_bool_t
+_cairo_path_empty_or_one_move_to (cairo_path_fixed_t *path)
+{
+    cairo_path_buf_t *tail = cairo_path_tail (path);
+    if (tail->num_ops == 0)
+	return TRUE;
+    return tail == cairo_path_head (path) && tail->num_points == 1;
+}
+
+void
+_cairo_path_fixed_start_arc (cairo_path_fixed_t *path)
+{
+    path->might_be_single_arc = _cairo_path_empty_or_one_move_to (path);
+}
+
+void
+_cairo_path_fixed_end_arc (cairo_path_fixed_t *path)
+{
+    path->is_single_arc = path->might_be_single_arc;
+    path->might_be_single_arc = FALSE;
 }
 
 cairo_status_t
@@ -909,17 +940,24 @@ _cairo_path_fixed_append (cairo_path_fixed_t		    *path,
 			  cairo_fixed_t			     ty)
 {
     cairo_path_fixed_append_closure_t closure;
+    cairo_status_t status;
+    cairo_bool_t empty_or_one_move_to = _cairo_path_empty_or_one_move_to (path);
 
     closure.path = path;
     closure.offset.x = tx;
     closure.offset.y = ty;
 
-    return _cairo_path_fixed_interpret (other,
-					_append_move_to,
-					_append_line_to,
-					_append_curve_to,
-					_append_close_path,
-					&closure);
+    status =  _cairo_path_fixed_interpret (other,
+					   _append_move_to,
+					   _append_line_to,
+					   _append_curve_to,
+					   _append_close_path,
+					   &closure);
+
+    if (! status && empty_or_one_move_to && other->is_single_arc)
+	path->is_single_arc = TRUE;
+
+    return status;
 }
 
 static void
@@ -1463,6 +1501,12 @@ _cairo_path_fixed_iter_init (cairo_path_fixed_iter_t *iter,
     iter->first = iter->buf = cairo_path_head (path);
     iter->n_op = 0;
     iter->n_point = 0;
+}
+
+cairo_bool_t
+_cairo_path_fixed_is_single_arc (const cairo_path_fixed_t *path)
+{
+    return path->is_single_arc;
 }
 
 static cairo_bool_t

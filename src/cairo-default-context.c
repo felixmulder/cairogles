@@ -748,6 +748,20 @@ _cairo_default_context_curve_to (void *abstract_cr,
 				       x3_fixed, y3_fixed);
 }
 
+static void
+_cairo_default_context_start_arc (void *abstract_cr)
+{
+    cairo_default_context_t *cr = abstract_cr;
+    _cairo_path_fixed_start_arc (cr->path);
+}
+
+static void
+_cairo_default_context_end_arc (void *abstract_cr)
+{
+    cairo_default_context_t *cr = abstract_cr;
+    _cairo_path_fixed_end_arc (cr->path);
+}
+
 static cairo_status_t
 _cairo_default_context_arc (void *abstract_cr,
 			    double xc, double yc, double radius,
@@ -1388,6 +1402,8 @@ static const cairo_backend_t _cairo_default_context_backend = {
     _cairo_default_context_rel_line_to,
     _cairo_default_context_curve_to,
     _cairo_default_context_rel_curve_to,
+    _cairo_default_context_start_arc,
+    _cairo_default_context_end_arc,
     NULL, /* arc-to */
     NULL, /* rel-arc-to */
     _cairo_default_context_close_path,

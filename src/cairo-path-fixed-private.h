@@ -109,6 +109,8 @@ struct _cairo_path_fixed {
     unsigned int fill_is_rectilinear	: 1;
     unsigned int fill_maybe_region	: 1;
     unsigned int fill_is_empty		: 1;
+    unsigned int is_single_arc		: 1;
+    unsigned int might_be_single_arc	: 1;
 
     cairo_box_t extents;
 
@@ -202,5 +204,8 @@ _cairo_path_fixed_is_stroke_box (const cairo_path_fixed_t *path,
 
 cairo_private cairo_bool_t
 _cairo_path_fixed_is_simple_quad (const cairo_path_fixed_t *path);
+
+cairo_private cairo_bool_t
+_cairo_path_fixed_is_single_arc (const cairo_path_fixed_t *path);
 
 #endif /* CAIRO_PATH_FIXED_PRIVATE_H */

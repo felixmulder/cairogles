@@ -110,6 +110,8 @@ struct _cairo_backend {
     cairo_status_t (*rel_line_to) (void *cr, double dx, double dy);
     cairo_status_t (*curve_to) (void *cr, double x1, double y1, double x2, double y2, double x3, double y3);
     cairo_status_t (*rel_curve_to) (void *cr, double dx1, double dy1, double dx2, double dy2, double dx3, double dy3);
+    void (*start_arc) (void *cr);
+    void (*end_arc) (void *cr);
     cairo_status_t (*arc_to) (void *cr, double x1, double y1, double x2, double y2, double radius);
     cairo_status_t (*rel_arc_to) (void *cr, double dx1, double dy1, double dx2, double dy2, double radius);
     cairo_status_t (*close_path) (void *cr);

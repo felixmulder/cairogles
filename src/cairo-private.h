@@ -59,6 +59,12 @@ _cairo_init (cairo_t *cr,
 cairo_private void
 _cairo_fini (cairo_t *cr);
 
+cairo_private void
+_cairo_start_arc (cairo_t *cr);
+
+cairo_private void
+_cairo_end_arc (cairo_t *cr);
+
 CAIRO_END_DECLS
 
 #endif /* CAIRO_PRIVATE_H */
