@@ -231,9 +231,20 @@ static void _cairo_gl_surface_clear_with_extent (cairo_gl_context_t *ctx,
 {
 	_cairo_gl_context_set_destination(ctx, dst, use_multisample);
 
-	glClearColor (0, 0, 0, 0);
-	glEnable(GL_SCISSOR_TEST);
-	glScissor(extent->x, extent->y, extent->width, extent->height);
+	if (ctx->states_cache.clear_red != 0 ||
+	    ctx->states_cache.clear_green != 0 ||
+	    ctx->states_cache.clear_blue != 0 ||
+	    ctx->states_cache.clear_alpha != 0) {
+
+	    ctx->states_cache.clear_red = 0;
+	    ctx->states_cache.clear_green = 0;
+	    ctx->states_cache.clear_blue = 0;
+	    ctx->states_cache.clear_alpha = 0;
+
+	    glClearColor (0, 0, 0, 0);
+	}
+	_enable_scissor_buffer (ctx);
+	glScissor(0, 0, extent->width, extent->height);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -406,17 +417,18 @@ render_glyphs_via_mask (cairo_gl_surface_t *dst,
 	    status = _cairo_gl_context_release (ctx, status);
 	    return status;
 	}
-    } else {
-	/* Reusing old glyph mask, clear it */
-	_cairo_gl_surface_clear_with_extent (ctx,
-					     (cairo_gl_surface_t *)ctx->glyph_mask,
-					     &info->extents, FALSE);
     }
+
+    /* clear it */
+    _cairo_gl_surface_clear_with_extent (ctx,
+					 (cairo_gl_surface_t *)ctx->glyph_mask,
+					  &info->extents, FALSE);
 
     status = render_glyphs (ctx->glyph_mask,
 			    info->extents.x, info->extents.y,
 			    CAIRO_OPERATOR_ADD, NULL,
 			    info, &has_component_alpha, NULL);
+
     if (likely (status == CAIRO_STATUS_SUCCESS)) {
 	cairo_surface_pattern_t mask_pattern;
 	cairo_surface_pattern_t source_pattern;
