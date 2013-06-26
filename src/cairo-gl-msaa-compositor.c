@@ -674,6 +674,11 @@ _prevent_overlapping_strokes (cairo_gl_context_t 		*ctx,
     _cairo_clip_destroy (setup->dst->clip_on_stencil_buffer);
     setup->dst->clip_on_stencil_buffer = NULL;
 
+    /* we must let the next drawing know we have changed stencil buffer
+     * so that next drawing calls flush
+     */
+    setup->dst->needs_update = TRUE;
+
     return CAIRO_INT_STATUS_SUCCESS;
 }
 
