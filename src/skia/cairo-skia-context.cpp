@@ -1057,6 +1057,16 @@ _cairo_skia_context_rel_curve_to (void *abstract_cr,
 }
 
 static cairo_status_t
+_cairo_skia_context_start_arc (void *abstract_cr)
+{
+}
+
+static cairo_status_t
+_cairo_skia_context_end_arc (void *abstract_cr)
+{
+}
+
+static cairo_status_t
 _cairo_skia_context_rel_arc_to (void *abstract_cr,
 				double dx1, double dy1,
 				double dx2, double dy2,
@@ -1648,6 +1658,8 @@ static const cairo_backend_t _cairo_skia_context_backend = {
     _cairo_skia_context_rel_line_to,
     _cairo_skia_context_curve_to,
     _cairo_skia_context_rel_curve_to,
+    _cairo_skia_context_start_arc,
+    _cairo_skia_context_end_arc,
     _cairo_skia_context_arc_to,
     _cairo_skia_context_rel_arc_to,
     _cairo_skia_context_close_path,

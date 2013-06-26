@@ -1566,6 +1566,24 @@ cairo_curve_to (cairo_t *cr,
 }
 slim_hidden_def (cairo_curve_to);
 
+void
+_cairo_start_arc (cairo_t *cr)
+{
+    if (unlikely (cr->status))
+	return;
+
+    cr->backend->start_arc (cr);
+}
+
+void
+_cairo_end_arc (cairo_t *cr)
+{
+    if (unlikely (cr->status))
+	return;
+
+    cr->backend->end_arc (cr);
+}
+
 /**
  * cairo_arc:
  * @cr: a cairo context

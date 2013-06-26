@@ -920,6 +920,12 @@ _cairo_path_fixed_rel_curve_to (cairo_path_fixed_t *path,
 				cairo_fixed_t dx1, cairo_fixed_t dy1,
 				cairo_fixed_t dx2, cairo_fixed_t dy2);
 
+cairo_private void
+_cairo_path_fixed_start_arc (cairo_path_fixed_t *path);
+
+cairo_private void
+_cairo_path_fixed_end_arc (cairo_path_fixed_t *path);
+
 cairo_private cairo_status_t
 _cairo_path_fixed_close_path (cairo_path_fixed_t *path);
 
