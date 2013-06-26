@@ -790,12 +790,21 @@ _cairo_gl_pattern_texture_setup (cairo_gl_operand_t *operand,
 	status = _cairo_gl_context_release (ctx, status);
 	if (unlikely (status))
 	    goto fail;
+
+	/* we need to release one more time */
+	status = _cairo_gl_context_release (ctx, status);
+	if (unlikely (status))
+	    goto fail;
     }
 
     status = _cairo_surface_offset_paint (&image->base, extents->x, extents->y,
 					  CAIRO_OPERATOR_SOURCE, _src, NULL);
 
     if (src_is_gl_surface) {
+	status = _cairo_gl_context_acquire (dst->base.device, &ctx);
+	if (unlikely (status))
+	    goto fail;
+	/* one more time acquire */
 	status = _cairo_gl_context_acquire (dst->base.device, &ctx);
 	if (unlikely (status))
 	    goto fail;
