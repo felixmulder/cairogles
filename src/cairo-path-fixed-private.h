@@ -109,6 +109,8 @@ struct _cairo_path_fixed {
     unsigned int fill_is_rectilinear	: 1;
     unsigned int fill_maybe_region	: 1;
     unsigned int fill_is_empty		: 1;
+    unsigned int is_single_arc		: 1;
+    unsigned int might_be_single_arc	: 1;
 
     cairo_box_t extents;
 

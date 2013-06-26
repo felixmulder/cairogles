@@ -600,8 +600,31 @@ static cairo_bool_t
 _is_continuous_arc (const cairo_path_fixed_t   *path,
 		    const cairo_stroke_style_t *style)
 {
-    return (_cairo_path_fixed_is_single_arc (path) &&
-	    style->dash == NULL);
+    return (_cairo_path_fixed_is_single_arc (path) && style->dash == NULL);
+}
+
+static cairo_bool_t
+_contains_only_curves (const cairo_path_fixed_t   *path)
+{
+    const cairo_path_buf_t *buf;
+
+    cairo_path_foreach_buf_start (buf, path) {
+	size_t i = 0;
+	for (i = 0; i < buf->num_ops; i++) {
+	    switch (buf->op[i]) {
+	    case CAIRO_PATH_OP_MOVE_TO:
+	    case CAIRO_PATH_OP_CURVE_TO:
+	    case CAIRO_PATH_OP_CLOSE_PATH:
+		continue;
+	    case CAIRO_PATH_OP_LINE_TO:
+		return FALSE;
+	    default:
+		ASSERT_NOT_REACHED;
+		break;
+	    }
+	}
+    } cairo_path_foreach_buf_end (buf, path);
+    return TRUE;
 }
 
 static cairo_int_status_t
@@ -842,6 +865,93 @@ _draw_simple_quad_path (cairo_gl_context_t *ctx,
     return _cairo_gl_composite_emit_triangle_as_tristrip (ctx, setup, triangle);
 }
 
+typedef struct _simple_curve_data {
+    cairo_gl_context_t *ctx;
+    cairo_gl_composite_t *setup;
+    size_t number_of_points;
+    cairo_point_t first_point;
+    cairo_point_t current_point;
+    double tolerance;
+} simple_curve_data_t;
+
+static cairo_status_t
+_simple_curve_move_to (void *closure,
+		       const cairo_point_t *point)
+{
+    simple_curve_data_t *data = (simple_curve_data_t *)closure;
+
+    assert (data->number_of_points == 0);
+    data->first_point = *point;
+    data->current_point = *point;
+    data->number_of_points++;
+
+    return CAIRO_STATUS_SUCCESS;
+}
+
+static cairo_status_t
+_handle_curve_point (void *closure,
+                     const cairo_point_t *point)
+{
+    cairo_status_t status;
+
+    simple_curve_data_t *data = (simple_curve_data_t *)closure;
+
+    if (data->number_of_points >= 2) {
+	cairo_point_t triangle[3];
+	triangle[0] = data->first_point;
+	triangle[1] = data->current_point;
+	triangle[2] = *point;
+
+	status = _cairo_gl_composite_emit_triangle_as_tristrip (data->ctx, data->setup, triangle);
+	if (status)
+	    return status;
+    }
+
+    data->current_point = *point;
+    data->number_of_points++;
+    return CAIRO_STATUS_SUCCESS;
+}
+
+static cairo_status_t
+_simple_curve_curve_to (void *closure,
+			const cairo_point_t *p0,
+			const cairo_point_t *p1,
+			const cairo_point_t *p2)
+{
+    simple_curve_data_t *data = (simple_curve_data_t *)closure;
+    cairo_spline_t spline;
+
+    if (! _cairo_spline_init (&spline,
+			      (cairo_spline_add_point_func_t)_handle_curve_point,
+			      closure,
+			      &data->current_point, p0, p1, p2))
+	return CAIRO_INT_STATUS_UNSUPPORTED;
+
+    return _cairo_spline_decompose (&spline, data->tolerance);
+
+}
+
+static cairo_int_status_t
+_draw_simple_arc_path (cairo_gl_context_t *ctx,
+		       cairo_gl_composite_t *setup,
+		       const cairo_path_fixed_t *path,
+		       double tolerance)
+{
+    simple_curve_data_t closure;
+    closure.ctx = ctx;
+    closure.setup = setup;
+    closure.tolerance = tolerance;
+    closure.number_of_points = 0;
+
+    return _cairo_path_fixed_interpret (path,
+					_simple_curve_move_to,
+					NULL,
+					_simple_curve_curve_to,
+					NULL,
+					(void *) &closure);
+
+}
+
 static cairo_int_status_t
 _cairo_gl_msaa_compositor_fill (const cairo_compositor_t	*compositor,
 				cairo_composite_rectangles_t	*composite,
@@ -855,7 +965,8 @@ _cairo_gl_msaa_compositor_fill (const cairo_compositor_t	*compositor,
     cairo_gl_context_t *ctx = NULL;
     cairo_int_status_t status;
     cairo_traps_t traps;
-    cairo_bool_t draw_path_with_traps;
+    cairo_bool_t path_is_single_arc_curves;
+    cairo_bool_t path_is_simple_quad;
 
     if (! can_use_msaa_compositor (dst, antialias))
 	return CAIRO_INT_STATUS_UNSUPPORTED;
@@ -881,9 +992,12 @@ _cairo_gl_msaa_compositor_fill (const cairo_compositor_t	*compositor,
 	return _paint_back_unbounded_surface (compositor, composite, surface);
     }
 
-    draw_path_with_traps = ! _cairo_path_fixed_is_simple_quad (path);
+    path_is_simple_quad = _cairo_path_fixed_is_simple_quad (path);
+    path_is_single_arc_curves = ! path_is_simple_quad &&
+				_cairo_path_fixed_is_single_arc (path) &&
+				_contains_only_curves (path);
 
-    if (draw_path_with_traps) {
+    if (! path_is_simple_quad && ! path_is_single_arc_curves) {
 	_cairo_traps_init (&traps);
 	status = _cairo_path_fixed_fill_to_traps (path, fill_rule, tolerance, &traps);
 	if (unlikely (status))
@@ -913,10 +1027,13 @@ _cairo_gl_msaa_compositor_fill (const cairo_compositor_t	*compositor,
     if (unlikely (status))
 	goto cleanup_setup;
 
-    if (! draw_path_with_traps)
+    if (path_is_single_arc_curves)
+	status = _draw_simple_arc_path (ctx, &setup, path, tolerance);
+    else if (path_is_simple_quad)
 	status = _draw_simple_quad_path (ctx, &setup, path);
     else
 	status = _draw_traps (ctx, &setup, &traps);
+
     if (unlikely (status))
         goto cleanup_setup;
 
@@ -927,7 +1044,7 @@ cleanup_setup:
 	status = _cairo_gl_context_release (ctx, status);
 
 cleanup_traps:
-    if (draw_path_with_traps)
+    if (! path_is_simple_quad && ! path_is_single_arc_curves)
 	_cairo_traps_fini (&traps);
 
     return status;

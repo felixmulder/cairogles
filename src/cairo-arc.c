@@ -37,6 +37,7 @@
 #include "cairoint.h"
 
 #include "cairo-arc-private.h"
+#include "cairo-private.h"
 
 #define MAX_FULL_CIRCLES 65536
 
@@ -271,10 +272,12 @@ _cairo_arc_path (cairo_t *cr,
 		 double	  angle1,
 		 double	  angle2)
 {
+    _cairo_start_arc (cr);
     _cairo_arc_in_direction (cr, xc, yc,
 			     radius,
 			     angle1, angle2,
 			     CAIRO_DIRECTION_FORWARD);
+    _cairo_end_arc (cr);
 }
 
 /**
@@ -301,8 +304,10 @@ _cairo_arc_path_negative (cairo_t *cr,
 			  double   angle1,
 			  double   angle2)
 {
+    _cairo_start_arc (cr);
     _cairo_arc_in_direction (cr, xc, yc,
 			     radius,
 			     angle2, angle1,
 			     CAIRO_DIRECTION_REVERSE);
+    _cairo_end_arc (cr);
 }
