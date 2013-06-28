@@ -2408,7 +2408,6 @@ _cairo_gstate_set_shadow_offset (cairo_gstate_t *gstate, double x_offset,
     double x = x_offset;
     double y = y_offset;
 
-    _cairo_gstate_user_to_backend_distance (gstate, &x, &y);
     gstate->shadow.x_offset = x;
     gstate->shadow.y_offset = y;
 
@@ -2436,7 +2435,10 @@ _cairo_gstate_set_shadow_sigma (cairo_gstate_t *gstate, double x_sigma,
     double x = x_sigma;
     double y = y_sigma;
 
-    _cairo_gstate_user_to_backend_distance (gstate, &x, &y);
+    if (x < 0.0)
+	x = 0.0;
+    if (y < 0.0)
+	y = 0.0;
     gstate->shadow.x_sigma = x;
     gstate->shadow.y_sigma = y;
 
