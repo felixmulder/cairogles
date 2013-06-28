@@ -237,11 +237,13 @@ void
 _cairo_xcb_connection_render_set_picture_filter (cairo_xcb_connection_t         *connection,
 						 xcb_render_picture_t      picture,
 						 uint16_t                  filter_len,
-						 char               *filter)
+						 char               *filter,
+						 uint32_t	     values_len,
+						 xcb_render_fixed_t *values)
 {
     assert (connection->flags & CAIRO_XCB_RENDER_HAS_FILTERS);
     xcb_render_set_picture_filter (connection->xcb_connection, picture,
-				   filter_len, filter, 0, NULL);
+				   filter_len, filter, values_len, values);
 }
 
 void
