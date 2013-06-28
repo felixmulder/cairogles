@@ -101,7 +101,8 @@ _cairo_gl_surface_shadow_surface (void *surface,
 	    }
 	}
 	shadow_surface = (cairo_gl_surface_t *)
-		_cairo_gl_surface_create_scratch (ctx, dst->base.content,
+		_cairo_gl_surface_create_scratch (ctx,
+						  CAIRO_CONTENT_COLOR_ALPHA,
 						  shadow_size,
 						  shadow_size);
 	if (unlikely (shadow_surface->base.status)) {
@@ -149,7 +150,8 @@ _cairo_gl_surface_glyph_shadow_surface (void *surface,
 
     if (! shadow_surface) {
 	shadow_surface = (cairo_gl_surface_t *)
-		_cairo_gl_surface_create_scratch (ctx, dst->base.content,
+		_cairo_gl_surface_create_scratch (ctx,
+						  CAIRO_CONTENT_COLOR_ALPHA, 
 						  width, height);
 	if (unlikely (shadow_surface->base.status)) {
 	    cairo_surface_destroy (&shadow_surface->base);
