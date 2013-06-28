@@ -713,7 +713,9 @@ cairo_private void
 _cairo_xcb_connection_render_set_picture_filter (cairo_xcb_connection_t         *connection,
 						 xcb_render_picture_t      picture,
 						 uint16_t                  filter_len,
-						 char                     *filter);
+						 char                     *filter,
+						 uint32_t		   values_len,
+						 xcb_render_fixed_t	  *values);
 
 cairo_private void
 _cairo_xcb_connection_render_create_solid_fill (cairo_xcb_connection_t     *connection,
@@ -748,6 +750,12 @@ _cairo_xcb_connection_render_create_conical_gradient (cairo_xcb_connection_t    
 						      uint32_t                  num_stops,
 						      xcb_render_fixed_t *stops,
 						      xcb_render_color_t *colors);
+
+cairo_private cairo_xcb_picture_t *
+_cairo_xcb_gaussian_filter (cairo_xcb_surface_t *target,
+			    cairo_xcb_picture_t *orig_pict,
+			    const cairo_pattern_t *pattern);
+
 #if CAIRO_HAS_XLIB_XCB_FUNCTIONS
 slim_hidden_proto (cairo_xcb_surface_create);
 slim_hidden_proto (cairo_xcb_surface_create_for_bitmap);
