@@ -71,6 +71,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     double		  y_scale = 1.0;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
+    cairo_content_t       content;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
@@ -114,11 +115,15 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 	shadow_surface = target->backend->get_shadow_surface (target,
 						      shadow_width,
 						      shadow_height);
-    else
+    else {
+	content = cairo_surface_get_content (target);
+ 	if (content == CAIRO_CONTENT_COLOR)
+	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
-						       cairo_surface_get_content (target),
+						       content,
 						       shadow_width,
 						       shadow_height);
+    }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
 
@@ -186,6 +191,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     cairo_pattern_t	 *color_pattern;
     cairo_surface_t	 *shadow_surface = NULL;
     cairo_rectangle_int_t shadow_surface_extents;
+    cairo_content_t       content;
 
     int shadow_width, shadow_height;
     int x_blur, y_blur;
@@ -242,11 +248,15 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 	shadow_surface = target->backend->get_shadow_surface (target,
 						      shadow_width,
 						      shadow_height);
-    else
+    else {
+	content = cairo_surface_get_content (target);
+	if (content == CAIRO_CONTENT_COLOR)
+	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
-						       cairo_surface_get_content (target),
+						       content,
 						       shadow_width,
 						       shadow_height);
+    }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
 
@@ -322,6 +332,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     cairo_surface_t	 *shadow_surface = NULL;
     cairo_rectangle_int_t shadow_surface_extents;
     cairo_matrix_t        shadow_ctm, shadow_ctm_inverse;
+    cairo_content_t       content;
 
     int shadow_width, shadow_height;
     int x_blur, y_blur;
@@ -382,11 +393,15 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 	shadow_surface = target->backend->get_shadow_surface (target,
 						      shadow_width,
 						      shadow_height);
-    else
+    else {
+	content = cairo_surface_get_content (target);
+	if (content == CAIRO_CONTENT_COLOR)
+	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
-						       cairo_surface_get_content (target),
+						       content,
 						       shadow_width,
 						       shadow_height);
+    }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
 
@@ -465,6 +480,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     cairo_pattern_t	 *color_pattern;
     cairo_surface_t	 *shadow_surface = NULL;
     cairo_rectangle_int_t shadow_surface_extents;
+    cairo_content_t       content;
 
     int shadow_width, shadow_height;
     int x_blur, y_blur;
@@ -521,11 +537,15 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 	shadow_surface = target->backend->get_shadow_surface (target,
 						      shadow_width,
 						      shadow_height);
-    else
+    else {
+	content = cairo_surface_get_content (target);
+	if (content == CAIRO_CONTENT_COLOR)
+	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
-						       cairo_surface_get_content (target),
+						       content,
 						       shadow_width,
 						       shadow_height);
+    }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
 
@@ -601,7 +621,7 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
     cairo_surface_t	 *blur_surface = NULL;
     cairo_rectangle_int_t shadow_surface_extents;
     cairo_glyph_t        *shadow_glyphs;
-    
+    cairo_content_t       content; 
 
     int shadow_width, shadow_height;
     int x_blur, y_blur;
@@ -661,11 +681,15 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 						 		    shadow_width,
 								    shadow_height,
 								    FALSE);
-    else
+    else {
+	content = cairo_surface_get_content (target);
+	if (content == CAIRO_CONTENT_COLOR)
+	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
-						       cairo_surface_get_content (target),
+						       content,
 						       shadow_width,
 						       shadow_height);
+    }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
 
