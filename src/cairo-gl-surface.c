@@ -114,8 +114,6 @@ _cairo_gl_surface_shadow_surface (void *surface,
 
     shadow_surface->needs_to_cache = FALSE;
     shadow_surface->force_no_cache = TRUE;
-    shadow_surface->force_no_msaa = TRUE;
-    shadow_surface->supports_msaa = FALSE;
 
     return cairo_surface_reference (&shadow_surface->base);
 }

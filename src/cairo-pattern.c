@@ -4526,12 +4526,11 @@ cairo_pattern_set_sigma (cairo_pattern_t *pattern,
     if (pattern->type != CAIRO_PATTERN_TYPE_SURFACE)
 	return CAIRO_STATUS_PATTERN_TYPE_MISMATCH;
 
-    cairo_matrix_transform_distance ((const cairo_matrix_t *)&pattern->matrix,
-				     &transformed_x_sigma,
-				     &transformed_y_sigma);
 
-    if (transformed_x_sigma < 0.0 || transformed_y_sigma < 0.0)
-	return CAIRO_STATUS_INVALID_SIZE;
+    if (transformed_x_sigma < 0.0)
+	transformed_x_sigma = 0.0;
+    if (transformed_y_sigma < 0.0)
+	transformed_y_sigma = 0.0;
 
     if (pattern->x_sigma == transformed_x_sigma &&
 	pattern->y_sigma == transformed_y_sigma)
