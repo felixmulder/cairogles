@@ -1134,6 +1134,25 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 			   cairo_gl_surface_t *src,
 			   cairo_rectangle_int_t *extents_out);
 
+static inline cairo_bool_t
+_cairo_gl_surface_is_scratch (cairo_gl_context_t *ctx,
+			      cairo_gl_surface_t *surface)
+{
+    int i;
+
+    for (i = 0; i < 2; i++) {
+	if (surface == ctx->source_scratch_surfaces[i] ||
+	    surface == ctx->mask_scratch_surfaces[i] ||
+	    surface == ctx->shadow_scratch_surfaces[i])
+	    return TRUE;
+    }
+
+    if (surface == ctx->shadow_scratch_surfaces[2])
+	return TRUE;
+
+    return FALSE;
+}
+
 slim_hidden_proto (cairo_gl_surface_create);
 slim_hidden_proto (cairo_gl_surface_create_for_texture);
 
