@@ -339,9 +339,11 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 
     /* we have created two scratch surfaces */
     /* shrink surface to scratches[0] */
-    if ((src_width <= width && src_height <= height) &&
-	(scratches[0]->width > src_width && scratches[0]->height > src_height))
+    if ((scratches[0]->width >= src_width && scratches[0]->height >= src_height)) {
 	skip_stage_0 = TRUE;
+	width = src_width;
+	height = src_height;
+    }
     else if (width > scratches[0]->width ||
 	     height > scratches[0]->height) {
 	width = scratches[0]->width;
