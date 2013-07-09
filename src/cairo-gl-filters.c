@@ -302,6 +302,11 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 		cairo_surface_destroy (&scratches[n]->base);
 		scratches[n] = NULL;
 	    }
+	    else if (scratch_width > 4 * width ||
+		     scratch_height > 4 * height) {
+		cairo_surface_destroy (&scratches[n]->base);
+		scratches[n] = NULL;
+	    }
 	}
 
 	if (! scratches[n]) {
