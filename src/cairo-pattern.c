@@ -4819,7 +4819,7 @@ _cairo_pattern_hash_with_hash (unsigned long hash,
 
     hash = _cairo_hash_bytes (hash, &pattern->type, sizeof (pattern->type));
     if (pattern->type != CAIRO_PATTERN_TYPE_SOLID) {
-	hash = _cairo_hash_bytes (hash, &pattern->matrix, sizeof (cairo_matrix_t));
+	hash = _cairo_hash_bytes (hash, &pattern->matrix, sizeof (double) * 4);
 	hash = _cairo_hash_bytes (hash,
 				  &pattern->filter, sizeof (pattern->filter));
 	hash = _cairo_hash_bytes (hash,
