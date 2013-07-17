@@ -197,7 +197,6 @@ _cairo_surface_mask_get_offset_extents (cairo_surface_t *target,
 {
     cairo_matrix_t m;
     cairo_rectangle_int_t rect, temp;
-    const cairo_rectangle_int_t *clip_rect;
 
     if (unlikely (target->status))
 	return target->status;
@@ -213,8 +212,6 @@ _cairo_surface_mask_get_offset_extents (cairo_surface_t *target,
     _copy_transformed_pattern (mask_out, mask, &m);
 
     _cairo_surface_get_extents (target, &rect);
-    clip_rect = _cairo_clip_get_extents (clip);
-    _cairo_rectangle_intersect (&rect, clip_rect);
 
     _cairo_pattern_get_extents (source_out, &temp);
     _cairo_rectangle_intersect (&rect, &temp);
