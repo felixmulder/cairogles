@@ -42,7 +42,7 @@
 
 #include "cairo-types-private.h"
 
-#define MAX_SHADOW_CACHE_SIZE 4194304
+#define MAX_SHADOW_CACHE_SIZE 1048576
 
 CAIRO_BEGIN_DECLS
 
