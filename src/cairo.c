@@ -4096,3 +4096,13 @@ cairo_set_shadow_sigma (cairo_t *cr, double x_sigma, double y_sigma)
 	_cairo_set_error (cr, status);
 }
 slim_hidden_def (cairo_set_shadow_sigma);
+
+void
+cairo_shadow_enable_cache (cairo_t *cr, cairo_bool_t enable)
+{
+    if (unlikely (cr->status))
+	return;
+
+    cr->backend->shadow_enable_cache (cr, enable);
+}
+slim_hidden_def (cairo_shadow_enable_cache);

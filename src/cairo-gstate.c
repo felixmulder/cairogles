@@ -2444,3 +2444,9 @@ _cairo_gstate_set_shadow_sigma (cairo_gstate_t *gstate, double x_sigma,
 
     return CAIRO_STATUS_SUCCESS;
 }
+
+void
+_cairo_gstate_shadow_enable_cache (cairo_gstate_t *gstate, cairo_bool_t enable)
+{
+    gstate->shadow.enable_cache = enable;
+}
