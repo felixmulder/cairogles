@@ -2940,6 +2940,9 @@ cairo_set_shadow_rgba (cairo_t *cr, double red, double green,
 cairo_public void 
 cairo_set_shadow_sigma (cairo_t *cr, double x_sigma, double y_sigma);
 
+cairo_public void
+cairo_shadow_enable_cache (cairo_t *cr, cairo_bool_t enable);
+
 cairo_public cairo_status_t
 cairo_pattern_get_rgba (cairo_pattern_t *pattern,
 			double *red, double *green,

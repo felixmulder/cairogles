@@ -2017,6 +2017,7 @@ slim_hidden_proto (cairo_set_shadow_offset);
 slim_hidden_proto (cairo_set_shadow_rgba);
 slim_hidden_proto (cairo_set_shadow_rgb);
 slim_hidden_proto (cairo_set_shadow_sigma);
+slim_hidden_proto (cairo_shadow_enable_cache);
 
 #if CAIRO_HAS_PNG_FUNCTIONS
 
