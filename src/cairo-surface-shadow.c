@@ -179,7 +179,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     cairo_pattern_union_t shadow_source;
     cairo_rectangle_int_t shadow_extents;
     cairo_pattern_t 	 *shadow_pattern = NULL;
-    cairo_pattern_t	 *color_pattern;
+    cairo_pattern_t	 *color_pattern = NULL;
     cairo_surface_t	 *shadow_surface = NULL;
     cairo_rectangle_int_t shadow_surface_extents;
 
@@ -195,6 +195,14 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     double		  y_offset = shadow->y_offset;
     cairo_content_t       content;
 
+    unsigned long         hash = 0;
+    cairo_shadow_cache_t *shadow_cache;
+    cairo_device_t       *device = target->device;
+    cairo_bool_t          found = FALSE;
+    unsigned long         size;
+    cairo_surface_t	 *cache_surface = NULL;
+
+
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
 
@@ -204,6 +212,59 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 
     if (_cairo_clip_is_all_clipped (clip))
 	return CAIRO_STATUS_SUCCESS;
+
+    if (device != NULL) {
+	hash = _cairo_shadow_hash_for_paint (source, shadow);
+	cairo_list_foreach_entry (shadow_cache, cairo_shadow_cache_t, &device->shadow_caches, link) {
+	    if (shadow_cache->hash == hash) {
+		found = TRUE;
+		break;
+	    }
+	}
+    }
+
+    if (found) {
+	/* paint the shadow surface to target */
+	x_blur = shadow_cache->x_blur;
+	y_blur = shadow_cache->y_blur;
+
+	color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
+					           shadow_copy.color.green,
+					           shadow_copy.color.blue,
+						   1.0);
+
+	status = _cairo_surface_paint_get_offset_extents (target,
+							  x_offset,
+							  y_offset,
+							  source,
+							  clip,
+							  &shadow_source.base,
+							  &shadow_extents);
+ 	if (unlikely (status))
+	    goto FINISH;
+
+	if (shadow_extents.width == 0 || shadow_extents.height == 0)
+	    goto FINISH;
+
+ 	x_offset = shadow_extents.x - x_blur;
+	y_offset = shadow_extents.y - y_blur;
+
+	shadow_width = shadow_extents.width + x_blur * 2;
+	shadow_height = shadow_extents.height + y_blur * 2;
+
+	scale = shadow_cache->scale;
+
+	cairo_matrix_init_scale (&m, scale, scale);
+	cairo_matrix_translate (&m, -x_offset, -y_offset);
+
+	shadow_pattern = cairo_pattern_create_for_surface (shadow_cache->surface);
+	cairo_pattern_set_matrix (shadow_pattern, &m);
+
+	status = _cairo_surface_mask (target, op, color_pattern, 
+				      shadow_pattern, clip);
+	cairo_list_move (&shadow_cache->link, &device->shadow_caches);
+	goto FINISH;
+    }
 
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
 
@@ -252,6 +313,22 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
 	goto FINISH;
 
+    if (device && shadow->enable_cache) {
+	content = cairo_surface_get_content (target);
+	if (content == CAIRO_CONTENT_COLOR)
+	    content = CAIRO_CONTENT_COLOR_ALPHA;
+
+	cache_surface = cairo_surface_create_similar (target, content,
+						      shadow_surface_extents.width,
+						      shadow_surface_extents.height);
+	if (unlikely (cache_surface->status))
+	    goto FINISH;
+	_cairo_surface_release_device_reference (cache_surface);
+    }
+
+    if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
+	goto FINISH;
+
     x_scale = (double) shadow_surface_extents.width / (double) shadow_width;
     y_scale = (double) shadow_surface_extents.height / (double) shadow_height;
 
@@ -281,10 +358,55 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
-    cairo_pattern_set_matrix (shadow_pattern, &m);
+    if (device && shadow->enable_cache) {
+	status = _cairo_surface_mask (cache_surface, CAIRO_OPERATOR_OVER,
+				      color_pattern, shadow_pattern, NULL);
+	if (unlikely (status))
+	    goto FINISH;
 
-    status = _cairo_surface_mask (target, op, color_pattern,
-				  shadow_pattern, clip);
+	cairo_pattern_destroy (shadow_pattern);
+
+	size = shadow_surface_extents.width * shadow_surface_extents.height;
+
+	while (device->shadow_caches_size + size > MAX_SHADOW_CACHE_SIZE) {
+	    shadow_cache = cairo_list_last_entry (&device->shadow_caches,
+						  cairo_shadow_cache_t,
+						  link);
+	    cairo_list_del (&shadow_cache->link);
+	    cairo_surface_destroy (shadow_cache->surface);
+	    device->shadow_caches_size -= shadow_cache->size;
+	    free (shadow_cache);
+	}
+
+	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
+	cairo_list_init (&shadow_cache->link);
+	shadow_cache->surface = cairo_surface_reference (cache_surface);
+	shadow_cache->size = size;
+	shadow_cache->hash = hash;
+	shadow_cache->x_blur = x_blur;
+	shadow_cache->y_blur = y_blur;
+	shadow_cache->scale = scale;
+
+	cairo_list_add (&shadow_cache->link, &device->shadow_caches);
+	device->shadow_caches_size += size;
+
+	shadow_pattern = cairo_pattern_create_for_surface (cache_surface);
+	cairo_pattern_set_matrix (shadow_pattern, &m);
+
+	cairo_pattern_destroy (color_pattern);
+	color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
+					           shadow_copy.color.green,
+					           shadow_copy.color.blue,
+					           1.0);
+
+	status = _cairo_surface_mask (target, op, color_pattern, 
+				      shadow_pattern, clip);
+    }
+    else {
+	cairo_pattern_set_matrix (shadow_pattern, &m);
+	status = _cairo_surface_mask (target, op,
+				      color_pattern, shadow_pattern, clip);
+    }
 
 FINISH:
     cairo_pattern_destroy (color_pattern);
@@ -466,7 +588,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     double		  y_scale = 1.0;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
-    unsigned long         hash;
+    unsigned long         hash = 0;
     cairo_shadow_cache_t *shadow_cache;
     cairo_device_t       *device = target->device;
     cairo_bool_t          found = FALSE;
@@ -692,7 +814,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     else {
 	cairo_pattern_set_matrix (shadow_pattern, &m);
 	status = _cairo_surface_mask (target, op,
-				      color_pattern, shadow_pattern, NULL);
+				      color_pattern, shadow_pattern, clip);
     }
 
 FINISH:
@@ -739,7 +861,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     double		  y_scale = 1.0;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
-    unsigned long         hash;
+    unsigned long         hash = 0;
     cairo_shadow_cache_t *shadow_cache;
     cairo_device_t       *device = target->device;
     cairo_bool_t          found = FALSE;
@@ -953,7 +1075,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     else {
 	cairo_pattern_set_matrix (shadow_pattern, &m);
 	status = _cairo_surface_mask (target, op,
-				      color_pattern, shadow_pattern, NULL);
+				      color_pattern, shadow_pattern, clip);
     }
 
 FINISH:
