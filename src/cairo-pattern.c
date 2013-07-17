@@ -4829,6 +4829,9 @@ _cairo_pattern_hash_with_hash (unsigned long hash,
 				  sizeof (pattern->has_component_alpha));
     }
 
+    if (pattern->type == CAIRO_PATTERN_TYPE_SURFACE)
+	hash = _cairo_hash_bytes (hash, &pattern->x_sigma, sizeof (double) * 2);
+
     switch (pattern->type) {
     case CAIRO_PATTERN_TYPE_SOLID:
 	return _cairo_solid_pattern_alpha_hash (hash, (cairo_solid_pattern_t *) pattern);
