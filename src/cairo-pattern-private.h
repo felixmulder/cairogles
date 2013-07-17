@@ -379,6 +379,10 @@ cairo_private cairo_status_t
 _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern,
 				       double		line_width);
 
+unsigned long
+_cairo_pattern_hash_with_hash (unsigned long hash,
+			       const cairo_pattern_t *pattern);
+
 cairo_private void
 _cairo_debug_print_pattern (FILE *file, const cairo_pattern_t *pattern);
 

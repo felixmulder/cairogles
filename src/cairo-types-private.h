@@ -433,6 +433,16 @@ typedef struct _cairo_shadow {
     double	y_sigma;
     cairo_color_t color;
 } cairo_shadow_t;
+
+typedef struct _cairo_shadow_cache {
+    cairo_surface_t *surface;
+    unsigned long    hash;
+    unsigned long    size;
+    double	     x_blur;
+    double	     y_blur;
+    double           scale;
+    cairo_list_t     link;
+} cairo_shadow_cache_t;
     
 CAIRO_END_DECLS
 
