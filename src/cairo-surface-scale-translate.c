@@ -321,7 +321,6 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
     cairo_status_t status;
     cairo_matrix_t m;
     cairo_rectangle_int_t rect, temp;
-    const cairo_rectangle_int_t *clip_rect;
 
     if (unlikely (target->status))
 	return target->status;
@@ -353,12 +352,7 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
 	cairo_matrix_multiply (ctm_out, ctm_out, &m);
     }
 
-    _cairo_surface_get_extents (target, &rect);
-    clip_rect = _cairo_clip_get_extents (clip);
-    _cairo_rectangle_intersect (&rect, clip_rect);
-
-    _cairo_pattern_get_extents (source_out, &temp);
-    _cairo_rectangle_intersect (&rect, &temp);
+    _cairo_pattern_get_extents (source_out, &rect);
 
     _cairo_path_fixed_approximate_stroke_extents (path_out, stroke_style,
 						  ctm_out, &temp);
@@ -434,7 +428,6 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
     cairo_status_t status;
     cairo_matrix_t m;
     cairo_rectangle_int_t rect, temp;
-    const cairo_rectangle_int_t *clip_rect;
 
     if (unlikely (target->status))
 	return target->status;
@@ -459,12 +452,7 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
 
     }
 
-    _cairo_surface_get_extents (target, &rect);
-    clip_rect = _cairo_clip_get_extents (clip);
-    _cairo_rectangle_intersect (&rect, clip_rect);
-
-    _cairo_pattern_get_extents (source_out, &temp);
-    _cairo_rectangle_intersect (&rect, &temp);
+    _cairo_pattern_get_extents (source_out, &rect);
 
     _cairo_path_fixed_approximate_fill_extents (path_out, &temp);
     _cairo_rectangle_intersect (&rect, &temp);

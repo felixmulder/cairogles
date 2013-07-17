@@ -52,6 +52,9 @@ struct _cairo_device {
     unsigned mutex_depth;
 
     cairo_bool_t finished;
+
+    unsigned long shadow_caches_size;
+    cairo_list_t  shadow_caches;
 };
 
 struct _cairo_device_backend {

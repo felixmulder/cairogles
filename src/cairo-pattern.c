@@ -4617,7 +4617,7 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern,
     if (x_sigma == 0.0)
         pattern->x_radius = 0;
     else {
-	while (x_sigma > max_sigma && test_line_width > min_line_width) {
+	while (x_sigma >= max_sigma && test_line_width >= min_line_width) {
 	    if (width <= CAIRO_MIN_SHRINK_SIZE)
 		break;
 
@@ -4637,7 +4637,7 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern,
     if (y_sigma == 0.0)
         pattern->y_radius = 0;
     else {
-	while (y_sigma > max_sigma && test_line_width > min_line_width) {
+	while (y_sigma >= max_sigma && test_line_width >= min_line_width) {
 	    if (height <= CAIRO_MIN_SHRINK_SIZE)
 		break;
 
@@ -4800,5 +4800,51 @@ _cairo_debug_print_pattern (FILE *file, const cairo_pattern_t *pattern)
     case CAIRO_PATTERN_TYPE_MESH:
 	_cairo_debug_print_mesh_pattern (file, (cairo_mesh_pattern_t *)pattern);
 	break;
+    }
+}
+
+static unsigned long
+_cairo_solid_pattern_alpha_hash (unsigned long hash,
+				 const cairo_solid_pattern_t *solid)
+{
+    return _cairo_hash_bytes (hash, &solid->color.alpha, sizeof (double));
+}
+
+unsigned long
+_cairo_pattern_hash_with_hash (unsigned long hash,
+			       const cairo_pattern_t *pattern)
+{
+    if (pattern->status)
+	return hash;
+
+    hash = _cairo_hash_bytes (hash, &pattern->type, sizeof (pattern->type));
+    if (pattern->type != CAIRO_PATTERN_TYPE_SOLID) {
+	hash = _cairo_hash_bytes (hash,
+				  &pattern->matrix, sizeof (pattern->matrix));
+	hash = _cairo_hash_bytes (hash,
+				  &pattern->filter, sizeof (pattern->filter));
+	hash = _cairo_hash_bytes (hash,
+				  &pattern->extend, sizeof (pattern->extend));
+	hash = _cairo_hash_bytes (hash,
+				  &pattern->has_component_alpha,
+				  sizeof (pattern->has_component_alpha));
+    }
+
+    switch (pattern->type) {
+    case CAIRO_PATTERN_TYPE_SOLID:
+	return _cairo_solid_pattern_alpha_hash (hash, (cairo_solid_pattern_t *) pattern);
+    case CAIRO_PATTERN_TYPE_LINEAR:
+	return _cairo_linear_pattern_hash (hash, (cairo_linear_pattern_t *) pattern);
+    case CAIRO_PATTERN_TYPE_RADIAL:
+	return _cairo_radial_pattern_hash (hash, (cairo_radial_pattern_t *) pattern);
+    case CAIRO_PATTERN_TYPE_MESH:
+	return _cairo_mesh_pattern_hash (hash, (cairo_mesh_pattern_t *) pattern);
+    case CAIRO_PATTERN_TYPE_SURFACE:
+	return _cairo_surface_pattern_hash (hash, (cairo_surface_pattern_t *) pattern);
+    case CAIRO_PATTERN_TYPE_RASTER_SOURCE:
+	return _cairo_raster_source_pattern_hash (hash, (cairo_raster_source_pattern_t *) pattern);
+    default:
+	ASSERT_NOT_REACHED;
+	return FALSE;
     }
 }
