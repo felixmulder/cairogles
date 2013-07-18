@@ -53,10 +53,12 @@ typedef struct _cairo_gl_dispatch_entry {
 				   offsetof(cairo_gl_dispatch_t, name) }
 #define DISPATCH_ENTRY_ARB_OES(name) { { "gl"#name, "gl"#name"ARB", "gl"#name"OES" }, \
 				       offsetof(cairo_gl_dispatch_t, name) }
-#define DISPATCH_ENTRY_EXT_IMG(name) { { "gl"#name, "gl"#name"EXT", "gl"#name"IMG" }, \
+#define DISPATCH_ENTRY_ANGLE_EXT_IMG(name) { { "gl"#name"ANGLE", "gl"#name"EXT", "gl"#name"IMG" }, \
 				       offsetof(cairo_gl_dispatch_t, name) }
 #define DISPATCH_ENTRY_CUSTOM(name, name2) { { "gl"#name, "gl"#name2, "gl"#name }, \
 			                     offsetof(cairo_gl_dispatch_t, name)}
+#define DISPATCH_ENTRY_CUSTOM_2(name1, name2, name3) { { "gl"#name1, "gl"#name2, "gl"#name3 }, \
+			                     offsetof(cairo_gl_dispatch_t, name1)}
 #define DISPATCH_ENTRY_LAST { { NULL, NULL, NULL }, 0 }
 
 cairo_private cairo_gl_dispatch_entry_t dispatch_buffers_entries[] = {
@@ -118,12 +120,13 @@ cairo_private cairo_gl_dispatch_entry_t dispatch_fbo_entries[] = {
     DISPATCH_ENTRY_EXT (FramebufferRenderbuffer),
     DISPATCH_ENTRY_EXT (DeleteRenderbuffers),
     DISPATCH_ENTRY_EXT (BlitFramebuffer),
+    DISPATCH_ENTRY_CUSTOM_2 (BlitFramebuffer, BlitFramebufferEXT, BlitFramebufferANGLE),
     DISPATCH_ENTRY_LAST
 };
 
 cairo_private cairo_gl_dispatch_entry_t dispatch_multisampling_entries[] = {
-    DISPATCH_ENTRY_EXT_IMG (RenderbufferStorageMultisample),
-    DISPATCH_ENTRY_EXT_IMG (FramebufferTexture2DMultisample),
+    DISPATCH_ENTRY_ANGLE_EXT_IMG (RenderbufferStorageMultisample),
+    DISPATCH_ENTRY_ANGLE_EXT_IMG (FramebufferTexture2DMultisample),
     DISPATCH_ENTRY_LAST
 };
 

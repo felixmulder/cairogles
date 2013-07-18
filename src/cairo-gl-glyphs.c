@@ -229,6 +229,8 @@ static void _cairo_gl_surface_clear_with_extent (cairo_gl_context_t *ctx,
 						 cairo_rectangle_int_t *extent,
 						 cairo_bool_t use_multisample )
 {
+	if (ctx->has_angle_multisample_and_blit)
+	    use_multisample = TRUE;
 	_cairo_gl_context_set_destination(ctx, dst, use_multisample);
 
 	if (ctx->states_cache.clear_red != 0 ||

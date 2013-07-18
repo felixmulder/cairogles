@@ -638,6 +638,7 @@ _cairo_gl_surface_clear (cairo_gl_surface_t  *surface,
     cairo_gl_context_t *ctx;
     cairo_status_t status;
     double r, g, b, a;
+    cairo_bool_t multisampling = surface->msaa_active;
 
     status = _cairo_gl_context_acquire (surface->base.device, &ctx);
     if (unlikely (status))
@@ -646,7 +647,10 @@ _cairo_gl_surface_clear (cairo_gl_surface_t  *surface,
     if (ctx->current_target == surface)
 	_cairo_gl_composite_flush (ctx);
 
-    _cairo_gl_context_set_destination (ctx, surface, surface->msaa_active);
+    if (ctx->has_angle_multisample_and_blit)
+	multisampling = TRUE;
+
+    _cairo_gl_context_set_destination (ctx, surface, multisampling);
     if (surface->base.content & CAIRO_CONTENT_COLOR) {
         r = color->red   * color->alpha;
         g = color->green * color->alpha;
@@ -1083,6 +1087,29 @@ _cairo_gl_surface_draw_image (cairo_gl_surface_t *dst,
 
 	free (data_start_gles2);
 
+	/* for ctx->has_angle_multisample_and_blit, we should paint the
+	 * image from texture to renderbuffer
+	 */
+	if (ctx->has_angle_multisample_and_blit && dst->supports_msaa) {
+	    cairo_surface_pattern_t pattern;
+	    cairo_clip_t *clip;
+	    cairo_rectangle_int_t rect;
+
+	    _cairo_pattern_init_for_surface (&pattern, &dst->base);
+	    rect.x = dst_x;
+	    rect.y = dst_y;
+	    rect.width = width;
+	    rect.height = height;
+	    clip = _cairo_clip_intersect_rectangle (NULL, &rect);
+	    status = _cairo_surface_paint (&dst->base, CAIRO_OPERATOR_SOURCE,
+					   &pattern.base, clip);
+	    _cairo_clip_destroy (clip);
+	    _cairo_gl_composite_flush (ctx);
+	    _cairo_pattern_fini (&pattern.base);
+	    if (unlikely (status))
+		goto FAIL;
+	}
+
 	/* If we just treated some rgb-only data as rgba, then we have to
 	 * go back and fix up the alpha channel where we filled in this
 	 * texture data.
@@ -1179,14 +1206,12 @@ _cairo_gl_surface_finish (void *abstract_surface)
     if (surface->owns_tex)
 	glDeleteTextures (1, &surface->tex);
 
-#if CAIRO_HAS_GL_SURFACE
     if (surface->msaa_depth_stencil)
 	ctx->dispatch.DeleteRenderbuffers (1, &surface->msaa_depth_stencil);
     if (surface->msaa_fb)
 	ctx->dispatch.DeleteFramebuffers (1, &surface->msaa_fb);
     if (surface->msaa_rb)
 	ctx->dispatch.DeleteRenderbuffers (1, &surface->msaa_rb);
-#endif
 
     if (surface->image_node) {
         surface->image_node->node.pinned = FALSE;
@@ -1289,7 +1314,11 @@ _cairo_gl_surface_map_to_image (void      *abstract_surface,
      * fall back instead.
      */
     _cairo_gl_composite_flush (ctx);
-    _cairo_gl_context_set_destination (ctx, surface, FALSE);
+    status = _cairo_gl_surface_resolve_multisampling (surface);
+    if (unlikely (status)) {
+	cairo_surface_destroy (&image->base);
+	return _cairo_image_surface_create_in_error (status);
+    }
 
     flipped = ! _cairo_gl_surface_is_texture (surface);
     mesa_invert = flipped && ctx->has_mesa_pack_invert;
@@ -1462,7 +1491,8 @@ _cairo_gl_surface_resolve_multisampling (cairo_gl_surface_t *surface)
 	return CAIRO_INT_STATUS_SUCCESS;
 
     /* GLES surfaces do not need explicit resolution. */
-    if (((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES)
+    if (((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES &&
+	! ((cairo_gl_context_t *) surface->base.device)->has_angle_multisample_and_blit)
 	return CAIRO_INT_STATUS_SUCCESS;
 
     if (! _cairo_gl_surface_is_texture (surface))
@@ -1472,11 +1502,9 @@ _cairo_gl_surface_resolve_multisampling (cairo_gl_surface_t *surface)
     if (unlikely (status))
 	return status;
 
-    ctx->current_target = surface;
+    _cairo_gl_resolve_framebuffer (ctx, surface);
 
-#if CAIRO_HAS_GL_SURFACE
-    _cairo_gl_context_bind_framebuffer (ctx, surface, FALSE);
-#endif
+    ctx->current_target = surface;
 
     status = _cairo_gl_context_release (ctx, status);
     return status;

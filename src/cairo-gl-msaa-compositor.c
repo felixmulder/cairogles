@@ -713,6 +713,7 @@ query_surface_capabilities (cairo_gl_surface_t *surface)
     GLint samples, stencil_bits;
     cairo_gl_context_t *ctx;
     cairo_int_status_t status;
+    cairo_bool_t multisample = surface->msaa_active;
 
     /* Texture surfaces are create in such a way that they always
        have stencil and multisample bits if possible, so we don't
@@ -730,7 +731,10 @@ query_surface_capabilities (cairo_gl_surface_t *surface)
     if (unlikely (status))
 	return;
 
-    _cairo_gl_context_set_destination (ctx, surface, FALSE);
+    if (ctx->has_angle_multisample_and_blit)
+	multisample = TRUE;
+
+    _cairo_gl_context_set_destination (ctx, surface, multisample);
 
     glGetIntegerv(GL_SAMPLES, &samples);
     glGetIntegerv(GL_STENCIL_BITS, &stencil_bits);

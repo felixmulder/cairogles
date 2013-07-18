@@ -818,6 +818,7 @@ _cairo_gl_composite_begin (cairo_gl_composite_t *setup,
 {
     cairo_gl_context_t *ctx;
     cairo_status_t status;
+    cairo_bool_t multisampling = setup->multisample;
 
     assert (setup->dst);
 
@@ -825,7 +826,10 @@ _cairo_gl_composite_begin (cairo_gl_composite_t *setup,
     if (unlikely (status))
 	return status;
 
-    _cairo_gl_context_set_destination (ctx, setup->dst, setup->multisample);
+    if (ctx->has_angle_multisample_and_blit)
+	multisampling = TRUE;
+
+    _cairo_gl_context_set_destination (ctx, setup->dst, multisampling);
     if (ctx->states_cache.blend_enabled == FALSE) {
 	glEnable (GL_BLEND);
 	ctx->states_cache.blend_enabled = TRUE;

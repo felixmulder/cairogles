@@ -347,7 +347,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 
     if (unlikely (status))
 	goto FINISH;
-
+    
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
     cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,

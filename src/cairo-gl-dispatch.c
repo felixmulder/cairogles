@@ -219,6 +219,9 @@ _cairo_gl_dispatch_init_multisampling (cairo_gl_dispatch_t *dispatch,
 	    dispatch_name = CAIRO_GL_DISPATCH_NAME_EXT;
 	else if (_cairo_gl_has_extension ("GL_IMG_multisampled_render_to_texture"))
 	    dispatch_name = CAIRO_GL_DISPATCH_NAME_ES;
+	else if (_cairo_gl_has_extension ("GL_ANGLE_framebuffer_multisample") &&
+		 _cairo_gl_has_extension ("GL_ANGLE_framebuffer_blit"))
+	    dispatch_name = CAIRO_GL_DISPATCH_NAME_CORE;
     }
     _cairo_gl_dispatch_init_entries (dispatch, get_proc_addr,
 				     dispatch_multisampling_entries,
