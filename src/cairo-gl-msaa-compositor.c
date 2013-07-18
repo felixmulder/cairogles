@@ -383,11 +383,23 @@ _cairo_gl_msaa_compositor_mask_source_operator (const cairo_compositor_t *compos
     /* If we have a non-rectangular clip, we can avoid using the stencil buffer
      * for clipping and just draw the clip polygon. */
     if (clip) {
-	status = _clip_to_traps (clip, &traps);
+	cairo_rectangle_int_t rect, temp;
+	cairo_clip_t *clip_copy = _cairo_clip_copy (clip);
+	
+	_cairo_surface_get_extents (&dst->base, &rect);
+	_cairo_pattern_get_extents (composite->original_source_pattern, &temp);
+	_cairo_rectangle_intersect (&rect, &temp);
+	_cairo_pattern_get_extents (composite->original_mask_pattern, &temp);
+	_cairo_rectangle_intersect (&rect, &temp);
+	clip_copy = _cairo_clip_intersect_rectangle (clip_copy, &rect);
+
+	status = _clip_to_traps (clip_copy, &traps);
 	if (unlikely (status)) {
 	    _cairo_traps_fini (&traps);
+	    _cairo_clip_destroy (clip_copy);
 	    return status;
 	}
+	_cairo_clip_destroy (clip_copy);
     }
 
     status = _cairo_gl_composite_init (&setup,
@@ -554,8 +566,21 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
 
     if (! clip)
 	status = _draw_int_rect (ctx, &setup, &composite->bounded);
-    else
-	status = _cairo_gl_msaa_compositor_draw_clip (ctx, &setup, clip);
+    else {
+	cairo_rectangle_int_t rect, temp;
+	cairo_clip_t *clip_copy = _cairo_clip_copy (clip);
+	
+	_cairo_surface_get_extents (&dst->base, &rect);
+	_cairo_pattern_get_extents (composite->original_source_pattern, &temp);
+	_cairo_rectangle_intersect (&rect, &temp);
+	if (composite->original_mask_pattern) {
+	    _cairo_pattern_get_extents (composite->original_mask_pattern, &temp);
+	    _cairo_rectangle_intersect (&rect, &temp);
+	}
+	clip_copy = _cairo_clip_intersect_rectangle (clip_copy, &rect);
+	status = _cairo_gl_msaa_compositor_draw_clip (ctx, &setup, clip_copy);
+	_cairo_clip_destroy (clip_copy);
+    }
 
 finish:
     _cairo_gl_composite_fini (&setup);
