@@ -536,7 +536,7 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
 				       FALSE /* assume_component_alpha */);
     if (unlikely (status))
 	return status;
-
+long now = _tick ();
     status = _cairo_gl_composite_set_source (&setup,
 					     composite->original_source_pattern,
 					     &composite->source_sample_area,
@@ -544,7 +544,8 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
 					     FALSE, FALSE);
     if (unlikely (status))
 	goto finish;
-
+printf ("\tsource %ld\n", _tick () - now);
+now = _tick ();
     if (composite->original_mask_pattern != NULL) {
 	status = _cairo_gl_composite_set_mask (&setup,
 					       composite->original_mask_pattern,
@@ -554,6 +555,8 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
     }
     if (unlikely (status))
 	goto finish;
+printf ("\tmask %ld\n", _tick () - now);
+now = _tick ();
 
     /* We always use multisampling here, because we do not yet have the smarts
        to calculate when the clip or the source requires it. */
@@ -563,6 +566,8 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
     status = _cairo_gl_composite_begin (&setup, &ctx);
     if (unlikely (status))
 	goto finish;
+printf ("\tbegin %ld\n", _tick () - now);
+now = _tick ();
 
     if (! clip)
 	status = _draw_int_rect (ctx, &setup, &composite->bounded);
@@ -581,6 +586,8 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
 	status = _cairo_gl_msaa_compositor_draw_clip (ctx, &setup, clip_copy);
 	_cairo_clip_destroy (clip_copy);
     }
+printf ("\tdraw %ld\n", _tick () - now);
+now = _tick ();
 
 finish:
     _cairo_gl_composite_fini (&setup);

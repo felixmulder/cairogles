@@ -221,6 +221,7 @@ _cairo_gl_context_setup_operand (cairo_gl_context_t *ctx,
 
     /* XXX: we need to do setup when switching from shaders
      * to no shaders (or back) */
+long now = _tick ();
     needs_setup = vertex_size_changed;
     needs_setup |= _cairo_gl_operand_needs_setup (&ctx->operands[tex_unit],
                                                  operand,
@@ -230,7 +231,8 @@ _cairo_gl_context_setup_operand (cairo_gl_context_t *ctx,
         _cairo_gl_composite_flush (ctx);
         _cairo_gl_context_destroy_operand (ctx, tex_unit);
     }
-
+printf ("\t\t\tdestroy operand %ld\n", _tick () - now);
+now = _tick ();
     memcpy (&ctx->operands[tex_unit], operand, sizeof (cairo_gl_operand_t));
     ctx->operands[tex_unit].vertex_offset = vertex_offset;
 
@@ -258,18 +260,30 @@ _cairo_gl_context_setup_operand (cairo_gl_context_t *ctx,
 	    glActiveTexture (GL_TEXTURE0 + tex_unit);
 	    ctx->states_cache.active_texture = GL_TEXTURE0 + tex_unit;
         }
+printf ("\t\t\t\tactive texture %ld\n", _tick () - now);
+now = _tick ();
         glBindTexture (ctx->tex_target, operand->texture.tex);
+printf ("\t\t\t\tbind tex %ld\n", _tick () - now);
+now = _tick ();
         _cairo_gl_texture_set_extend (ctx, ctx->tex_target,
                                       operand->texture.attributes.extend,
                                       operand->texture.use_atlas);
+printf ("\t\t\t\textend %ld\n", _tick () - now);
+now = _tick ();
         _cairo_gl_texture_set_filter (ctx, ctx->tex_target,
                                       operand->texture.attributes.filter);
+printf ("\t\t\t\tfilter %ld\n", _tick () - now);
+now = _tick ();
 	if (! operand->texture.texgen) {
 	    dispatch->VertexAttribPointer (CAIRO_GL_TEXCOORD0_ATTRIB_INDEX + tex_unit, 2,
 					   GL_FLOAT, GL_FALSE, ctx->vertex_size,
 					   ctx->vb + offset);
+printf ("\t\t\t\ttex coord pointer %ld\n", _tick () - now);
+now = _tick ();
 	    dispatch->EnableVertexAttribArray (CAIRO_GL_TEXCOORD0_ATTRIB_INDEX + tex_unit);
 	    offset += 2 * sizeof (GLfloat);
+printf ("\t\t\t\tenable tex coord pointer %ld\n", _tick () - now);
+now = _tick ();
 	}
 
 	if (operand->texture.use_atlas) {
@@ -277,12 +291,20 @@ _cairo_gl_context_setup_operand (cairo_gl_context_t *ctx,
 					   2, GL_FLOAT, GL_FALSE,
 					   ctx->vertex_size,
 					   ctx->vb + offset);
+printf ("\t\t\t\tstart coord pointer %ld\n", _tick () - now);
+now = _tick ();
 	    dispatch->EnableVertexAttribArray (CAIRO_GL_START_COORD0_ATTRIB_INDEX + tex_unit);
+printf ("\t\t\t\tenable start coord pointer %ld\n", _tick () - now);
+now = _tick ();
 	    dispatch->VertexAttribPointer (CAIRO_GL_STOP_COORD0_ATTRIB_INDEX + tex_unit,
 					   2, GL_FLOAT, GL_FALSE,
 					   ctx->vertex_size,
 					   ctx->vb + offset + 2 * sizeof (float));
+printf ("\t\t\t\tstop coord pointer %ld\n", _tick () - now);
+now = _tick ();
 	    dispatch->EnableVertexAttribArray (CAIRO_GL_STOP_COORD0_ATTRIB_INDEX + tex_unit);
+printf ("\t\t\t\tenable stop coord pointer %ld\n", _tick () - now);
+now = _tick ();
 	}
         break;
     case CAIRO_GL_OPERAND_LINEAR_GRADIENT:
@@ -306,6 +328,7 @@ _cairo_gl_context_setup_operand (cairo_gl_context_t *ctx,
 	}
 	break;
     }
+printf ("\t\t\tvertex %ld\n", _tick () - now);
 }
 
 static void
@@ -821,24 +844,32 @@ _cairo_gl_composite_begin (cairo_gl_composite_t *setup,
     cairo_bool_t multisampling = setup->multisample;
 
     assert (setup->dst);
-
+long now = _tick ();
     status = _cairo_gl_context_acquire (setup->dst->base.device, &ctx);
     if (unlikely (status))
 	return status;
 
+printf ("\t\tacquire %ld\n", _tick () - now);
+now = _tick ();
     if (ctx->has_angle_multisample_and_blit)
 	multisampling = TRUE;
 
     _cairo_gl_context_set_destination (ctx, setup->dst, multisampling);
+printf ("\t\tdestination %ld\n", _tick () - now);
+now = _tick ();
     if (ctx->states_cache.blend_enabled == FALSE) {
 	glEnable (GL_BLEND);
 	ctx->states_cache.blend_enabled = TRUE;
     }
     _cairo_gl_set_operands_and_operator (setup, ctx);
+printf ("\t\toperand %ld\n", _tick () - now);
+now = _tick ();
 
     status = _cairo_gl_composite_setup_clipping (setup, ctx, ctx->vertex_size);
     if (unlikely (status))
 	goto FAIL;
+printf ("\t\tclip %ld\n", _tick () - now);
+now = _tick ();
 
     *ctx_out = ctx;
 

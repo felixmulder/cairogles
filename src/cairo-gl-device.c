@@ -928,22 +928,29 @@ _cairo_gl_context_set_destination (cairo_gl_context_t *ctx,
     changing_sampling = surface->msaa_active != multisampling;
     if (! changing_surface && ! changing_sampling)
 	return;
+long now = _tick ();
     if (! changing_surface) {
 	_cairo_gl_composite_flush (ctx);
 	_cairo_gl_context_bind_framebuffer (ctx, surface, multisampling);
+printf ("\t\t\tnot change surface %ld\n", _tick () - now);
 	return;
     }
 
     _cairo_gl_composite_flush (ctx);
-
+printf ("\t\t\tflush %ld\n", _tick () - now);
+now = _tick ();
     ctx->current_target = surface;
     surface->needs_update = FALSE;
 
     if (! _cairo_gl_surface_is_texture (surface)) {
 	ctx->make_current (ctx, surface);
+printf ("\t\t\tmakecurrent %ld\n", _tick () - now);
+now = _tick ();
     }
 
     _cairo_gl_context_bind_framebuffer (ctx, surface, multisampling);
+printf ("\t\t\tbind %ld\n", _tick () - now);
+now = _tick ();
 
     if (! _cairo_gl_surface_is_texture (surface)) {
 #if CAIRO_HAS_GL_SURFACE
@@ -953,6 +960,8 @@ _cairo_gl_context_set_destination (cairo_gl_context_t *ctx,
     }
 
     glDisable (GL_DITHER);
+printf ("\t\t\tdither %ld\n", _tick () - now);
+now = _tick ();
     if (ctx->states_cache.viewport_box.width != surface->width ||
 	ctx->states_cache.viewport_box.height != surface->height) {
 	glViewport (0, 0, surface->width, surface->height);
@@ -966,6 +975,8 @@ _cairo_gl_context_set_destination (cairo_gl_context_t *ctx,
     else
 	_gl_identity_ortho (ctx->modelviewprojection_matrix,
 			    0, surface->width, surface->height, 0);
+printf ("\t\t\tviewport %ld\n", _tick () - now);
+now = _tick ();
 }
 
 void

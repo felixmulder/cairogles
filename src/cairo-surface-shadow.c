@@ -47,6 +47,15 @@
 #include "cairo-list-inline.h"
 #include "cairo-device-private.h"
 
+#include <sys/time.h>
+static long
+_tick ()
+{
+    struct timeval now;
+    gettimeofday (&now, NULL);
+    return now.tv_sec * 1000000 + now.tv_usec;
+}
+
 static unsigned long
 _cairo_stroke_style_hash (unsigned long hash, 
 			  const cairo_stroke_style_t *style)
@@ -1049,9 +1058,11 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 
 	shadow_pattern = cairo_pattern_create_for_surface (shadow_cache->surface);
 	cairo_pattern_set_matrix (shadow_pattern, &m);
-
+printf ("--- cache mask ---\n");
+long now = _tick ();
 	status = _cairo_surface_mask (target, op, color_pattern, 
 				      shadow_pattern, clip);
+printf (" mask = %ld\n---- end ----\n\n", _tick () - now);
 	cairo_list_move (&shadow_cache->link, &device->shadow_caches);
 	goto FINISH;
     }

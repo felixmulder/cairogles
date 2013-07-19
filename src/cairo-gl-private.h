@@ -1161,4 +1161,12 @@ _cairo_gl_surface_is_scratch (cairo_gl_context_t *ctx,
 slim_hidden_proto (cairo_gl_surface_create);
 slim_hidden_proto (cairo_gl_surface_create_for_texture);
 
+#include <sys/time.h>
+static long
+_tick ()
+{
+    struct timeval now;
+    gettimeofday (&now, NULL);
+    return now.tv_sec * 1000000 + now.tv_usec;
+}
 #endif /* CAIRO_GL_PRIVATE_H */
