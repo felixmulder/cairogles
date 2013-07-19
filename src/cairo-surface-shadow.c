@@ -201,6 +201,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     cairo_bool_t          found = FALSE;
     unsigned long         size;
     cairo_surface_t	 *cache_surface = NULL;
+    cairo_bool_t          bounded;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
@@ -238,7 +239,8 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 							  source,
 							  clip,
 							  &shadow_source.base,
-							  &shadow_extents);
+							  &shadow_extents,
+							  &bounded);
  	if (unlikely (status))
 	    goto FINISH;
 
@@ -280,7 +282,8 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 						      source,
 						      clip,
 						      &shadow_source.base,
-						      &shadow_extents);
+						      &shadow_extents,
+						      &bounded);
     if (unlikely (status))
 	goto FINISH;
 
@@ -312,7 +315,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
 	goto FINISH;
 
-    if (device && shadow->enable_cache) {
+    if (device && shadow->enable_cache && bounded) {
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
@@ -357,7 +360,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
-    if (device && shadow->enable_cache) {
+    if (device && shadow->enable_cache && bounded) {
 	status = _cairo_surface_mask (cache_surface, CAIRO_OPERATOR_OVER,
 				      color_pattern, shadow_pattern, NULL);
 	if (unlikely (status))
@@ -454,6 +457,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     cairo_bool_t          found = FALSE;
     unsigned long         size;
     cairo_surface_t	 *cache_surface = NULL;
+    cairo_bool_t          bounded;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
@@ -493,7 +497,8 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 							  clip,
 							  &shadow_source.base,
 							  &shadow_mask.base,
-							  &shadow_extents);
+							  &shadow_extents,
+							  &bounded);
  	if (unlikely (status))
 	    goto FINISH;
 
@@ -537,7 +542,8 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 						     clip,
 						     &shadow_source.base,
 						     &shadow_mask.base,
-						     &shadow_extents);
+						     &shadow_extents,
+						     &bounded);
     if (unlikely (status))
 	goto FINISH;
 
@@ -569,7 +575,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
 	goto FINISH;
 
-    if (device && shadow->enable_cache) {
+    if (device && shadow->enable_cache && bounded) {
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
@@ -615,7 +621,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
-    if (device && shadow->enable_cache) {
+    if (device && shadow->enable_cache && bounded) {
 	status = _cairo_surface_mask (cache_surface, CAIRO_OPERATOR_OVER,
 				      color_pattern, shadow_pattern, NULL);
 	if (unlikely (status))

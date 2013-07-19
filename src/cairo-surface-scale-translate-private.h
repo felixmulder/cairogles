@@ -57,7 +57,8 @@ _cairo_surface_paint_get_offset_extents (cairo_surface_t *target,
 					 const cairo_pattern_t *source,
 					 const cairo_clip_t *clip,
 					 cairo_pattern_t *source_out,
-					 cairo_rectangle_int_t *extents);
+					 cairo_rectangle_int_t *extents,
+					 cairo_bool_t *bounded);
 
 cairo_private cairo_status_t
 _cairo_surface_scale_translate_mask (cairo_surface_t *target,
@@ -75,7 +76,8 @@ _cairo_surface_mask_get_offset_extents (cairo_surface_t *target,
 					 const cairo_clip_t *clip,
 					 cairo_pattern_t *source_out,
 					 cairo_pattern_t *mask_out,
-					 cairo_rectangle_int_t *extents);
+					 cairo_rectangle_int_t *extents,
+					 cairo_bool_t *bounded);
 
 cairo_private cairo_status_t
 _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,

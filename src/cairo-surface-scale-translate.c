@@ -112,7 +112,8 @@ _cairo_surface_paint_get_offset_extents (cairo_surface_t *target,
 					 const cairo_pattern_t *source,
 					 const cairo_clip_t *clip,
 					 cairo_pattern_t *source_out,
-					 cairo_rectangle_int_t *extents)
+					 cairo_rectangle_int_t *extents,
+					 cairo_bool_t *bounded)
 {
     cairo_matrix_t m;
     cairo_rectangle_int_t rect, temp;
@@ -134,10 +135,12 @@ _cairo_surface_paint_get_offset_extents (cairo_surface_t *target,
     _cairo_pattern_get_extents (source_out, &temp);
     _cairo_rectangle_intersect (&rect, &temp);
 
+    *bounded = TRUE;
+
     if (rect.width == _cairo_unbounded_rectangle.width ||
 	rect.height == _cairo_unbounded_rectangle.height) {
 	const cairo_rectangle_int_t *clip_extent = _cairo_clip_get_extents (clip);
-	
+	bounded = FALSE;
 	_cairo_rectangle_intersect (&rect, clip_extent);
 	if (rect.width == _cairo_unbounded_rectangle.width ||
 	    rect.height == _cairo_unbounded_rectangle.height)
@@ -203,7 +206,8 @@ _cairo_surface_mask_get_offset_extents (cairo_surface_t *target,
 					const cairo_clip_t *clip,
 					cairo_pattern_t *source_out,
 					cairo_pattern_t *mask_out,
-					cairo_rectangle_int_t *extents)
+					cairo_rectangle_int_t *extents,
+					cairo_bool_t *bounded)
 {
     cairo_matrix_t m;
     cairo_rectangle_int_t rect, temp;
@@ -229,10 +233,13 @@ _cairo_surface_mask_get_offset_extents (cairo_surface_t *target,
     _cairo_pattern_get_extents (mask_out, &temp);
     _cairo_rectangle_intersect (&rect, &temp);
 
+    *bounded = TRUE;
+
     if (rect.width == _cairo_unbounded_rectangle.width ||
 	rect.height == _cairo_unbounded_rectangle.height) {
 	const cairo_rectangle_int_t *clip_extent = _cairo_clip_get_extents (clip);
-	
+	bounded = FALSE;
+
 	_cairo_rectangle_intersect (&rect, clip_extent);
 	if (rect.width == _cairo_unbounded_rectangle.width ||
 	    rect.height == _cairo_unbounded_rectangle.height)
