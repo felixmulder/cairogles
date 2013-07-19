@@ -233,6 +233,18 @@ _cairo_image_surface_create_from_image (cairo_image_surface_t *other,
 					int x, int y, int width, int height,
 					int stride);
 
+cairo_private cairo_status_t
+_cairo_image_surface_shadow_cache_acquire (cairo_image_surface_t *surface);
+
+cairo_private void
+_cairo_image_surface_shadow_cache_release (cairo_image_surface_t *surface);
+
+cairo_private cairo_list_t *
+_cairo_image_surface_get_shadow_cache (cairo_image_surface_t *surface);
+
+cairo_private unsigned long *
+_cairo_image_surface_get_shadow_cache_size (cairo_image_surface_t *surface);
+
 CAIRO_END_DECLS
 
 #endif /* CAIRO_IMAGE_SURFACE_PRIVATE_H */

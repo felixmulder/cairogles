@@ -54,6 +54,7 @@
 #include "cairo-surface-snapshot-private.h"
 #include "cairo-surface-subsurface-private.h"
 #include "cairo-surface-shadow-private.h"
+#include "cairo-list-inline.h"
 
 /* Limit on the width / height of an image surface in pixels.  This is
  * mainly determined by coordinates of things sent to pixman at the
@@ -80,6 +81,101 @@
  *
  * Since: 1.8
  **/
+
+static cairo_list_t shadow_caches;
+static unsigned long shadow_caches_size = 0;
+static cairo_recursive_mutex_t shadow_caches_mutex;
+static unsigned shadow_caches_mutex_depth = 0;
+static cairo_atomic_int_t shadow_caches_ref_count = 0;
+
+static void
+_cairo_image_shadow_caches_init (void)
+{
+    _cairo_atomic_int_inc (&shadow_caches_ref_count);
+
+    if (shadow_caches_ref_count == 1)
+	cairo_list_init (&shadow_caches);
+
+    CAIRO_RECURSIVE_MUTEX_INIT (shadow_caches_mutex);
+}
+
+static void
+_cairo_image_shadow_caches_destroy (void)
+{
+    assert (shadow_caches_ref_count != 0);
+
+    if (! _cairo_atomic_int_dec_and_test (&shadow_caches_ref_count))
+	return;
+
+    if (shadow_caches_mutex_depth == 0) {
+	CAIRO_MUTEX_FINI (shadow_caches_mutex);
+
+	while (! cairo_list_is_empty (&shadow_caches)) {
+	    cairo_shadow_cache_t *shadow;
+
+	    shadow = cairo_list_first_entry (&shadow_caches,
+					     cairo_shadow_cache_t,
+					     link);
+	    cairo_list_del (&shadow->link);
+	    cairo_surface_destroy (shadow->surface);
+	    free (shadow);
+	}
+    }
+}
+
+cairo_status_t
+_cairo_image_surface_shadow_cache_acquire (cairo_image_surface_t *surface)
+{
+    if (! surface)
+	return CAIRO_STATUS_SURFACE_TYPE_MISMATCH;
+
+    if (unlikely (surface->base.status))
+	return surface->base.status;
+
+    CAIRO_MUTEX_LOCK (shadow_caches_mutex);
+    shadow_caches_mutex_depth++;
+
+    return CAIRO_STATUS_SUCCESS;
+}
+
+void
+_cairo_image_surface_shadow_cache_release (cairo_image_surface_t *surface)
+{
+    if (! surface)
+	return;
+
+    if (unlikely (surface->base.status))
+	return;
+
+    assert (shadow_caches_mutex_depth > 0);
+    shadow_caches_mutex_depth--;
+
+    CAIRO_MUTEX_UNLOCK (shadow_caches_mutex);
+}
+
+cairo_list_t *
+_cairo_image_surface_get_shadow_cache (cairo_image_surface_t *surface)
+{
+    if (! surface)
+	return NULL;
+
+    if (unlikely (surface->base.status))
+	return NULL;
+
+    return &shadow_caches;
+}
+
+unsigned long *
+_cairo_image_surface_get_shadow_cache_size (cairo_image_surface_t *surface)
+{
+    if (! surface)
+	return NULL;
+
+    if (unlikely (surface->base.status))
+	return NULL;
+
+    return &shadow_caches_size;
+}
 
 static cairo_bool_t
 _cairo_image_surface_is_size_valid (int width, int height)
@@ -166,6 +262,8 @@ _cairo_image_surface_init (cairo_image_surface_t *surface,
     surface->base.is_clear = surface->width == 0 || surface->height == 0;
 
     surface->compositor = _cairo_image_spans_compositor_get ();
+
+    _cairo_image_shadow_caches_init ();
 }
 
 cairo_surface_t *
@@ -847,6 +945,8 @@ _cairo_image_surface_finish (void *abstract_surface)
 	cairo_surface_destroy (surface->parent);
 	surface->parent = NULL;
     }
+
+    _cairo_image_shadow_caches_destroy ();
 
     return CAIRO_STATUS_SUCCESS;
 }
