@@ -61,6 +61,9 @@
  * moment being in 16.16 format. */
 #define MAX_IMAGE_SIZE 32767
 
+#define MAX_IMAGE_SHADOW_SIZE 256
+#define MIN_IMAGE_SHADOW_SIZE 32
+
 /**
  * SECTION:cairo-image
  * @Title: Image Surfaces
@@ -1196,6 +1199,43 @@ _cairo_image_surface_get_font_options (void                  *abstract_surface,
     _cairo_font_options_set_round_glyph_positions (options, CAIRO_ROUND_GLYPH_POS_ON);
 }
 
+static cairo_surface_t *
+_cairo_image_surface_shadow_surface (void *surface,
+				     int width, int height)
+{
+    int shadow_width, shadow_height;
+    cairo_image_surface_t *shadow_surface = NULL;
+
+    if (width < MIN_IMAGE_SHADOW_SIZE)
+	shadow_width = width;
+    else if (width < MIN_IMAGE_SHADOW_SIZE * 2)
+	shadow_width = MIN_IMAGE_SHADOW_SIZE;
+    else if (width > MAX_IMAGE_SHADOW_SIZE * 2)
+	shadow_width = MAX_IMAGE_SHADOW_SIZE;
+    else
+	shadow_width = width * 0.5;
+
+    if (height < MIN_IMAGE_SHADOW_SIZE)
+	shadow_height = width;
+    else if (height < MIN_IMAGE_SHADOW_SIZE * 2)
+	shadow_height = MIN_IMAGE_SHADOW_SIZE;
+    else if (height > MAX_IMAGE_SHADOW_SIZE * 2)
+	shadow_height = MAX_IMAGE_SHADOW_SIZE;
+    else
+	shadow_height = height * 0.5;
+
+    shadow_surface = (cairo_image_surface_t *)
+		cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+					    shadow_width,
+					    shadow_height);
+    if (unlikely (shadow_surface->base.status)) {
+	cairo_surface_destroy (&shadow_surface->base);
+	return NULL;
+    }
+
+    return cairo_surface_reference (&shadow_surface->base);
+}
+
 const cairo_surface_backend_t _cairo_image_surface_backend = {
     CAIRO_SURFACE_TYPE_IMAGE,
     _cairo_image_surface_finish,
@@ -1227,6 +1267,10 @@ const cairo_surface_backend_t _cairo_image_surface_backend = {
     _cairo_image_surface_fill,
     NULL, /* fill-stroke */
     _cairo_image_surface_glyphs,
+    NULL, /* has_text_glyphs */
+    NULL, /* show_text_glyphs */
+    NULL, /* get_supported_mime_types */
+    _cairo_image_surface_shadow_surface,
 };
 
 /* A convenience function for when one needs to coerce an image
