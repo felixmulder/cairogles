@@ -987,7 +987,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 						    &shadow_ctm,
 						    &shadow_ctm_inverse,
 						    tolerance,
-						    CAIRO_ANTIALIAS_NONE,
+						    antialias,
 						    NULL);
 
     if (unlikely (status))
@@ -1284,7 +1284,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 						  &shadow_path,
 						  fill_rule,
 						  tolerance,
-						  CAIRO_ANTIALIAS_NONE,
+						  antialias,
 						  NULL);
 
     if (unlikely (status))
