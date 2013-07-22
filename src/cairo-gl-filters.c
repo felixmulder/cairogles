@@ -335,8 +335,6 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 
         scratches[n]->needs_to_cache = FALSE;
 	scratches[n]->force_no_cache = TRUE;
-	scratches[n]->force_no_msaa = TRUE;
-        scratches[n]->supports_msaa = FALSE;
     }
 
     if (is_source)
