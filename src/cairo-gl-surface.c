@@ -63,7 +63,8 @@ static cairo_bool_t _cairo_surface_is_gl (cairo_surface_t *surface)
 
 static cairo_surface_t *
 _cairo_gl_surface_shadow_surface (void *surface,
-				  int width, int height)
+				  int width, int height,
+				  int *width_out, int *height_out)
 {
     int shadow_width, shadow_height;
     int shadow_size;
@@ -80,10 +81,8 @@ _cairo_gl_surface_shadow_surface (void *surface,
 	shadow_width = shadow_surface->width;
 	shadow_height = shadow_surface->height;
 
-	if ((shadow_width * 2 < width &&
-	     shadow_width * 2 < MAX_SCRATCH_SIZE) ||
-	    (shadow_height * 2 < height &&
-	     shadow_height * 2 < MAX_SCRATCH_SIZE)) {
+	if (shadow_width * 2 < width ||
+	    shadow_height * 2 < height) {
 	   cairo_surface_destroy (&shadow_surface->base);
 	   shadow_surface = NULL;
 	}
@@ -118,8 +117,17 @@ _cairo_gl_surface_shadow_surface (void *surface,
 
     ctx->shadow_scratch_surfaces[0] = shadow_surface;
 
+    shadow_size = shadow_surface->width;
+
     shadow_surface->needs_to_cache = FALSE;
     shadow_surface->force_no_cache = TRUE;
+
+    *width_out = width;
+    *height_out = height;
+    while (*width_out > shadow_size || *height_out > shadow_size) {
+	*width_out *= 0.5;
+	*height_out *= 0.5;
+    }
 
     return cairo_surface_reference (&shadow_surface->base);
 }

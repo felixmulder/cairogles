@@ -187,6 +187,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     cairo_rectangle_int_t shadow_surface_extents;
 
     int shadow_width, shadow_height;
+    int width_out, height_out;
     int x_blur, y_blur;
     cairo_shadow_t       shadow_copy = *shadow;
 
@@ -329,7 +330,9 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if (target->backend->get_shadow_surface)
 	shadow_surface = target->backend->get_shadow_surface (target,
 						      shadow_width,
-						      shadow_height);
+						      shadow_height,
+						      &width_out,
+						      &height_out);
     else {
 	int scaled_width = MAX (shadow_width, MAX_SHADOW_SIZE);
 	int scaled_height = MAX (shadow_height, MAX_SHADOW_SIZE);
@@ -341,12 +344,15 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 						       content,
 						       scaled_width,
 						       scaled_height);
+	width_out = scaled_width;
+	height_out = scaled_height;
     }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
 
-    if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
-	goto FINISH;
+    shadow_surface_extents.x = shadow_surface_extents.y = 0;
+    shadow_surface_extents.width = width_out;
+    shadow_surface_extents.height = height_out;
 
     if ((device || locked) && shadow->enable_cache && bounded) {
 	content = cairo_surface_get_content (target);
@@ -362,9 +368,6 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 	if (device)
 	    _cairo_surface_release_device_reference (cache_surface);
     }
-
-    if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
-	goto FINISH;
 
     x_scale = (double) shadow_surface_extents.width / (double) shadow_width;
     y_scale = (double) shadow_surface_extents.height / (double) shadow_height;
@@ -480,6 +483,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     cairo_content_t       content;
 
     int shadow_width, shadow_height;
+    int width_out, height_out;
     int x_blur, y_blur;
     cairo_shadow_t       shadow_copy = *shadow;
 
@@ -625,7 +629,9 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     if (target->backend->get_shadow_surface)
 	shadow_surface = target->backend->get_shadow_surface (target,
 						      shadow_width,
-						      shadow_height);
+						      shadow_height,
+						      &width_out,
+						      &height_out);
     else {
 	int scaled_width = MAX (shadow_width, MAX_SHADOW_SIZE);
 	int scaled_height = MAX (shadow_width, MAX_SHADOW_SIZE);
@@ -638,12 +644,15 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 						       content,
 						       scaled_width,
 						       scaled_height);
+	width_out = scaled_width;
+	height_out = scaled_height;
     }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
 
-    if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
-	goto FINISH;
+    shadow_surface_extents.x = shadow_surface_extents.y = 0;
+    shadow_surface_extents.width = width_out;
+    shadow_surface_extents.height = height_out;
 
     if ((locked || device) && shadow->enable_cache && bounded) {
 	content = cairo_surface_get_content (target);
@@ -659,9 +668,6 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 	if (device)
 	    _cairo_surface_release_device_reference (cache_surface);
     }
-
-    if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
-	goto FINISH;
 
     x_scale = (double) shadow_surface_extents.width / (double) shadow_width;
     y_scale = (double) shadow_surface_extents.height / (double) shadow_height;
@@ -783,6 +789,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     cairo_content_t       content;
 
     int shadow_width, shadow_height;
+    int width_out, height_out;
     int x_blur, y_blur;
     cairo_shadow_t       shadow_copy = *shadow;
 
@@ -933,7 +940,9 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     if (target->backend->get_shadow_surface)
 	shadow_surface = target->backend->get_shadow_surface (target,
 						      shadow_width,
-						      shadow_height);
+						      shadow_height,
+						      &width_out,
+						      &height_out);
     else {
 	int scaled_width = MAX (shadow_width, MAX_SHADOW_SIZE);
 	int scaled_height = MAX (shadow_width, MAX_SHADOW_SIZE);
@@ -945,12 +954,15 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 						       content,
 						       scaled_width,
 						       scaled_height);
+	width_out = scaled_width;
+	height_out = scaled_height;
     }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
 
-    if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
-	goto FINISH;
+    shadow_surface_extents.x = shadow_surface_extents.y = 0;
+    shadow_surface_extents.width = width_out;
+    shadow_surface_extents.height = height_out;
 
     if ((locked || device) && shadow->enable_cache) {
 	content = cairo_surface_get_content (target);
@@ -1092,6 +1104,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     cairo_content_t       content;
 
     int shadow_width, shadow_height;
+    int width_out, height_out;
     int x_blur, y_blur;
     cairo_shadow_t       shadow_copy = *shadow;
 
@@ -1233,7 +1246,9 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     if (target->backend->get_shadow_surface)
 	shadow_surface = target->backend->get_shadow_surface (target,
 						      shadow_width,
-						      shadow_height);
+						      shadow_height,
+						      &width_out,
+						      &height_out);
     else {
 	int scaled_width = MAX (shadow_width, MAX_SHADOW_SIZE);
 	int scaled_height = MAX (shadow_width, MAX_SHADOW_SIZE);
@@ -1245,12 +1260,16 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 						       content,
 						       scaled_width,
 						       scaled_height);
+	width_out = scaled_width;
+	height_out = scaled_height;
     }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
 
-    if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
-	goto FINISH;
+    shadow_surface_extents.x = shadow_surface_extents.y = 0;
+    shadow_surface_extents.width = width_out;
+    shadow_surface_extents.height = height_out;
+
     if ((locked || device) && shadow->enable_cache) {
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)

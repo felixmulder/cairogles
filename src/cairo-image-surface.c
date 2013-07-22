@@ -1201,7 +1201,8 @@ _cairo_image_surface_get_font_options (void                  *abstract_surface,
 
 static cairo_surface_t *
 _cairo_image_surface_shadow_surface (void *surface,
-				     int width, int height)
+				     int width, int height,
+				     int *width_out, int *height_out)
 {
     int shadow_width, shadow_height;
     cairo_image_surface_t *shadow_surface = NULL;
@@ -1232,7 +1233,8 @@ _cairo_image_surface_shadow_surface (void *surface,
 	cairo_surface_destroy (&shadow_surface->base);
 	return NULL;
     }
-
+    *width_out = shadow_width;
+    *height_out = shadow_height;
     return cairo_surface_reference (&shadow_surface->base);
 }
 
