@@ -114,7 +114,7 @@ _cairo_path_fixed_rel_hash (unsigned long hash, const cairo_path_fixed_t *path)
 static unsigned long
 _cairo_shadow_hash (unsigned long hash, const cairo_shadow_t *shadow)
 {
-    return _cairo_hash_bytes (hash, shadow, sizeof (cairo_shadow_t));
+    return _cairo_hash_bytes (hash, shadow, sizeof (cairo_shadow_t) - sizeof (cairo_bool_t));
 }
 
 static unsigned long
@@ -209,6 +209,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     cairo_bool_t          locked = FALSE;
     cairo_list_t	 *shadow_caches = NULL;
     unsigned long	 *shadow_caches_size = 0;
+    cairo_bool_t          draw_shadow_only = source->shadow.draw_shadow_only;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
@@ -299,6 +300,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     }
 
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
     x_blur = ceil (shadow_copy.x_sigma * 2);
     y_blur = ceil (shadow_copy.y_sigma * 2);
@@ -461,6 +463,7 @@ FINISH:
     if (locked)
 	_cairo_image_surface_shadow_cache_release ((cairo_image_surface_t *)target);
 
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     return status;
 }
 
@@ -504,6 +507,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     cairo_bool_t          locked = FALSE;
     cairo_list_t	 *shadow_caches = NULL;
     unsigned long        *shadow_caches_size = 0;
+    cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
@@ -596,6 +600,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     }
 
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
     x_blur = ceil (shadow_copy.x_sigma * 2);
     y_blur = ceil (shadow_copy.y_sigma * 2);
@@ -761,6 +766,7 @@ FINISH:
     if (locked)
 	_cairo_image_surface_shadow_cache_release ((cairo_image_surface_t *)target);
 
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     return status;
 }
 
@@ -808,6 +814,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     cairo_bool_t          locked = FALSE;
     cairo_list_t	 *shadow_caches = NULL;
     unsigned long        *shadow_caches_size = 0;
+    cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
@@ -904,6 +911,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     }
 
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
     x_blur = ceil (shadow_copy.x_sigma * 2);
     y_blur = ceil (shadow_copy.y_sigma * 2);
@@ -1079,6 +1087,7 @@ FINISH:
     if (locked)
 	_cairo_image_surface_shadow_cache_release ((cairo_image_surface_t *)target);
 
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     return status;
 }
 
@@ -1123,6 +1132,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     cairo_bool_t          locked = FALSE;
     cairo_list_t	 *shadow_caches = NULL;
     unsigned long        *shadow_caches_size = 0;
+    cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
@@ -1169,6 +1179,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 	}
     }
 
+
     if (found) {
 	/* paint the shadow surface to target */
  	color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
@@ -1214,6 +1225,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     }
 
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
  
     color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
 					       shadow_copy.color.green,
@@ -1382,6 +1394,7 @@ FINISH:
 
     if (locked)
 	_cairo_image_surface_shadow_cache_release ((cairo_image_surface_t *)target);
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
 
     return status;
 }
@@ -1414,6 +1427,7 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
     cairo_matrix_t 	  m;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
+    cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
@@ -1426,6 +1440,7 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 	return CAIRO_STATUS_SUCCESS;
 
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
     x_blur = ceil (shadow_copy.x_sigma * 2);
     y_blur = ceil (shadow_copy.y_sigma * 2);
@@ -1567,5 +1582,6 @@ FINISH:
     cairo_surface_destroy (shadow_surface);
     cairo_surface_destroy (blur_surface);
 
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     return status;
 }

@@ -185,6 +185,8 @@ struct _cairo_backend {
     cairo_status_t (*set_shadow_sigma) (void *cr,
 					double x_sigma,
 					double y_sigma);
+    void       (*set_draw_shadow_only) (void *cr,
+					cairo_bool_t draw_shadow_only);
     void	   (*shadow_enable_cache) (void *cr, cairo_bool_t enable);
 };
 

@@ -402,6 +402,10 @@ _cairo_gstate_set_shadow_sigma (cairo_gstate_t *gstate, double x_sigma,
 				double y_sigma);
 
 cairo_private void
+_cairo_gstate_set_draw_shadow_only (cairo_gstate_t *gstate,
+				    cairo_bool_t draw_shadow_only);
+
+cairo_private void
 _cairo_gstate_shadow_enable_cache (cairo_gstate_t *gstate, cairo_bool_t enable);
 
 #endif /* CAIRO_GSTATE_PRIVATE_H */

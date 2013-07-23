@@ -4098,6 +4098,16 @@ cairo_set_shadow_sigma (cairo_t *cr, double x_sigma, double y_sigma)
 slim_hidden_def (cairo_set_shadow_sigma);
 
 void
+cairo_set_draw_shadow_only (cairo_t *cr, cairo_bool_t draw_shadow_only)
+{
+    if (unlikely (cr->status))
+	return;
+
+    cr->backend->set_draw_shadow_only (cr, draw_shadow_only);
+}
+slim_hidden_def (cairo_set_draw_shadow_only);
+
+void
 cairo_shadow_enable_cache (cairo_t *cr, cairo_bool_t enable)
 {
     if (unlikely (cr->status))

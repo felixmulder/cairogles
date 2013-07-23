@@ -1516,6 +1516,15 @@ _cairo_gl_surface_paint (void			*surface,
 	return status;
     }
 
+    if (source->shadow.draw_shadow_only) {
+	if (likely (status))
+	    dst->content_changed = TRUE;
+ 
+	ctx->source_scratch_in_use = FALSE;
+	cairo_device_release (dst->base.device);
+	return status;
+    }
+
     /* simplify the common case of clearing the surface */
     if (clip == NULL) {
         if (op == CAIRO_OPERATOR_CLEAR) {
@@ -1566,6 +1575,15 @@ _cairo_gl_surface_mask (void			 *surface,
 	return status;
     }
 
+    if (source->shadow.draw_shadow_only) {
+	if (likely (status))
+	    dst->content_changed = TRUE;
+ 
+	ctx->source_scratch_in_use = FALSE;
+	cairo_device_release (dst->base.device);
+	return status;
+    }
+
     status = _cairo_compositor_mask (get_compositor (surface), surface,
 				     op, source, mask, clip);
     if (likely (status))
@@ -1607,6 +1625,14 @@ _cairo_gl_surface_stroke (void			        *surface,
 	return status;
     }
 
+    if (source->shadow.draw_shadow_only) {
+	if (likely (status))
+	    dst->content_changed = TRUE;
+ 
+	ctx->source_scratch_in_use = FALSE;
+	cairo_device_release (dst->base.device);
+	return status;
+    }
 
     status = _cairo_compositor_stroke (get_compositor (surface), surface,
 				       op, source, path, style,
@@ -1645,6 +1671,15 @@ _cairo_gl_surface_fill (void			*surface,
     ctx->source_scratch_in_use = FALSE;
     if (unlikely (status)) {
  	cairo_device_release (dst->base.device);
+	return status;
+    }
+
+    if (source->shadow.draw_shadow_only) {
+	if (likely (status))
+	    dst->content_changed = TRUE;
+ 
+	ctx->source_scratch_in_use = FALSE;
+	cairo_device_release (dst->base.device);
 	return status;
     }
 
@@ -1689,6 +1724,14 @@ _cairo_gl_surface_glyphs (void			*surface,
 	return status;
     }
 
+    if (source->shadow.draw_shadow_only) {
+	if (likely (status))
+	    dst->content_changed = TRUE;
+ 
+	ctx->source_scratch_in_use = FALSE;
+	cairo_device_release (dst->base.device);
+	return status;
+    }
 
     status = _cairo_compositor_glyphs (get_compositor (surface), surface,
 				       op, source, glyphs, num_glyphs,

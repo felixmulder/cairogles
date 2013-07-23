@@ -1356,6 +1356,15 @@ _cairo_default_context_set_shadow_sigma (void *abstract_cr,
 }
 
 static void
+_cairo_default_context_set_draw_shadow_only (void *abstract_cr,
+					     cairo_bool_t draw_shadow_only)
+{
+    cairo_default_context_t *cr = abstract_cr;
+
+    _cairo_gstate_set_draw_shadow_only (cr->gstate, draw_shadow_only);
+}
+
+static void
 _cairo_default_context_shadow_enable_cache (void	*abstract_cr,
 					    cairo_bool_t enable)
 {
@@ -1487,6 +1496,7 @@ static const cairo_backend_t _cairo_default_context_backend = {
     _cairo_default_context_set_shadow_offset,
     _cairo_default_context_set_shadow_rgba,
     _cairo_default_context_set_shadow_sigma,
+    _cairo_default_context_set_draw_shadow_only,
     _cairo_default_context_shadow_enable_cache,
 };
 

@@ -433,6 +433,7 @@ typedef struct _cairo_shadow {
     double	y_sigma;
     cairo_color_t color;
     cairo_bool_t  enable_cache;
+    cairo_bool_t draw_shadow_only;
 } cairo_shadow_t;
 
 typedef struct _cairo_shadow_cache {
