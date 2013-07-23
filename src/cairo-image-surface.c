@@ -1259,7 +1259,8 @@ _cairo_image_surface_shadow_surface (void *surface,
     }
     *width_out = shadow_width;
     *height_out = shadow_height;
-    return cairo_surface_reference (&shadow_surface->base);
+
+    return &shadow_surface->base;
 }
 
 const cairo_surface_backend_t _cairo_image_surface_backend = {
