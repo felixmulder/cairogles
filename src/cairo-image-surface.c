@@ -1241,7 +1241,7 @@ _cairo_image_surface_shadow_surface (void *surface,
 	shadow_width = width * 0.5;
 
     if (height < MIN_IMAGE_SHADOW_SIZE)
-	shadow_height = width;
+	shadow_height = height;
     else if (height < MIN_IMAGE_SHADOW_SIZE * 2)
 	shadow_height = MIN_IMAGE_SHADOW_SIZE;
     else if (height > MAX_IMAGE_SHADOW_SIZE * 2)
@@ -1257,6 +1257,7 @@ _cairo_image_surface_shadow_surface (void *surface,
 	cairo_surface_destroy (&shadow_surface->base);
 	return NULL;
     }
+
     *width_out = shadow_width;
     *height_out = shadow_height;
 
