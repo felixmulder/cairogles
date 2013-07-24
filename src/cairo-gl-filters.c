@@ -124,7 +124,7 @@ gaussian_filter_stage_1 (cairo_bool_t x_axis,
 
     src->blur_stage = CAIRO_GL_BLUR_STAGE_1;
     _cairo_pattern_init_for_surface (pattern, &src->base);
-    pattern->base.filter = CAIRO_FILTER_NEAREST;
+    pattern->base.filter = CAIRO_FILTER_GOOD;
 
     if (x_axis) {
 	src->operand.type = CAIRO_GL_OPERAND_GAUSSIAN;
@@ -136,6 +136,7 @@ gaussian_filter_stage_1 (cairo_bool_t x_axis,
 
 	if (src->operand.texture.coef)
 	    free (src->operand.texture.coef);
+
 	src->operand.texture.x_radius = original_pattern->base.x_radius;
 	src->operand.texture.y_radius = 1;
 	src->operand.texture.coef = coef;
@@ -150,6 +151,7 @@ gaussian_filter_stage_1 (cairo_bool_t x_axis,
 
 	if (src->operand.texture.coef)
 	    free (src->operand.texture.coef);
+
 	src->operand.texture.y_radius = original_pattern->base.y_radius;
 	src->operand.texture.x_radius = 1;
 	src->operand.texture.coef = coef;
