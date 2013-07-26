@@ -253,6 +253,7 @@ _cairo_surface_mask_get_offset_extents (cairo_surface_t *target,
 
 cairo_status_t
 _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
+				       const cairo_color_t *bg_color,
 				       const cairo_matrix_t *matrix,
 				       cairo_operator_t		 op,
 				       cairo_pattern_t	*source,
@@ -308,7 +309,7 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
 	}
     }
 
-    clear_pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
+    clear_pattern = _cairo_pattern_create_solid (bg_color);
     status = _cairo_surface_paint (surface, CAIRO_OPERATOR_SOURCE,
 				   clear_pattern, dev_clip);
     cairo_pattern_destroy (clear_pattern);
