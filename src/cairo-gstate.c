@@ -1016,6 +1016,9 @@ _reduce_op (cairo_gstate_t *gstate)
     if (op != CAIRO_OPERATOR_SOURCE)
 	return op;
 
+    if (gstate->shadow.type != CAIRO_SHADOW_NONE)
+	return op;
+
     pattern = gstate->source;
     if (pattern->type == CAIRO_PATTERN_TYPE_SOLID) {
 	const cairo_solid_pattern_t *solid = (cairo_solid_pattern_t *) pattern;
