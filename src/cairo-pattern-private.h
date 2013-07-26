@@ -381,7 +381,8 @@ _cairo_pattern_create_gaussian_matrix (cairo_pattern_t *pattern,
 
 unsigned long
 _cairo_pattern_hash_with_hash (unsigned long hash,
-			       const cairo_pattern_t *pattern);
+			       const cairo_pattern_t *pattern,
+			       const cairo_bool_t use_color);
 
 cairo_private void
 _cairo_debug_print_pattern (FILE *file, const cairo_pattern_t *pattern);

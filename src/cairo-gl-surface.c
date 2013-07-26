@@ -1659,6 +1659,7 @@ _cairo_gl_surface_fill (void			*surface,
     cairo_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
     cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
+    cairo_shadow_type_t shadow_type = source->shadow.type;
 
     status = cairo_device_acquire (dst->base.device);
     if (unlikely (status))
@@ -1674,7 +1675,8 @@ _cairo_gl_surface_fill (void			*surface,
 	return status;
     }
 
-    if (source->shadow.draw_shadow_only) {
+    if (shadow_type == CAIRO_SHADOW_INSET ||
+	source->shadow.draw_shadow_only) {
 	if (likely (status))
 	    dst->content_changed = TRUE;
  

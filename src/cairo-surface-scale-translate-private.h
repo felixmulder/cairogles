@@ -109,6 +109,7 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
 
 cairo_private cairo_status_t
 _cairo_surface_scale_translate_fill (cairo_surface_t	*surface,
+				     const cairo_color_t      *bg_color,
 				     const cairo_matrix_t *matrix,
 				     cairo_operator_t	 op,
 				     cairo_pattern_t    *source,

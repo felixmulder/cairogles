@@ -4812,7 +4812,8 @@ _cairo_solid_pattern_alpha_hash (unsigned long hash,
 
 unsigned long
 _cairo_pattern_hash_with_hash (unsigned long hash,
-			       const cairo_pattern_t *pattern)
+			       const cairo_pattern_t *pattern,
+			       const cairo_bool_t use_color)
 {
     if (pattern->status)
 	return hash;
@@ -4834,7 +4835,10 @@ _cairo_pattern_hash_with_hash (unsigned long hash,
 
     switch (pattern->type) {
     case CAIRO_PATTERN_TYPE_SOLID:
-	return _cairo_solid_pattern_alpha_hash (hash, (cairo_solid_pattern_t *) pattern);
+	if (use_color)
+	    return _cairo_solid_pattern_hash (hash, (cairo_solid_pattern_t *) pattern);
+	else
+	    return _cairo_solid_pattern_alpha_hash (hash, (cairo_solid_pattern_t *) pattern);
     case CAIRO_PATTERN_TYPE_LINEAR:
 	return _cairo_linear_pattern_hash (hash, (cairo_linear_pattern_t *) pattern);
     case CAIRO_PATTERN_TYPE_RADIAL:
