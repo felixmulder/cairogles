@@ -213,6 +213,16 @@ struct _cairo_surface_backend {
 				  int		 width,
 				  int		 height,
 				  cairo_bool_t   for_source);
+
+    cairo_surface_t *
+    (*get_shadow_mask_surface) 	(void	*surface,
+				 int	 width,
+				 int	 height);
+
+    cairo_surface_t *
+    (*get_glyph_shadow_mask_surface)  (void		*surface,
+				       int		 width,
+				       int		 height);
 };
 
 cairo_private cairo_status_t

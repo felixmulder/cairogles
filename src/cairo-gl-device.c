@@ -185,6 +185,11 @@ _gl_destroy (void *device)
     if (ctx->shadow_scratch_surfaces[2])
 	cairo_surface_destroy (&ctx->shadow_scratch_surfaces[2]->base);
 
+    for (n = 0; n < 2; n++) {
+	if (ctx->shadow_masks[n])
+	    cairo_surface_destroy (&ctx->shadow_masks[n]->base);
+    }
+
     while (! cairo_list_is_empty (&ctx->fonts)) {
 	cairo_gl_font_t *font;
 
@@ -388,6 +393,9 @@ _cairo_gl_context_init (cairo_gl_context_t *ctx)
 	ctx->mask_scratch_surfaces[n] = NULL;
 	ctx->shadow_scratch_surfaces[n] = NULL;
     }
+
+    ctx->shadow_masks[0] = ctx->shadow_masks[1] = NULL;
+
     ctx->source_scratch_in_use = FALSE;
 
     _cairo_gl_context_reset (ctx);

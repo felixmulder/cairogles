@@ -487,6 +487,7 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
 
 cairo_status_t
 _cairo_surface_translate_glyphs (cairo_surface_t 	*surface,
+				 const cairo_color_t    *bg_color,
 		 		 const cairo_matrix_t 	*matrix,
 				 cairo_operator_t	 op,
 				 cairo_pattern_t	*source,
@@ -500,6 +501,7 @@ _cairo_surface_translate_glyphs (cairo_surface_t 	*surface,
     cairo_glyph_t *dev_glyphs = glyphs;
     cairo_pattern_t *clear_pattern;
     int i;
+    cairo_matrix_t inverse_matrix;
 
     if (unlikely (surface->status))
 	return surface->status;
@@ -507,13 +509,16 @@ _cairo_surface_translate_glyphs (cairo_surface_t 	*surface,
     if (_cairo_clip_is_all_clipped (clip))
 	return CAIRO_STATUS_SUCCESS;
 
-    if (! _cairo_matrix_is_identity (matrix)) {
-	cairo_matrix_t m;
+    inverse_matrix = *matrix;
+    status = cairo_matrix_invert (&inverse_matrix);
+    if (unlikely (status))
+	return status;
 
+    if (! _cairo_matrix_is_identity (matrix)) {
 	dev_clip = _cairo_clip_copy_with_translation (clip, matrix->x0, 
 						      matrix->y0);
 
-        _transformed_pattern (source, &m);
+        _transformed_pattern (source, matrix);
 
 	for (i = 0; i < num_glyphs; i++) {
 	    dev_glyphs[i].x += matrix->x0;
@@ -521,7 +526,7 @@ _cairo_surface_translate_glyphs (cairo_surface_t 	*surface,
 	}
     }
 
-    clear_pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
+    clear_pattern = _cairo_pattern_create_solid (bg_color);
     status = _cairo_surface_paint (surface, CAIRO_OPERATOR_SOURCE,
 				   clear_pattern, NULL);
     cairo_pattern_destroy (clear_pattern);
@@ -536,6 +541,7 @@ _cairo_surface_translate_glyphs (cairo_surface_t 	*surface,
     if (dev_clip != clip)
 	_cairo_clip_destroy (dev_clip);
 
+    _transformed_pattern (source, &inverse_matrix);
     return status;
 }
 

@@ -133,6 +133,48 @@ _cairo_gl_surface_shadow_surface (void *surface,
 }
 
 static cairo_surface_t *
+_cairo_gl_surface_shadow_mask_surface (void *surface,
+				       int width, int height)
+{
+    cairo_gl_surface_t *mask_surface = NULL;
+
+    cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
+    cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
+    if (ctx == NULL)
+	return NULL;
+
+    mask_surface = ctx->shadow_masks[0];
+
+    if (mask_surface) {
+	if (mask_surface->width != width ||
+	    mask_surface->height != height) {
+	    cairo_surface_destroy (&mask_surface->base);
+	    mask_surface = NULL;
+	    ctx->shadow_masks[0] = NULL;
+	}
+    }
+
+    if (! mask_surface) {
+	mask_surface = (cairo_gl_surface_t *)
+		_cairo_gl_surface_create_scratch (ctx,
+						  CAIRO_CONTENT_ALPHA,
+						  width,
+						  height);
+	if (unlikely (mask_surface->base.status)) {
+	    cairo_surface_destroy (&mask_surface->base);
+	    return NULL;
+	}
+    }
+
+    ctx->shadow_masks[0] = mask_surface;
+
+    mask_surface->needs_to_cache = FALSE;
+    mask_surface->force_no_cache = TRUE;
+
+    return cairo_surface_reference (&mask_surface->base);
+}
+
+static cairo_surface_t *
 _cairo_gl_surface_glyph_shadow_surface (void *surface,
 					int width, int height,
 					cairo_bool_t for_source)
@@ -181,6 +223,48 @@ _cairo_gl_surface_glyph_shadow_surface (void *surface,
     shadow_surface->force_no_cache = TRUE;
 
     return cairo_surface_reference (&shadow_surface->base);
+}
+
+static cairo_surface_t *
+_cairo_gl_surface_glyph_shadow_mask_surface (void *surface,
+					     int width, int height)
+{
+    cairo_gl_surface_t *mask_surface = NULL;
+
+    cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
+    cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
+    if (ctx == NULL)
+	return NULL;
+
+    mask_surface = ctx->shadow_masks[1];
+   
+    if (mask_surface) {
+	if (mask_surface->width != width ||
+	    mask_surface->height != height) { 
+	    cairo_surface_destroy (&mask_surface->base);
+	    mask_surface = NULL;
+	    ctx->shadow_masks[1] = NULL;
+	}
+    }
+
+    if (! mask_surface) {
+	mask_surface = (cairo_gl_surface_t *)
+		_cairo_gl_surface_create_scratch (ctx,
+						  CAIRO_CONTENT_ALPHA,
+						  width,
+						  height);
+	if (unlikely (mask_surface->base.status)) {
+	    cairo_surface_destroy (&mask_surface->base);
+	    return NULL;
+	}
+    }
+
+    ctx->shadow_masks[1] = mask_surface;
+
+    mask_surface->needs_to_cache = FALSE;
+    mask_surface->force_no_cache = TRUE;
+
+    return cairo_surface_reference (&mask_surface->base);
 }
 
 static cairo_bool_t
@@ -1712,6 +1796,7 @@ _cairo_gl_surface_glyphs (void			*surface,
     cairo_int_status_t status;
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *)surface;
     cairo_gl_context_t *ctx = (cairo_gl_context_t *)dst->base.device;
+    cairo_shadow_type_t shadow_type = source->shadow.type;
 
     status = cairo_device_acquire (dst->base.device);
     if (unlikely (status))
@@ -1728,7 +1813,8 @@ _cairo_gl_surface_glyphs (void			*surface,
 	return status;
     }
 
-    if (source->shadow.draw_shadow_only) {
+    if (shadow_type == CAIRO_SHADOW_INSET ||
+	source->shadow.draw_shadow_only) {
 	if (likely (status))
 	    dst->content_changed = TRUE;
  
@@ -1784,6 +1870,8 @@ static const cairo_surface_backend_t _cairo_gl_surface_backend = {
     NULL, /* get_supported_mime_types */
     _cairo_gl_surface_shadow_surface,
     _cairo_gl_surface_glyph_shadow_surface,
+    _cairo_gl_surface_shadow_mask_surface,
+    _cairo_gl_surface_glyph_shadow_mask_surface,
 };
 
 cairo_status_t

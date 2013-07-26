@@ -2033,6 +2033,173 @@ FINISH:
     return status;
 }
 
+static cairo_status_t
+_cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
+				    cairo_operator_t		op,
+				    const cairo_pattern_t	*source,
+				    cairo_scaled_font_t		*scaled_font,
+				    cairo_glyph_t		*glyphs,
+				    int			 	num_glyphs,
+				    const cairo_clip_t		*clip,
+				    const cairo_shadow_t	*shadow)
+{
+    cairo_status_t	  status;
+    cairo_pattern_union_t shadow_source;
+    cairo_rectangle_int_t shadow_extents;
+    cairo_pattern_t 	 *shadow_pattern = NULL;
+    cairo_pattern_t	 *color_pattern;
+    cairo_surface_t	 *shadow_surface = NULL;
+    cairo_surface_t      *mask_surface = NULL;
+    cairo_rectangle_int_t shadow_surface_extents;
+    cairo_glyph_t        *shadow_glyphs;
+    cairo_content_t       content; 
+    cairo_color_t          bg_color;
+
+    int shadow_width, shadow_height;
+    int x_blur, y_blur;
+    cairo_shadow_t       shadow_copy = *shadow;
+
+    cairo_matrix_t 	  m;
+    double		  x_offset = shadow->x_offset;
+    double		  y_offset = shadow->y_offset;
+    cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
+
+    ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
+
+    x_blur = ceil (shadow_copy.x_sigma * 2);
+    y_blur = ceil (shadow_copy.y_sigma * 2);
+
+    color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
+					       shadow_copy.color.green,
+					       shadow_copy.color.blue,
+					       shadow_copy.color.alpha);
+
+    shadow_glyphs = (cairo_glyph_t *)_cairo_malloc_ab (num_glyphs,
+						       sizeof (cairo_glyph_t));
+
+    status = _cairo_surface_glyphs_get_offset_extents (target,
+						       x_offset, y_offset,
+						       source,
+						       scaled_font,
+						       glyphs,
+						       num_glyphs,
+						       clip,
+						       &shadow_source.base,
+						       shadow_glyphs,
+						       &shadow_extents);
+    if (unlikely (status))
+	goto FINISH;
+
+    if (shadow_extents.width == 0 && shadow_extents.height == 0)
+	goto FINISH;
+
+    x_offset = shadow_extents.x - x_blur;
+    y_offset = shadow_extents.y - y_blur;
+
+    shadow_width = shadow_extents.width + x_blur * 2;
+    shadow_height = shadow_extents.height + y_blur * 2;
+
+    if (target->backend->get_glyph_shadow_surface) {
+	shadow_surface = target->backend->get_glyph_shadow_surface (target,
+						 		    shadow_width,
+								    shadow_height,
+								    FALSE);
+    }
+    else {
+	content = cairo_surface_get_content (target);
+	if (content == CAIRO_CONTENT_COLOR)
+	    content = CAIRO_CONTENT_COLOR_ALPHA;
+	shadow_surface = cairo_surface_create_similar (target,
+						       content,
+						       shadow_width,
+						       shadow_height);
+    }
+    if (unlikely (shadow_surface->status))
+	goto FINISH;
+
+    if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
+	goto FINISH;
+
+    if (target->backend->get_glyph_shadow_mask_surface) {
+	mask_surface = target->backend->get_glyph_shadow_mask_surface (shadow_surface,
+								       shadow_surface_extents.width,
+								       shadow_surface_extents.height);
+    }
+    else {
+	shadow_surface = cairo_surface_create_similar (shadow_surface,
+						       CAIRO_CONTENT_ALPHA,
+						       shadow_surface_extents.width,
+						       shadow_surface_extents.height);
+    }
+    if (unlikely (mask_surface->status))
+	goto FINISH;
+
+    cairo_matrix_init_translate (&m, -x_offset, -y_offset);
+
+    /* paint with offset and scale */
+    _cairo_color_init_rgba (&bg_color, 0, 0, 0, 0);
+    status = _cairo_surface_translate_glyphs (mask_surface,
+					      &bg_color,
+					      &m,
+					      CAIRO_OPERATOR_OVER,
+					      &shadow_source.base,
+					      scaled_font,
+					      shadow_glyphs,
+					      num_glyphs,
+					      NULL);
+
+    if (unlikely (status))
+	goto FINISH;
+
+    /* paint shadow surface with shadow color */
+    status = _cairo_surface_paint (shadow_surface, CAIRO_OPERATOR_SOURCE,
+				   color_pattern, NULL);
+    if (unlikely (status))
+	goto FINISH;
+
+    shadow_pattern = cairo_pattern_create_for_surface (mask_surface);
+    status = _cairo_surface_mask (shadow_surface, CAIRO_OPERATOR_SOURCE,
+				  &shadow_source.base, shadow_pattern,
+				  NULL);
+    if (unlikely (status))
+	goto FINISH;
+
+    cairo_pattern_destroy (shadow_pattern);
+
+    shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
+    cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
+    cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma,
+			     shadow_copy.y_sigma);
+
+    status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
+    if (unlikely (status))
+	goto FINISH;
+
+    cairo_pattern_set_matrix (shadow_pattern, &m);
+
+    cairo_pattern_destroy (color_pattern);
+
+    color_pattern = cairo_pattern_create_for_surface (mask_surface);
+    cairo_pattern_set_matrix (color_pattern, &m);
+
+    status = _cairo_surface_mask (target, op, shadow_pattern,
+				  color_pattern, NULL);
+FINISH:
+    cairo_pattern_destroy (color_pattern);
+
+    if (shadow_pattern)
+	cairo_pattern_destroy (shadow_pattern);
+
+    free (shadow_glyphs);
+
+    cairo_surface_destroy (shadow_surface);
+    cairo_surface_destroy (mask_surface);
+
+    ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
+    return status;
+}
+
 cairo_status_t
 _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 			      cairo_operator_t		 op,
@@ -2049,10 +2216,10 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
     cairo_pattern_t 	 *shadow_pattern = NULL;
     cairo_pattern_t	 *color_pattern;
     cairo_surface_t	 *shadow_surface = NULL;
-    cairo_surface_t	 *blur_surface = NULL;
     cairo_rectangle_int_t shadow_surface_extents;
     cairo_glyph_t        *shadow_glyphs;
-    cairo_content_t       content; 
+    cairo_content_t       content;
+    cairo_color_t         bg_color;
 
     int shadow_width, shadow_height;
     int x_blur, y_blur;
@@ -2072,6 +2239,12 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 
     if (_cairo_clip_is_all_clipped (clip))
 	return CAIRO_STATUS_SUCCESS;
+
+    if (shadow->type == CAIRO_SHADOW_INSET)
+	return _cairo_surface_inset_shadow_glyphs (target, op, source,
+						   scaled_font, glyphs,
+						   num_glyphs, clip,
+						   shadow);
 
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
@@ -2132,7 +2305,9 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
     cairo_matrix_init_translate (&m, -x_offset, -y_offset);
 
     /* paint with offset and scale */
+    _cairo_color_init_rgba (&bg_color, 0, 0, 0, 0);
     status = _cairo_surface_translate_glyphs (shadow_surface,
+					      &bg_color,
 					      &m,
 					      CAIRO_OPERATOR_OVER,
 					      &shadow_source.base,
@@ -2153,68 +2328,20 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
-    if (op != CAIRO_OPERATOR_SOURCE) {
-	cairo_pattern_set_matrix (shadow_pattern, &m);
+    cairo_pattern_set_matrix (shadow_pattern, &m);
 
-	status = _cairo_surface_mask (target, op, color_pattern,
-				      shadow_pattern, NULL);
+    status = _cairo_surface_mask (target, op, color_pattern,
+				  shadow_pattern, NULL);
 
-    }
-    else {
-	cairo_matrix_t identity_matrix;
-	cairo_pattern_t *clear_pattern;
- 	cairo_pattern_t *blur_pattern;
-
-	cairo_matrix_init_identity (&identity_matrix);
-
-	if (target->backend->get_glyph_shadow_surface)
-	    blur_surface = target->backend->get_glyph_shadow_surface (target,
-						 		    shadow_width,
-								    shadow_height,
-								    TRUE);
-	else
-	    blur_surface = cairo_surface_create_similar (target,
-						       cairo_surface_get_content (target),
-						       shadow_width,
-						       shadow_height);
-	if (unlikely (blur_surface->status))
-	    goto FINISH;
-
-	/* paint with blur */
-	/* FIXME: not efficient, we should only clear what is needed */
-	clear_pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
-	status = _cairo_surface_paint (blur_surface, CAIRO_OPERATOR_SOURCE,
-				       clear_pattern, NULL);
-        cairo_pattern_destroy (clear_pattern);
-
-	cairo_pattern_set_matrix (shadow_pattern, &identity_matrix);
- 	status = _cairo_surface_paint (blur_surface,
-				       CAIRO_OPERATOR_OVER,
-				       shadow_pattern,
-				       NULL);
-
-	if (unlikely (status))
-	    goto FINISH;
-
-	/* paint blur back to target */
-        blur_pattern = cairo_pattern_create_for_surface (blur_surface);
-	cairo_pattern_set_matrix (blur_pattern, &m);
-
-	status = _cairo_surface_mask (target, op, color_pattern,
-				      blur_pattern, clip);
-	cairo_pattern_destroy (blur_pattern);
-    }
 FINISH:
     cairo_pattern_destroy (color_pattern);
 
     if (shadow_pattern)
 	cairo_pattern_destroy (shadow_pattern);
 
-
     free (shadow_glyphs);
 
     cairo_surface_destroy (shadow_surface);
-    cairo_surface_destroy (blur_surface);
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     return status;
