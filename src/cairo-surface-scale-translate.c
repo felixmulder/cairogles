@@ -327,6 +327,7 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
 
 cairo_private cairo_status_t
 _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
+					  cairo_bool_t     is_inset,
 					  double x_offset, double y_offset,
 					  const cairo_pattern_t *source,
 					  const cairo_path_fixed_t *path,
@@ -380,6 +381,12 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
 						  ctm_out, &temp);
     _cairo_rectangle_intersect (&rect, &temp);
 
+    if (is_inset) {
+	rect.x -= x_offset;
+	rect.y -= y_offset;
+	rect.width += x_offset;
+	rect.height += y_offset;
+    }
     *extents = rect;
 
     return CAIRO_STATUS_SUCCESS;
@@ -440,6 +447,7 @@ _cairo_surface_scale_translate_fill (cairo_surface_t	*surface,
 
 cairo_private cairo_status_t
 _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
+					cairo_bool_t     is_inset,
 					double x_offset, double y_offset,
 					const cairo_pattern_t *source,
 					const cairo_path_fixed_t *path,
@@ -480,6 +488,12 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
     _cairo_path_fixed_approximate_fill_extents (path_out, &temp);
     _cairo_rectangle_intersect (&rect, &temp);
 
+    if (is_inset) {
+	rect.x -= x_offset;
+	rect.y -= y_offset;
+	rect.width += x_offset;
+	rect.height += y_offset;
+    }
     *extents = rect;
 
     return CAIRO_STATUS_SUCCESS;
@@ -547,6 +561,7 @@ _cairo_surface_translate_glyphs (cairo_surface_t 	*surface,
 
 cairo_private cairo_status_t
 _cairo_surface_glyphs_get_offset_extents (cairo_surface_t *target,
+					  cairo_bool_t    is_inset,
 					  double x_offset, double y_offset,
 					  const cairo_pattern_t *source,
 					  cairo_scaled_font_t *scaled_font,
@@ -602,6 +617,13 @@ _cairo_surface_glyphs_get_offset_extents (cairo_surface_t *target,
 	return CAIRO_STATUS_USER_FONT_ERROR;
 
     _cairo_rectangle_intersect (&rect, &temp);
+
+    if (is_inset) {
+	rect.x -= x_offset;
+	rect.y -= y_offset;
+	rect.width += x_offset;
+	rect.height += y_offset;
+    }
 
     *extents = rect;
 

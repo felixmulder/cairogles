@@ -95,6 +95,7 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
 
 cairo_private cairo_status_t
 _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
+					  cairo_bool_t is_inset,
 					  double x_offset, double y_offset,
 					  const cairo_pattern_t *source,
 					  const cairo_path_fixed_t *path,
@@ -122,6 +123,7 @@ _cairo_surface_scale_translate_fill (cairo_surface_t	*surface,
 
 cairo_private cairo_status_t
 _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
+					cairo_bool_t    is_inset,
 					double x_offset, double y_offset,
 					const cairo_pattern_t *source,
 					const cairo_path_fixed_t *path,
@@ -143,6 +145,7 @@ _cairo_surface_translate_glyphs (cairo_surface_t 	*surface,
 
 cairo_private cairo_status_t
 _cairo_surface_glyphs_get_offset_extents (cairo_surface_t *target,
+					  cairo_bool_t     is_inset,
 					  double x_offset, double y_offset,
 					  const cairo_pattern_t *source,
 					  cairo_scaled_font_t *scaled_font,

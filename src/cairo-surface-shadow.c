@@ -866,6 +866,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 						   1.0);
 
 	status = _cairo_surface_stroke_get_offset_extents (target,
+							   TRUE,
 							   x_offset,
 							   y_offset,
 							   source,
@@ -884,8 +885,8 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 	if (shadow_extents.width == 0 || shadow_extents.height == 0)
 	    goto FINISH;
 
- 	x_offset = shadow_extents.x - x_blur;
-	y_offset = shadow_extents.y - y_blur;
+ 	x_offset = shadow_extents.x - x_offset;
+	y_offset = shadow_extents.y - y_offset;
 
 	shadow_width = shadow_extents.width + x_blur * 2;
 	shadow_height = shadow_extents.height + y_blur * 2;
@@ -918,6 +919,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 					       shadow_copy.color.alpha);
 
     status = _cairo_surface_stroke_get_offset_extents (target,
+						       TRUE,
 						       x_offset, y_offset,
 						       source,
 						       path,
@@ -935,8 +937,8 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     if (shadow_extents.width == 0 || shadow_extents.height == 0)
 	goto FINISH;
 
-    x_offset = shadow_extents.x - x_blur;
-    y_offset = shadow_extents.y - y_blur;
+    x_offset = shadow_extents.x - x_offset;
+    y_offset = shadow_extents.y - y_offset;
 
     shadow_width = shadow_extents.width + x_blur * 2;
     shadow_height = shadow_extents.height + y_blur * 2;
@@ -1199,6 +1201,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 						   1.0);
 
 	status = _cairo_surface_stroke_get_offset_extents (target,
+							   FALSE,
 							   x_offset,
 							   y_offset,
 							   source,
@@ -1249,6 +1252,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 					       shadow_copy.color.alpha);
 
     status = _cairo_surface_stroke_get_offset_extents (target,
+						       FALSE,
 						       x_offset, y_offset,
 						       source,
 						       path,
@@ -1507,6 +1511,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	y_blur = shadow_cache->y_blur;
 
 	status = _cairo_surface_fill_get_offset_extents (target,
+							 TRUE,
 							 x_offset,
 							 y_offset,
 							 source,
@@ -1521,8 +1526,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	if (shadow_extents.width == 0 || shadow_extents.height == 0)
 	    goto FINISH;
 
- 	x_offset = shadow_extents.x - x_blur;
-	y_offset = shadow_extents.y - y_blur;
+ 	x_offset = shadow_extents.x - x_offset;
+	y_offset = shadow_extents.y - y_offset;
 
 	shadow_width = shadow_extents.width + x_blur * 2;
 	shadow_height = shadow_extents.height + y_blur * 2;
@@ -1555,6 +1560,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     y_blur = ceil (shadow_copy.y_sigma * 2);
 
     status = _cairo_surface_fill_get_offset_extents (target,
+						     TRUE,
 						     x_offset, y_offset,
 						     source,
 						     path,
@@ -1568,8 +1574,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     if (shadow_extents.width == 0 && shadow_extents.height == 0)
 	goto FINISH;
 
-    x_offset = shadow_extents.x - x_blur;
-    y_offset = shadow_extents.y - y_blur;
+    x_offset = shadow_extents.x - x_offset;
+    y_offset = shadow_extents.y - y_offset;
 
     shadow_width = shadow_extents.width + x_blur * 2;
     shadow_height = shadow_extents.height + y_blur * 2;
@@ -1822,6 +1828,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 	y_blur = shadow_cache->y_blur;
 
 	status = _cairo_surface_fill_get_offset_extents (target,
+							 FALSE,
 							 x_offset,
 							 y_offset,
 							 source,
@@ -1868,6 +1875,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     y_blur = ceil (shadow_copy.y_sigma * 2);
 
     status = _cairo_surface_fill_get_offset_extents (target,
+						     FALSE,
 						     x_offset, y_offset,
 						     source,
 						     path,
@@ -2079,6 +2087,7 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
 						       sizeof (cairo_glyph_t));
 
     status = _cairo_surface_glyphs_get_offset_extents (target,
+						       TRUE,
 						       x_offset, y_offset,
 						       source,
 						       scaled_font,
@@ -2094,8 +2103,8 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     if (shadow_extents.width == 0 && shadow_extents.height == 0)
 	goto FINISH;
 
-    x_offset = shadow_extents.x - x_blur;
-    y_offset = shadow_extents.y - y_blur;
+    x_offset = shadow_extents.x - x_offset;
+    y_offset = shadow_extents.y - y_offset;
 
     shadow_width = shadow_extents.width + x_blur * 2;
     shadow_height = shadow_extents.height + y_blur * 2;
@@ -2165,6 +2174,7 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
+
     cairo_pattern_destroy (shadow_pattern);
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
@@ -2181,6 +2191,7 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     cairo_pattern_destroy (color_pattern);
 
     color_pattern = cairo_pattern_create_for_surface (mask_surface);
+    cairo_matrix_translate (&m, shadow->x_offset, shadow->y_offset);
     cairo_pattern_set_matrix (color_pattern, &m);
 
     status = _cairo_surface_mask (target, op, shadow_pattern,
@@ -2261,6 +2272,7 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 						       sizeof (cairo_glyph_t));
 
     status = _cairo_surface_glyphs_get_offset_extents (target,
+						       FALSE,
 						       x_offset, y_offset,
 						       source,
 						       scaled_font,
