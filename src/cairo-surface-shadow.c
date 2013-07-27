@@ -219,7 +219,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->x_sigma <= 0.0 && shadow->y_sigma <= 0.0 &&
-	shadow->x_offset == 0.0 && shadow->y_sigma == 0.0)
+	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
     if (_cairo_clip_is_all_clipped (clip))
@@ -517,7 +517,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->x_sigma <= 0.0 && shadow->y_sigma <= 0.0 &&
-	shadow->x_offset == 0.0 && shadow->y_sigma == 0.0)
+	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
     if (_cairo_clip_is_all_clipped (clip))
@@ -1143,7 +1143,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->x_sigma <= 0.0 && shadow->y_sigma <= 0.0 &&
-	shadow->x_offset == 0.0 && shadow->y_sigma == 0.0)
+	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
     if (_cairo_clip_is_all_clipped (clip))
@@ -1771,7 +1771,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->x_sigma <= 0.0 && shadow->y_sigma <= 0.0 &&
-	shadow->x_offset == 0.0 && shadow->y_sigma == 0.0)
+	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
     if (_cairo_clip_is_all_clipped (clip))
@@ -2245,7 +2245,7 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->x_sigma <= 0.0 && shadow->y_sigma <= 0.0 &&
-	shadow->x_offset == 0.0 && shadow->y_sigma == 0.0)
+	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
     if (_cairo_clip_is_all_clipped (clip))
