@@ -134,7 +134,8 @@ _cairo_gl_surface_shadow_surface (void *surface,
 
 static cairo_surface_t *
 _cairo_gl_surface_shadow_mask_surface (void *surface,
-				       int width, int height)
+				       int width, int height,
+				       unsigned int index)
 {
     cairo_gl_surface_t *mask_surface = NULL;
 
@@ -143,21 +144,24 @@ _cairo_gl_surface_shadow_mask_surface (void *surface,
     if (ctx == NULL)
 	return NULL;
 
-    mask_surface = ctx->shadow_masks[0];
+    if (index > 1)
+	return NULL;
+
+    mask_surface = ctx->shadow_masks[index];
 
     if (mask_surface) {
 	if (mask_surface->width != width ||
 	    mask_surface->height != height) {
 	    cairo_surface_destroy (&mask_surface->base);
 	    mask_surface = NULL;
-	    ctx->shadow_masks[0] = NULL;
+	    ctx->shadow_masks[index] = NULL;
 	}
     }
 
     if (! mask_surface) {
 	mask_surface = (cairo_gl_surface_t *)
 		_cairo_gl_surface_create_scratch (ctx,
-						  CAIRO_CONTENT_ALPHA,
+						  CAIRO_CONTENT_COLOR_ALPHA,
 						  width,
 						  height);
 	if (unlikely (mask_surface->base.status)) {
@@ -166,7 +170,7 @@ _cairo_gl_surface_shadow_mask_surface (void *surface,
 	}
     }
 
-    ctx->shadow_masks[0] = mask_surface;
+    ctx->shadow_masks[index] = mask_surface;
 
     mask_surface->needs_to_cache = FALSE;
     mask_surface->force_no_cache = TRUE;
@@ -250,7 +254,7 @@ _cairo_gl_surface_glyph_shadow_mask_surface (void *surface,
     if (! mask_surface) {
 	mask_surface = (cairo_gl_surface_t *)
 		_cairo_gl_surface_create_scratch (ctx,
-						  CAIRO_CONTENT_ALPHA,
+						  CAIRO_CONTENT_COLOR_ALPHA,
 						  width,
 						  height);
 	if (unlikely (mask_surface->base.status)) {

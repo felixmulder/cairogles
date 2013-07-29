@@ -429,10 +429,12 @@ _cairo_surface_scale_translate_fill (cairo_surface_t	*surface,
 	_transformed_pattern (source, &m);
     }
 
-    clear_pattern = _cairo_pattern_create_solid (bg_color);
-    status = _cairo_surface_paint (surface, CAIRO_OPERATOR_SOURCE,
+    if (bg_color) {
+	clear_pattern = _cairo_pattern_create_solid (bg_color);
+	status = _cairo_surface_paint (surface, CAIRO_OPERATOR_SOURCE,
 				   clear_pattern, dev_clip);
-    cairo_pattern_destroy (clear_pattern);
+	cairo_pattern_destroy (clear_pattern);
+    }
 
     status = _cairo_surface_fill (surface, op, source,
 				  dev_path, fill_rule,

@@ -1442,8 +1442,11 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     cairo_pattern_t 	 *shadow_pattern = NULL;
     cairo_pattern_t	 *color_pattern = NULL;
     cairo_surface_t	 *shadow_surface = NULL;
+    cairo_surface_t	 *mask_surface = NULL;
+    cairo_surface_t      *invert_mask_surface = NULL;
     cairo_surface_t      *cache_surface = NULL;
     cairo_rectangle_int_t shadow_surface_extents;
+    cairo_rectangle_int_t extents;
     cairo_content_t       content;
 
     int shadow_width, shadow_height;
@@ -1451,7 +1454,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     int x_blur, y_blur;
     cairo_shadow_t       shadow_copy = *shadow;
 
-    cairo_matrix_t 	  m;
+    cairo_matrix_t 	  m, im;
     double 		  scale;
     double		  x_scale = 1.0;
     double		  y_scale = 1.0;
@@ -1466,6 +1469,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     cairo_list_t	 *shadow_caches = NULL;
     unsigned long        *shadow_caches_size = 0;
     cairo_color_t         bg_color;
+    cairo_operator_t      shadow_op;
 
     if (device != NULL) {
 	hash = _cairo_shadow_hash_for_fill (source, path, fill_rule, shadow);
@@ -1526,8 +1530,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	if (shadow_extents.width == 0 || shadow_extents.height == 0)
 	    goto FINISH;
 
- 	x_offset = shadow_extents.x - x_offset;
-	y_offset = shadow_extents.y - y_offset;
+ 	x_offset = shadow_extents.x - x_blur;
+	y_offset = shadow_extents.y - y_blur;
 
 	shadow_width = shadow_extents.width + x_blur * 2;
 	shadow_height = shadow_extents.height + y_blur * 2;
@@ -1574,8 +1578,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     if (shadow_extents.width == 0 && shadow_extents.height == 0)
 	goto FINISH;
 
-    x_offset = shadow_extents.x - x_offset;
-    y_offset = shadow_extents.y - y_offset;
+    x_offset = shadow_extents.x - x_offset - x_blur;
+    y_offset = shadow_extents.y - y_offset - y_blur;
 
     shadow_width = shadow_extents.width + x_blur * 2;
     shadow_height = shadow_extents.height + y_blur * 2;
@@ -1600,8 +1604,39 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	width_out = scaled_width;
 	height_out = scaled_height;
     }
+    if (! shadow_surface)
+	goto FINISH;
+
     if (unlikely (shadow_surface->status))
 	goto FINISH;
+
+    _cairo_surface_get_extents (shadow_surface, &extents);
+
+    if (source->type != CAIRO_PATTERN_TYPE_SOLID) {
+	if (target->backend->get_shadow_mask_surface) {
+	    mask_surface = target->backend->get_shadow_mask_surface (shadow_surface,
+								     extents.width,
+								     extents.height, 0);
+	    invert_mask_surface = target->backend->get_shadow_mask_surface (shadow_surface,
+								     extents.width,
+								     extents.height, 1);
+	}
+	else {
+	    mask_surface = cairo_surface_create_similar (shadow_surface,
+							 CAIRO_CONTENT_COLOR_ALPHA,
+							 width_out,
+							 height_out);
+	    invert_mask_surface = cairo_surface_create_similar (shadow_surface,
+							 CAIRO_CONTENT_COLOR_ALPHA,
+							 width_out,
+							 height_out);
+	}
+	if (! mask_surface || ! invert_mask_surface)
+	    goto FINISH;
+	if (unlikely (mask_surface->status) ||
+	    unlikely (invert_mask_surface->status))
+	    goto FINISH;
+    }    
 
     shadow_surface_extents.x = shadow_surface_extents.y = 0;
     shadow_surface_extents.width = width_out;
@@ -1632,16 +1667,23 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
-    /* paint with offset and scale */
     _cairo_color_init_rgba (&bg_color,
 			    shadow_copy.color.red,
 			    shadow_copy.color.green,
 			    shadow_copy.color.blue,
 			    shadow_copy.color.alpha);
+    /* paint with offset and scale */
+    if (mask_surface) {
+	shadow_op = CAIRO_OPERATOR_CLEAR;
+    }
+    else {
+	shadow_op = CAIRO_OPERATOR_SOURCE;
+    }
+
     status = _cairo_surface_scale_translate_fill (shadow_surface,
 						  &bg_color,
 						  &m,
-						  CAIRO_OPERATOR_SOURCE,
+						  shadow_op,
 						  &shadow_source.base,
 						  &shadow_path,
 						  fill_rule,
@@ -1660,6 +1702,73 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))
 	goto FINISH;
+
+    /* blur to mask surface */
+    if (mask_surface) {
+	cairo_pattern_destroy (color_pattern);
+	color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
+						   shadow_copy.color.green,
+						   shadow_copy.color.blue,
+						   shadow_copy.color.alpha);
+	
+	status = _cairo_surface_paint (mask_surface,
+				       CAIRO_OPERATOR_SOURCE,
+				       color_pattern, NULL);
+	if (unlikely (status))
+	    goto FINISH;
+
+	status = _cairo_surface_mask (mask_surface, CAIRO_OPERATOR_SOURCE,
+				       shadow_pattern, color_pattern, NULL);
+	if (unlikely (status))
+	    goto FINISH;
+
+	cairo_pattern_destroy (color_pattern);
+	color_pattern = cairo_pattern_create_rgba (0, 0, 0, 1);
+	
+	status = _cairo_surface_paint (invert_mask_surface,
+				       CAIRO_OPERATOR_SOURCE,
+				       color_pattern, NULL);
+	if (unlikely (status))
+	    goto FINISH;
+
+	cairo_pattern_destroy (color_pattern);
+	color_pattern = cairo_pattern_create_for_surface (mask_surface);
+
+	status = _cairo_surface_paint (invert_mask_surface,
+				       CAIRO_OPERATOR_DEST_OUT,
+				       shadow_pattern, NULL);
+	if (unlikely (status))
+	    goto FINISH;
+
+	cairo_pattern_destroy (color_pattern);
+	color_pattern = cairo_pattern_create_for_surface (mask_surface);
+	
+	status = _cairo_surface_paint (shadow_surface,
+				       CAIRO_OPERATOR_SOURCE,
+				       color_pattern, NULL);
+	if (unlikely (status))
+	    goto FINISH;
+
+	cairo_pattern_destroy (shadow_pattern);
+	shadow_pattern = cairo_pattern_create_for_surface (invert_mask_surface);
+
+	cairo_matrix_init_translate (&im, shadow_copy.x_offset, shadow_copy.y_offset);
+	_cairo_pattern_transform (&shadow_source.base, &im);
+ 	status = _cairo_surface_mask (shadow_surface,
+				      CAIRO_OPERATOR_OVER,
+				      &shadow_source.base,
+				      shadow_pattern, NULL);
+
+	if (unlikely (status))
+	    goto FINISH;
+
+	cairo_pattern_destroy (shadow_pattern);
+	shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
+    }
+
+    cairo_matrix_init_scale (&m, scale, scale);
+    cairo_matrix_translate (&m, -x_offset - shadow_copy.x_offset,
+			    -y_offset - shadow_copy.y_offset);
 
     if ((locked || device) && shadow->enable_cache) {
         status = _cairo_surface_paint (cache_surface, CAIRO_OPERATOR_OVER,
@@ -1719,7 +1828,8 @@ FINISH:
 	cairo_surface_destroy (cache_surface);
 
     cairo_surface_destroy (shadow_surface);
-
+    cairo_surface_destroy (mask_surface);
+    cairo_surface_destroy (invert_mask_surface);
     return status;
 }
 
