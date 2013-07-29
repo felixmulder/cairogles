@@ -571,7 +571,7 @@ _cairo_gl_ensure_multisampling (cairo_gl_context_t *ctx,
     _disable_scissor_buffer (ctx);
     glClearColor (0, 0, 0, 0);
     // reset cached clear colors
-    memset (&ctx->states_cache.clear_red, 0, sizeof (double) * 4);
+    memset (&ctx->states_cache.clear_red, 0, sizeof (GLclampf) * 4);
     glClear (GL_COLOR_BUFFER_BIT);
 }
 #endif
