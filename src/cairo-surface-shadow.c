@@ -353,7 +353,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 	width_out = scaled_width;
 	height_out = scaled_height;
     }
-    if (unlikely (shadow_surface->status))
+    if (! shadow_surface || unlikely (shadow_surface->status))
 	goto FINISH;
 
     shadow_surface_extents.x = shadow_surface_extents.y = 0;
@@ -656,7 +656,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 	width_out = scaled_width;
 	height_out = scaled_height;
     }
-    if (unlikely (shadow_surface->status))
+    if (! shadow_surface || unlikely (shadow_surface->status))
 	goto FINISH;
 
     shadow_surface_extents.x = shadow_surface_extents.y = 0;
@@ -2270,7 +2270,7 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     cairo_pattern_union_t shadow_source;
     cairo_rectangle_int_t shadow_extents;
     cairo_pattern_t 	 *shadow_pattern = NULL;
-    cairo_pattern_t	 *color_pattern;
+    cairo_pattern_t	 *color_pattern = NULL;
     cairo_surface_t	 *shadow_surface = NULL;
     cairo_surface_t      *mask_surface = NULL;
     cairo_rectangle_int_t shadow_surface_extents;
@@ -2282,7 +2282,7 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     int x_blur, y_blur;
     cairo_shadow_t       shadow_copy = *shadow;
 
-    cairo_matrix_t 	  m;
+    cairo_matrix_t 	  m, im;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
@@ -2292,11 +2292,6 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
 
     x_blur = ceil (shadow_copy.x_sigma * 2);
     y_blur = ceil (shadow_copy.y_sigma * 2);
-
-    color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
-					       shadow_copy.color.green,
-					       shadow_copy.color.blue,
-					       shadow_copy.color.alpha);
 
     shadow_glyphs = (cairo_glyph_t *)_cairo_malloc_ab (num_glyphs,
 						       sizeof (cairo_glyph_t));
@@ -2339,7 +2334,7 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
 						       shadow_width,
 						       shadow_height);
     }
-    if (unlikely (shadow_surface->status))
+    if (! shadow_surface || unlikely (shadow_surface->status))
 	goto FINISH;
 
     if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
@@ -2351,23 +2346,25 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
 								       shadow_surface_extents.height);
     }
     else {
-	shadow_surface = cairo_surface_create_similar (shadow_surface,
+	mask_surface = cairo_surface_create_similar (shadow_surface,
 						       CAIRO_CONTENT_ALPHA,
 						       shadow_surface_extents.width,
 						       shadow_surface_extents.height);
     }
-    if (unlikely (mask_surface->status))
+    if (!mask_surface || unlikely (mask_surface->status))
 	goto FINISH;
 
     cairo_matrix_init_translate (&m, -x_offset, -y_offset);
 
     /* paint with offset and scale */
     _cairo_color_init_rgba (&bg_color, 0, 0, 0, 0);
+    color_pattern = cairo_pattern_create_rgba (1, 1, 1, 1);
+
     status = _cairo_surface_translate_glyphs (mask_surface,
 					      &bg_color,
 					      &m,
 					      CAIRO_OPERATOR_OVER,
-					      &shadow_source.base,
+					      color_pattern,
 					      scaled_font,
 					      shadow_glyphs,
 					      num_glyphs,
@@ -2377,12 +2374,23 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
 	goto FINISH;
 
     /* paint shadow surface with shadow color */
+    cairo_pattern_destroy (color_pattern);
+    color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
+					       shadow_copy.color.green,
+					       shadow_copy.color.blue,
+					       shadow_copy.color.alpha);
+
     status = _cairo_surface_paint (shadow_surface, CAIRO_OPERATOR_SOURCE,
 				   color_pattern, NULL);
     if (unlikely (status))
 	goto FINISH;
 
     shadow_pattern = cairo_pattern_create_for_surface (mask_surface);
+    cairo_matrix_init_translate (&im, shadow_extents.x + x_blur,
+				 shadow_extents.y + y_blur);
+    cairo_matrix_multiply (&shadow_source.base.matrix, &im,
+			   &shadow_source.base.matrix);
+
     status = _cairo_surface_mask (shadow_surface, CAIRO_OPERATOR_SOURCE,
 				  &shadow_source.base, shadow_pattern,
 				  NULL);
@@ -2522,7 +2530,7 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 						       shadow_width,
 						       shadow_height);
     }
-    if (unlikely (shadow_surface->status))
+    if (! shadow_surface || unlikely (shadow_surface->status))
 	goto FINISH;
 
     if(! _cairo_surface_get_extents (shadow_surface, &shadow_surface_extents))
