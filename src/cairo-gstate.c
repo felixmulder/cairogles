@@ -1358,7 +1358,8 @@ _cairo_gstate_fill (cairo_gstate_t *gstate, cairo_path_fixed_t *path)
 	    box.p1.x <= _cairo_fixed_from_int (extents.x) &&
 	    box.p1.y <= _cairo_fixed_from_int (extents.y) &&
 	    box.p2.x >= _cairo_fixed_from_int (extents.x + extents.width) &&
-	    box.p2.y >= _cairo_fixed_from_int (extents.y + extents.height))
+	    box.p2.y >= _cairo_fixed_from_int (extents.y + extents.height) &&
+	    gstate->shadow.type != CAIRO_SHADOW_INSET)
 	{
 	    status = _cairo_surface_paint (gstate->target, op, pattern,
 					   gstate->clip);

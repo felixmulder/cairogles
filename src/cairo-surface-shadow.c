@@ -2389,7 +2389,6 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
-
     cairo_pattern_destroy (shadow_pattern);
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
