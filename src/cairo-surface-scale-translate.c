@@ -619,14 +619,6 @@ _cairo_surface_glyphs_get_offset_extents (cairo_surface_t *target,
 	return CAIRO_STATUS_USER_FONT_ERROR;
 
     _cairo_rectangle_intersect (&rect, &temp);
-
-    if (is_inset) {
-	rect.x -= x_offset;
-	rect.y -= y_offset;
-	rect.width += x_offset;
-	rect.height += y_offset;
-    }
-
     *extents = rect;
 
     return CAIRO_STATUS_SUCCESS;

@@ -2303,7 +2303,7 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
 
     status = _cairo_surface_glyphs_get_offset_extents (target,
 						       TRUE,
-						       x_offset, y_offset,
+						       0, 0,
 						       source,
 						       scaled_font,
 						       glyphs,
@@ -2318,11 +2318,11 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     if (shadow_extents.width == 0 && shadow_extents.height == 0)
 	goto FINISH;
 
-    x_offset = shadow_extents.x - x_offset;
-    y_offset = shadow_extents.y - y_offset;
+    x_offset = shadow_extents.x - x_blur - shadow->x_offset;
+    y_offset = shadow_extents.y - y_blur - shadow->y_offset;
 
-    shadow_width = shadow_extents.width + x_blur * 2;
-    shadow_height = shadow_extents.height + y_blur * 2;
+    shadow_width = shadow_extents.width + x_blur * 2 + shadow->x_offset;
+    shadow_height = shadow_extents.height + y_blur * 2 + shadow->y_offset;
 
     if (target->backend->get_glyph_shadow_surface) {
 	shadow_surface = target->backend->get_glyph_shadow_surface (target,
@@ -2401,14 +2401,14 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
-    cairo_pattern_set_matrix (shadow_pattern, &m);
-
     cairo_pattern_destroy (color_pattern);
 
     color_pattern = cairo_pattern_create_for_surface (mask_surface);
-    cairo_matrix_translate (&m, shadow->x_offset, shadow->y_offset);
     cairo_pattern_set_matrix (color_pattern, &m);
 
+    cairo_matrix_translate (&m, -shadow->x_offset,
+			    -shadow->y_offset);
+    cairo_pattern_set_matrix (shadow_pattern, &m);
     status = _cairo_surface_mask (target, op, shadow_pattern,
 				  color_pattern, NULL);
 FINISH:
