@@ -1093,6 +1093,7 @@ _cairo_image_surface_stroke (void			*abstract_surface,
 {
     cairo_int_status_t status;
     cairo_image_surface_t *surface = abstract_surface;
+    cairo_shadow_type_t shadow_type = source->shadow.type;
 
     TRACE ((stderr, "%s (surface=%d)\n",
 	    __FUNCTION__, surface->base.unique_id));
@@ -1111,7 +1112,8 @@ _cairo_image_surface_stroke (void			*abstract_surface,
 	return status;
     }
 
-    if (source->shadow.draw_shadow_only) {
+    if (shadow_type == CAIRO_SHADOW_INSET ||
+	source->shadow.draw_shadow_only) {
 	cairo_device_release (surface->base.device);
 	return status;
     }
@@ -1137,6 +1139,7 @@ _cairo_image_surface_fill (void				*abstract_surface,
 {
     cairo_int_status_t status;
     cairo_image_surface_t *surface = abstract_surface;
+    cairo_shadow_type_t shadow_type = source->shadow.type;
 
     TRACE ((stderr, "%s (surface=%d)\n",
 	    __FUNCTION__, surface->base.unique_id));
@@ -1155,7 +1158,8 @@ _cairo_image_surface_fill (void				*abstract_surface,
 	return status;
     }
 
-    if (source->shadow.draw_shadow_only) {
+    if (shadow_type == CAIRO_SHADOW_INSET ||
+	source->shadow.draw_shadow_only) {
 	cairo_device_release (surface->base.device);
 	return status;
     }
@@ -1180,6 +1184,7 @@ _cairo_image_surface_glyphs (void			*abstract_surface,
 {
     cairo_int_status_t status;
     cairo_image_surface_t *surface = abstract_surface;
+    cairo_shadow_type_t shadow_type = source->shadow.type;
 
     TRACE ((stderr, "%s (surface=%d)\n",
 	    __FUNCTION__, surface->base.unique_id));
@@ -1199,7 +1204,8 @@ _cairo_image_surface_glyphs (void			*abstract_surface,
 	return status;
     }
 
-    if (source->shadow.draw_shadow_only) {
+    if (shadow_type == CAIRO_SHADOW_INSET ||
+	source->shadow.draw_shadow_only) {
 	cairo_device_release (surface->base.device);
 	return status;
     }
