@@ -429,8 +429,8 @@ typedef struct _cairo_shadow {
     double x_offset;
     double y_offset;
     cairo_shadow_type_t type;
-    double 	x_sigma;
-    double	y_sigma;
+    double 	x_blur;
+    double	y_blur;
     cairo_color_t color;
     cairo_bool_t  enable_cache;
     cairo_bool_t draw_shadow_only;

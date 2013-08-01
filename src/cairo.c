@@ -4084,18 +4084,18 @@ cairo_set_shadow_rgba (cairo_t *cr, double red, double green,
 slim_hidden_def (cairo_set_shadow_rgba);
 
 void
-cairo_set_shadow_sigma (cairo_t *cr, double x_sigma, double y_sigma)
+cairo_set_shadow_blur (cairo_t *cr, double x_blur, double y_blur)
 {
     cairo_status_t status;
 
     if (unlikely (cr->status))
 	return;
 
-    status = cr->backend->set_shadow_sigma (cr, x_sigma, y_sigma);
+    status = cr->backend->set_shadow_blur (cr, x_blur, y_blur);
     if (unlikely (status))
 	_cairo_set_error (cr, status);
 }
-slim_hidden_def (cairo_set_shadow_sigma);
+slim_hidden_def (cairo_set_shadow_blur);
 
 void
 cairo_set_draw_shadow_only (cairo_t *cr, cairo_bool_t draw_shadow_only)

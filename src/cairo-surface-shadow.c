@@ -218,7 +218,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
 
-    if (shadow->x_sigma <= 0.0 && shadow->y_sigma <= 0.0 &&
+    if (shadow->x_blur <= 0.0 && shadow->y_blur <= 0.0 &&
 	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
@@ -306,8 +306,8 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
-    x_blur = ceil (shadow_copy.x_sigma * 2);
-    y_blur = ceil (shadow_copy.y_sigma * 2);
+    x_blur = ceil (shadow_copy.x_blur);
+    y_blur = ceil (shadow_copy.y_blur);
 
     color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
 					       shadow_copy.color.green,
@@ -397,8 +397,9 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
-    cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,
-			     shadow_copy.y_sigma * scale);
+    cairo_pattern_set_sigma (shadow_pattern,
+			     shadow_copy.x_blur * scale * 0.5,
+			     shadow_copy.y_blur * scale * 0.5);
 
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))
@@ -516,7 +517,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
 
-    if (shadow->x_sigma <= 0.0 && shadow->y_sigma <= 0.0 &&
+    if (shadow->x_blur <= 0.0 && shadow->y_blur <= 0.0 &&
 	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
@@ -606,8 +607,8 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
-    x_blur = ceil (shadow_copy.x_sigma * 2);
-    y_blur = ceil (shadow_copy.y_sigma * 2);
+    x_blur = ceil (shadow_copy.x_blur);
+    y_blur = ceil (shadow_copy.y_blur);
 
     color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
 					       shadow_copy.color.green,
@@ -701,8 +702,9 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
-    cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,
-			     shadow_copy.y_sigma * scale);
+    cairo_pattern_set_sigma (shadow_pattern,
+			     shadow_copy.x_blur * scale * 0.5,
+			     shadow_copy.y_blur * scale * 0.5);
 
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))
@@ -914,8 +916,8 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
-    x_blur = ceil (shadow_copy.x_sigma * 2);
-    y_blur = ceil (shadow_copy.y_sigma * 2);
+    x_blur = ceil (shadow_copy.x_blur);
+    y_blur = ceil (shadow_copy.y_blur);
 
     color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
 					       shadow_copy.color.green,
@@ -1058,8 +1060,9 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
-    cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,
-			     shadow_copy.y_sigma * scale);
+    cairo_pattern_set_sigma (shadow_pattern,
+			     shadow_copy.x_blur * scale * 0.5,
+			     shadow_copy.y_blur * scale * 0.5);
 
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern,
 						    stroke_style->line_width);
@@ -1247,7 +1250,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
 
-    if (shadow->x_sigma <= 0.0 && shadow->y_sigma <= 0.0 &&
+    if (shadow->x_blur <= 0.0 && shadow->y_blur <= 0.0 &&
 	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
@@ -1348,8 +1351,8 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
-    x_blur = ceil (shadow_copy.x_sigma * 2);
-    y_blur = ceil (shadow_copy.y_sigma * 2);
+    x_blur = ceil (shadow_copy.x_blur);
+    y_blur = ceil (shadow_copy.y_blur);
 
     color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
 					       shadow_copy.color.green,
@@ -1453,8 +1456,9 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
-    cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,
-			     shadow_copy.y_sigma * scale);
+    cairo_pattern_set_sigma (shadow_pattern,
+			     shadow_copy.x_blur * scale * 0.5,
+			     shadow_copy.y_blur * scale * 0.5);
 
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern,
 						    stroke_style->line_width);
@@ -1665,8 +1669,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 					       shadow_copy.color.blue,
 					       shadow_copy.color.alpha);
 
-    x_blur = ceil (shadow_copy.x_sigma * 2);
-    y_blur = ceil (shadow_copy.y_sigma * 2);
+    x_blur = ceil (shadow_copy.x_blur);
+    y_blur = ceil (shadow_copy.y_blur);
 
     status = _cairo_surface_fill_get_offset_extents (target,
 						     TRUE,
@@ -1801,8 +1805,9 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
-    cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,
-			     shadow_copy.y_sigma * scale);
+    cairo_pattern_set_sigma (shadow_pattern,
+			     shadow_copy.x_blur * scale * 0.5,
+			     shadow_copy.y_blur * scale * 0.5);
 
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))
@@ -1985,7 +1990,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
 
-    if (shadow->x_sigma <= 0.0 && shadow->y_sigma <= 0.0 &&
+    if (shadow->x_blur <= 0.0 && shadow->y_blur <= 0.0 &&
 	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
@@ -2086,8 +2091,8 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 					       shadow_copy.color.blue,
 					       shadow_copy.color.alpha);
 
-    x_blur = ceil (shadow_copy.x_sigma * 2);
-    y_blur = ceil (shadow_copy.y_sigma * 2);
+    x_blur = ceil (shadow_copy.x_blur);
+    y_blur = ceil (shadow_copy.y_blur);
 
     status = _cairo_surface_fill_get_offset_extents (target,
 						     FALSE,
@@ -2180,8 +2185,9 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
-    cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma * scale,
-			     shadow_copy.y_sigma * scale);
+    cairo_pattern_set_sigma (shadow_pattern,
+			     shadow_copy.x_blur * scale * 0.5,
+			     shadow_copy.y_blur * scale * 0.5);
 
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))
@@ -2290,8 +2296,8 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
-    x_blur = ceil (shadow_copy.x_sigma * 2);
-    y_blur = ceil (shadow_copy.y_sigma * 2);
+    x_blur = ceil (shadow_copy.x_blur);
+    y_blur = ceil (shadow_copy.y_blur);
 
     shadow_glyphs = (cairo_glyph_t *)_cairo_malloc_ab (num_glyphs,
 						       sizeof (cairo_glyph_t));
@@ -2401,8 +2407,9 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
-    cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma,
-			     shadow_copy.y_sigma);
+    cairo_pattern_set_sigma (shadow_pattern,
+			     shadow_copy.x_blur * 0.5,
+			     shadow_copy.y_blur * 0.5);
 
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))
@@ -2466,7 +2473,7 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
 
-    if (shadow->x_sigma <= 0.0 && shadow->y_sigma <= 0.0 &&
+    if (shadow->x_blur <= 0.0 && shadow->y_blur <= 0.0 &&
 	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
@@ -2482,8 +2489,8 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
-    x_blur = ceil (shadow_copy.x_sigma * 2);
-    y_blur = ceil (shadow_copy.y_sigma * 2);
+    x_blur = ceil (shadow_copy.x_blur);
+    y_blur = ceil (shadow_copy.y_blur);
 
     color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
 					       shadow_copy.color.green,
@@ -2555,8 +2562,9 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
-    cairo_pattern_set_sigma (shadow_pattern, shadow_copy.x_sigma,
-			     shadow_copy.y_sigma);
+    cairo_pattern_set_sigma (shadow_pattern,
+			     shadow_copy.x_blur * 0.5,
+			     shadow_copy.y_blur * 0.5);
 
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern, 1024);
     if (unlikely (status))

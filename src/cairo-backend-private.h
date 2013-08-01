@@ -182,9 +182,9 @@ struct _cairo_backend {
 				       double green,
 				       double blue,
 				       double alpha);
-    cairo_status_t (*set_shadow_sigma) (void *cr,
-					double x_sigma,
-					double y_sigma);
+    cairo_status_t (*set_shadow_blur) (void *cr,
+				       double x_blur,
+				       double y_blur);
     void       (*set_draw_shadow_only) (void *cr,
 					cairo_bool_t draw_shadow_only);
     void	   (*shadow_enable_cache) (void *cr, cairo_bool_t enable);

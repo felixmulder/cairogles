@@ -80,8 +80,8 @@ _cairo_gstate_has_shadow (cairo_gstate_t *gstate)
     if (gstate->shadow.type == CAIRO_SHADOW_NONE)
 	return FALSE;
 
-    if (gstate->shadow.x_sigma == 0.0 &&
-	gstate->shadow.y_sigma == 0.0 &&
+    if (gstate->shadow.x_blur == 0.0 &&
+	gstate->shadow.y_blur == 0.0 &&
 	gstate->shadow.x_offset == 0.0 &&
 	gstate->shadow.y_offset == 0.0)
 	return FALSE;
@@ -2433,18 +2433,18 @@ _cairo_gstate_set_shadow_rgba (cairo_gstate_t *gstate, double r, double g,
 }
 
 cairo_status_t
-_cairo_gstate_set_shadow_sigma (cairo_gstate_t *gstate, double x_sigma,
-				double y_sigma)
+_cairo_gstate_set_shadow_blur (cairo_gstate_t *gstate, double x_blur,
+				double y_blur)
 {
-    double x = x_sigma;
-    double y = y_sigma;
+    double x = x_blur;
+    double y = y_blur;
 
     if (x < 0.0)
 	x = 0.0;
     if (y < 0.0)
 	y = 0.0;
-    gstate->shadow.x_sigma = x;
-    gstate->shadow.y_sigma = y;
+    gstate->shadow.x_blur = x;
+    gstate->shadow.y_blur = y;
 
     return CAIRO_STATUS_SUCCESS;
 }

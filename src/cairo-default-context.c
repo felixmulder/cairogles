@@ -1346,13 +1346,13 @@ _cairo_default_context_set_shadow_rgba (void *abstract_cr, double red, double gr
 }
 
 static cairo_status_t
-_cairo_default_context_set_shadow_sigma (void *abstract_cr,
-					 double x_sigma,
-					 double y_sigma)
+_cairo_default_context_set_shadow_blur (void *abstract_cr,
+					 double x_blur,
+					 double y_blur)
 {
     cairo_default_context_t *cr = abstract_cr;
 
-    return _cairo_gstate_set_shadow_sigma (cr->gstate, x_sigma, y_sigma);
+    return _cairo_gstate_set_shadow_blur (cr->gstate, x_blur, y_blur);
 }
 
 static void
@@ -1495,7 +1495,7 @@ static const cairo_backend_t _cairo_default_context_backend = {
     _cairo_default_context_set_shadow,
     _cairo_default_context_set_shadow_offset,
     _cairo_default_context_set_shadow_rgba,
-    _cairo_default_context_set_shadow_sigma,
+    _cairo_default_context_set_shadow_blur,
     _cairo_default_context_set_draw_shadow_only,
     _cairo_default_context_shadow_enable_cache,
 };

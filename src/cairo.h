@@ -2938,7 +2938,7 @@ cairo_set_shadow_rgba (cairo_t *cr, double red, double green,
 		       double blue, double alpha);
 
 cairo_public void 
-cairo_set_shadow_sigma (cairo_t *cr, double x_sigma, double y_sigma);
+cairo_set_shadow_blur (cairo_t *cr, double x_blur, double y_blur);
 
 cairo_public void 
 cairo_set_draw_shadow_only (cairo_t *cr, cairo_bool_t draw_shadow_only);

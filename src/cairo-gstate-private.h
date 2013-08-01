@@ -398,8 +398,8 @@ _cairo_gstate_set_shadow_rgba (cairo_gstate_t *gstate, double r, double g,
 			       double b, double a);
 
 cairo_private cairo_status_t
-_cairo_gstate_set_shadow_sigma (cairo_gstate_t *gstate, double x_sigma,
-				double y_sigma);
+_cairo_gstate_set_shadow_blur (cairo_gstate_t *gstate, double x_blur,
+			       double y_blur);
 
 cairo_private void
 _cairo_gstate_set_draw_shadow_only (cairo_gstate_t *gstate,
