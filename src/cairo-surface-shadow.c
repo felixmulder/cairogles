@@ -340,8 +340,8 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MAX (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MAX (shadow_height, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_height = MIN (shadow_height, MAX_SHADOW_SIZE);
 
 	content = cairo_surface_get_content (target);
  	if (content == CAIRO_CONTENT_COLOR)
@@ -643,8 +643,8 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MAX (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MAX (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE);
 
 	content = cairo_surface_get_content (target);
 	content = cairo_surface_get_content (target);
@@ -956,8 +956,8 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MAX (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MAX (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE);
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
@@ -1391,8 +1391,8 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MAX (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MAX (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE);
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
@@ -1700,8 +1700,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MAX (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MAX (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE);
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
@@ -2122,8 +2122,8 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MAX (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MAX (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE);
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
