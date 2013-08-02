@@ -1166,8 +1166,6 @@ _cairo_xcb_surface_picture (cairo_xcb_surface_t *target,
 		is_gaussian_filter = TRUE;
 	    }
 
-	    _cairo_xcb_surface_setup_surface_picture (picture, pattern, extents);
-
 	    /* apply gaussian filter if pattern filter is gaussian */
 	    if (is_gaussian_filter)
 		orig_pattern->base.filter = CAIRO_FILTER_GAUSSIAN;
@@ -1190,6 +1188,8 @@ _cairo_xcb_surface_picture (cairo_xcb_surface_t *target,
 					       extents->x + extents->width/2.,
 					       extents->y + extents->height/2.);
 	    }
+
+	    _cairo_xcb_surface_setup_surface_picture (filtered_picture, pattern, extents);
 
 	    cairo_surface_destroy (&picture->base);
 	    return filtered_picture;
@@ -1352,8 +1352,6 @@ _cairo_xcb_surface_picture (cairo_xcb_surface_t *target,
 	is_gaussian_filter = TRUE;
     }
 
-    _cairo_xcb_surface_setup_surface_picture (picture, pattern, extents);
-
     /* apply gaussian filter if pattern filter is gaussian */
     if (is_gaussian_filter)
 	orig_pattern->base.filter = CAIRO_FILTER_GAUSSIAN;
@@ -1374,6 +1372,8 @@ _cairo_xcb_surface_picture (cairo_xcb_surface_t *target,
 				       extents->x + extents->width/2.,
 				       extents->y + extents->height/2.);
     }
+
+    _cairo_xcb_surface_setup_surface_picture (filtered_picture, pattern, extents);
 
     cairo_surface_destroy (&picture->base);
     return filtered_picture;
@@ -4990,6 +4990,7 @@ _cairo_xcb_gaussian_filter (cairo_xcb_surface_t *source,
     int row, col;
     int width, height;
     cairo_matrix_t matrix;
+    cairo_format_t format;
 
     cairo_xcb_picture_t *shrinked_picture = NULL;
     cairo_xcb_picture_t *scratch_pictures[] = { NULL, NULL };
@@ -5016,10 +5017,10 @@ _cairo_xcb_gaussian_filter (cairo_xcb_surface_t *source,
 
     width = src_width / pattern->shrink_factor_x;
     height = src_height / pattern->shrink_factor_y;
-
-    pixman_format = _cairo_format_to_pixman_format_code (CAIRO_FORMAT_ARGB32);
+    format = _cairo_format_from_content (cairo_surface_get_content (&source->base));
+    pixman_format = _cairo_format_to_pixman_format_code (format);
     depth = PIXMAN_FORMAT_DEPTH (pixman_format);
-    xrender_format = source->connection->standard_formats[CAIRO_FORMAT_ARGB32];
+    xrender_format = source->connection->standard_formats[format];
 
     picture = _cairo_xcb_picture_create (source->screen,
 					 pixman_format,
