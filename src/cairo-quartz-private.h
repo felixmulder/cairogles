@@ -97,6 +97,11 @@ CairoQuartzCreateCGImage (cairo_format_t format,
 cairo_private CGFontRef
 _cairo_quartz_scaled_font_get_cg_font_ref (cairo_scaled_font_t *sfont);
 
+cairo_private cairo_status_t
+_cairo_quartz_gaussian_filter (const cairo_pattern_t *src,
+			       const CGImageRef image,
+			       CGImageRef *out_image);
+
 #else
 
 # error Cairo was not compiled with support for the quartz backend

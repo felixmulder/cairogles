@@ -348,7 +348,8 @@ cairo_qt_cxx_sources = cairo-qt-surface.cpp
 
 cairo_quartz_headers = cairo-quartz.h
 cairo_quartz_private = cairo-quartz-private.h
-cairo_quartz_sources = cairo-quartz-surface.c
+cairo_quartz_sources = cairo-quartz-surface.c \
+		       cairo-quartz-filters.c
 
 cairo_quartz_image_headers = cairo-quartz-image.h
 cairo_quartz_image_sources = cairo-quartz-image-surface.c

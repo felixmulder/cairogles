@@ -783,7 +783,8 @@ DataProviderReleaseCallback (void *info, const void *data, size_t size)
 }
 
 static cairo_status_t
-_cairo_surface_to_cgimage (cairo_surface_t       *source,
+_cairo_surface_to_cgimage (const cairo_pattern_t *pattern,
+			   cairo_surface_t       *source,
 			   cairo_rectangle_int_t *extents,
 			   cairo_format_t         format,
 			   cairo_matrix_t        *matrix,
@@ -793,11 +794,17 @@ _cairo_surface_to_cgimage (cairo_surface_t       *source,
     cairo_status_t status;
     quartz_source_image_t *source_img;
     cairo_image_surface_t *image_surface;
+    CGImageRef image;
 
     if (source->backend && source->backend->type == CAIRO_SURFACE_TYPE_QUARTZ_IMAGE) {
 	cairo_quartz_image_surface_t *surface = (cairo_quartz_image_surface_t *) source;
-	*image_out = CGImageRetain (surface->image);
-	return CAIRO_STATUS_SUCCESS;
+
+	status = _cairo_quartz_gaussian_filter (pattern, surface->image,
+						image_out);
+	if (unlikely (status)) {
+	    *image_out = NULL;
+	}
+	return status;
     }
 
     if (_cairo_surface_is_quartz (source)) {
@@ -808,9 +815,20 @@ _cairo_surface_to_cgimage (cairo_surface_t       *source,
 	}
 
 	if (_cairo_quartz_is_cgcontext_bitmap_context (surface->cgContext)) {
-	    *image_out = CGBitmapContextCreateImage (surface->cgContext);
-	    if (*image_out)
-		return CAIRO_STATUS_SUCCESS;
+	    image = CGBitmapContextCreateImage (surface->cgContext);
+	    if (image) {
+		status = _cairo_quartz_gaussian_filter (pattern, image,
+							image_out);
+		CGImageRelease (image);
+		if (unlikely (status)) {
+		    *image_out = NULL;
+		}
+	    }
+	    else {
+		status = CAIRO_INT_STATUS_UNSUPPORTED;
+		*image_out = NULL;
+	    }
+	    return status;
 	}
     }
 
@@ -861,19 +879,29 @@ _cairo_surface_to_cgimage (cairo_surface_t       *source,
 				     source_img->image_out->data,
 				     source_img->image_out->height * source_img->image_out->stride);
     } else {
-	*image_out = CairoQuartzCreateCGImage (source_img->image_out->format,
-					       source_img->image_out->width,
-					       source_img->image_out->height,
-					       source_img->image_out->stride,
-					       source_img->image_out->data,
-					       TRUE,
-					       NULL,
-					       DataProviderReleaseCallback,
-					       source_img);
+	image = CairoQuartzCreateCGImage (source_img->image_out->format,
+					  source_img->image_out->width,
+					  source_img->image_out->height,
+					  source_img->image_out->stride,
+					  source_img->image_out->data,
+					  TRUE,
+					  NULL,
+					  DataProviderReleaseCallback,
+					  source_img);
 
 	/* TODO: differentiate memory error and unsupported surface type */
-	if (unlikely (*image_out == NULL))
+	if (unlikely (image == NULL)) {
+	    *image_out = NULL;
 	    status = CAIRO_INT_STATUS_UNSUPPORTED;
+	}
+
+	status = _cairo_quartz_gaussian_filter (pattern, image,
+						image_out);
+	CGImageRelease (image);
+
+	if (unlikely (status)) {
+	    *image_out = NULL;
+	}
     }
 
     return status;
@@ -967,7 +995,8 @@ _cairo_quartz_cairo_repeating_surface_pattern_to_quartz (cairo_quartz_surface_t 
 	_cairo_surface_get_extents (&dest->base, &extents);
 
     m = spattern->base.matrix;
-    status = _cairo_surface_to_cgimage (pat_surf, &extents, format,
+    status = _cairo_surface_to_cgimage (apattern, pat_surf, &extents,
+					format,
 					&m, clip, &image);
     if (unlikely (status))
 	return status;
@@ -1249,7 +1278,8 @@ _cairo_quartz_setup_state (cairo_quartz_drawing_state_t *state,
 	cairo_bool_t is_bounded;
 
 	_cairo_surface_get_extents (composite->surface, &extents);
-	status = _cairo_surface_to_cgimage (pat_surf, &extents, format,
+	status = _cairo_surface_to_cgimage (source, pat_surf, &extents,
+					    format,
 					    &m, clip, &img);
 	if (unlikely (status))
 	    return status;
@@ -1656,7 +1686,8 @@ _cairo_quartz_cg_mask_with_surface (cairo_composite_rectangles_t *extents,
     cairo_matrix_t m = *mask_mat;
 
     _cairo_surface_get_extents (extents->surface, &dest_extents);
-    status = _cairo_surface_to_cgimage (mask_surf, &dest_extents, format,
+    status = _cairo_surface_to_cgimage (&extents->mask_pattern.base, 
+					mask_surf, &dest_extents, format,
 					&m, extents->clip, &img);
     if (unlikely (status))
 	return status;

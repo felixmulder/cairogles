@@ -340,8 +340,10 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MIN (shadow_height, MAX_SHADOW_SIZE);
+	//int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
+	//int scaled_height = MIN (shadow_height, MAX_SHADOW_SIZE);
+	int scaled_width = shadow_width;
+	int scaled_height = shadow_height;
 
 	content = cairo_surface_get_content (target);
  	if (content == CAIRO_CONTENT_COLOR)

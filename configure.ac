@@ -194,13 +194,13 @@ dnl ===========================================================================
 
 CAIRO_ENABLE_SURFACE_BACKEND(quartz, Quartz, auto, [
   dnl There is no pkgconfig for quartz; lets do a header check
-  AC_CHECK_HEADER(ApplicationServices/ApplicationServices.h, , [use_quartz="no (requires ApplicationServices framework)"])
+  AC_CHECK_HEADERS([ApplicationServices/ApplicationServices.h Accelerate/Accelerate.h], , [use_quartz="no (requires ApplicationServices framework)"])
   if test "x$use_quartz" != "xyes" ; then
     dnl check for CoreGraphics as a separate framework
-    AC_CHECK_HEADER(CoreGraphics/CoreGraphics.h, , [use_quartz="no (requires CoreGraphics framework)"])
-    quartz_LIBS="-Xlinker -framework -Xlinker CoreGraphics"
+    AC_CHECK_HEADERS([CoreGraphics/CoreGraphics.h Accelerate/Accelerate.h], , [use_quartz="no (requires CoreGraphics framework)"])
+    quartz_LIBS="-Xlinker -framework -Xlinker CoreGraphics -Xlinker -framework -Xlinker Accelerate"
   else
-    quartz_LIBS="-Xlinker -framework -Xlinker ApplicationServices"
+    quartz_LIBS="-Xlinker -framework -Xlinker ApplicationServices -Xlinker -framework -Xlinker Accelerate"
   fi
 ])
 
