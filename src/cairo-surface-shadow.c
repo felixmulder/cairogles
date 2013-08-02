@@ -236,16 +236,16 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 	shadow_caches = &device->shadow_caches;
 	shadow_caches_size = &device->shadow_caches_size;
     }
-    else if (target->type == CAIRO_SURFACE_TYPE_IMAGE) {
-	cairo_image_surface_t *image_target = (cairo_image_surface_t *)target;
-
-	status = _cairo_image_surface_shadow_cache_acquire (image_target);
+    else if (target->backend &&
+	  target->backend->has_shadow_cache &&
+	  target->backend->has_shadow_cache (target)) {
+	status = target->backend->shadow_cache_acquire (target);
 	locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_caches = _cairo_image_surface_get_shadow_cache (image_target);
+	    shadow_caches = target->backend->get_shadow_cache (target);
 	    if (shadow_caches) {
-		shadow_caches_size = _cairo_image_surface_get_shadow_cache_size (image_target);
+		shadow_caches_size = target->backend->get_shadow_cache_size (target);
 		hash = _cairo_shadow_hash_for_paint (source, shadow);
 		cairo_list_foreach_entry (shadow_cache,
 					  cairo_shadow_cache_t, 
@@ -468,7 +468,7 @@ FINISH:
     cairo_surface_destroy (cache_surface);
 
     if (locked)
-	_cairo_image_surface_shadow_cache_release ((cairo_image_surface_t *)target);
+	target->backend->shadow_cache_release (target);
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     return status;
@@ -537,16 +537,16 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 	    }
 	}
     }
-    else if (target->type == CAIRO_SURFACE_TYPE_IMAGE) {
-	cairo_image_surface_t *image_target = (cairo_image_surface_t *)target;
-
-	status = _cairo_image_surface_shadow_cache_acquire (image_target);
+    else if (target->backend &&
+	  target->backend->has_shadow_cache &&
+	  target->backend->has_shadow_cache (target)) {
+	status = target->backend->shadow_cache_acquire (target);
 	locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_caches = _cairo_image_surface_get_shadow_cache (image_target);
+	    shadow_caches = target->backend->get_shadow_cache (target);
 	    if (shadow_caches) {
-		shadow_caches_size = _cairo_image_surface_get_shadow_cache_size (image_target);
+		shadow_caches_size = target->backend->get_shadow_cache_size (target);
 		hash = _cairo_shadow_hash_for_mask (source, mask, shadow);
 		cairo_list_foreach_entry (shadow_cache,
 					  cairo_shadow_cache_t, 
@@ -772,7 +772,7 @@ FINISH:
     cairo_surface_destroy (cache_surface);
 
     if (locked)
-	_cairo_image_surface_shadow_cache_release ((cairo_image_surface_t *)target);
+	target->backend->shadow_cache_release (target);
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     return status;
@@ -840,16 +840,16 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 	    }
 	}
     }
-    else if (target->type == CAIRO_SURFACE_TYPE_IMAGE) {
-	cairo_image_surface_t *image_target = (cairo_image_surface_t *)target;
-
-	status = _cairo_image_surface_shadow_cache_acquire (image_target);
+    else if (target->backend &&
+	  target->backend->has_shadow_cache &&
+	  target->backend->has_shadow_cache (target)) {
+	status = target->backend->shadow_cache_acquire (target);
 	locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_caches = _cairo_image_surface_get_shadow_cache (image_target);
+	    shadow_caches = target->backend->get_shadow_cache (target);
 	    if (shadow_caches) {
-		shadow_caches_size = _cairo_image_surface_get_shadow_cache_size (image_target);
+		shadow_caches_size = target->backend->get_shadow_cache_size (target);
 		hash = _cairo_shadow_hash_for_stroke (source, path, stroke_style, ctm, shadow);
 		cairo_list_foreach_entry (shadow_cache,
 					  cairo_shadow_cache_t, 
@@ -1196,7 +1196,7 @@ FINISH:
     cairo_surface_destroy (invert_mask_surface);
 
     if (locked)
-	_cairo_image_surface_shadow_cache_release ((cairo_image_surface_t *)target);
+	target->backend->shadow_cache_release (target);
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     return status;
@@ -1277,16 +1277,16 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 	    }
 	}
     }
-    else if (target->type == CAIRO_SURFACE_TYPE_IMAGE) {
-	cairo_image_surface_t *image_target = (cairo_image_surface_t *)target;
-
-	status = _cairo_image_surface_shadow_cache_acquire (image_target);
+    else if (target->backend &&
+	  target->backend->has_shadow_cache &&
+	  target->backend->has_shadow_cache (target)) {
+	status = target->backend->shadow_cache_acquire (target);
 	locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_caches = _cairo_image_surface_get_shadow_cache (image_target);
+	    shadow_caches = target->backend->get_shadow_cache (target);
 	    if (shadow_caches) {
-		shadow_caches_size = _cairo_image_surface_get_shadow_cache_size (image_target);
+		shadow_caches_size = target->backend->get_shadow_cache_size (target);
 		hash = _cairo_shadow_hash_for_stroke (source, path, stroke_style, ctm, shadow);
 		cairo_list_foreach_entry (shadow_cache,
 					  cairo_shadow_cache_t, 
@@ -1529,7 +1529,7 @@ FINISH:
     cairo_surface_destroy (cache_surface);
 
     if (locked)
-	_cairo_image_surface_shadow_cache_release ((cairo_image_surface_t *)target);
+	target->backend->shadow_cache_release (target);
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     return status;
@@ -1593,16 +1593,16 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	    }
 	}
     }
-    else if (target->type == CAIRO_SURFACE_TYPE_IMAGE) {
-	cairo_image_surface_t *image_target = (cairo_image_surface_t *)target;
-
-	status = _cairo_image_surface_shadow_cache_acquire (image_target);
+    else if (target->backend &&
+	  target->backend->has_shadow_cache &&
+	  target->backend->has_shadow_cache (target)) {
+	status = target->backend->shadow_cache_acquire (target);
 	locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_caches = _cairo_image_surface_get_shadow_cache (image_target);
+	    shadow_caches = target->backend->get_shadow_cache (target);
 	    if (shadow_caches) {
-		shadow_caches_size = _cairo_image_surface_get_shadow_cache_size (image_target);
+		shadow_caches_size = target->backend->get_shadow_cache_size (target);
 		hash = _cairo_shadow_hash_for_fill (source, path, fill_rule, shadow);
 		cairo_list_foreach_entry (shadow_cache,
 					  cairo_shadow_cache_t, 
@@ -1942,6 +1942,9 @@ FINISH:
     cairo_surface_destroy (shadow_surface);
     cairo_surface_destroy (mask_surface);
     cairo_surface_destroy (invert_mask_surface);
+
+    if (locked)
+	target->backend->shadow_cache_release (target);
     return status;
 }
 
@@ -2016,16 +2019,16 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 	    }
 	}
     }
-    else if (target->type == CAIRO_SURFACE_TYPE_IMAGE) {
-	cairo_image_surface_t *image_target = (cairo_image_surface_t *)target;
-
-	status = _cairo_image_surface_shadow_cache_acquire (image_target);
+    else if (target->backend &&
+	  target->backend->has_shadow_cache &&
+	  target->backend->has_shadow_cache (target)) {
+	status = target->backend->shadow_cache_acquire (target);
 	locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_caches = _cairo_image_surface_get_shadow_cache (image_target);
+	    shadow_caches = target->backend->get_shadow_cache (target);
 	    if (shadow_caches) {
-		shadow_caches_size = _cairo_image_surface_get_shadow_cache_size (image_target);
+		shadow_caches_size = target->backend->get_shadow_cache_size (target);
 		hash = _cairo_shadow_hash_for_fill (source, path, fill_rule, shadow);
 		cairo_list_foreach_entry (shadow_cache,
 					  cairo_shadow_cache_t, 
@@ -2258,7 +2261,7 @@ FINISH:
     cairo_surface_destroy (shadow_surface);
 
     if (locked)
-	_cairo_image_surface_shadow_cache_release ((cairo_image_surface_t *)target);
+	target->backend->shadow_cache_release (target);
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
 
     return status;

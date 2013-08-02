@@ -126,10 +126,12 @@ _cairo_image_shadow_caches_destroy (void)
     }
 }
 
-cairo_status_t
-_cairo_image_surface_shadow_cache_acquire (cairo_image_surface_t *surface)
+static cairo_status_t
+_cairo_image_surface_shadow_cache_acquire (void *abstract_surface)
 {
-    if (! surface)
+    cairo_image_surface_t *surface = abstract_surface;
+
+    if (! surface || surface->base.type != CAIRO_SURFACE_TYPE_IMAGE)
 	return CAIRO_STATUS_SURFACE_TYPE_MISMATCH;
 
     if (unlikely (surface->base.status))
@@ -141,10 +143,12 @@ _cairo_image_surface_shadow_cache_acquire (cairo_image_surface_t *surface)
     return CAIRO_STATUS_SUCCESS;
 }
 
-void
-_cairo_image_surface_shadow_cache_release (cairo_image_surface_t *surface)
+static void
+_cairo_image_surface_shadow_cache_release (void *abstract_surface)
 {
-    if (! surface)
+    cairo_image_surface_t *surface = abstract_surface;
+
+    if (! surface || surface->base.type != CAIRO_SURFACE_TYPE_IMAGE)
 	return;
 
     if (unlikely (surface->base.status))
@@ -156,10 +160,12 @@ _cairo_image_surface_shadow_cache_release (cairo_image_surface_t *surface)
     CAIRO_MUTEX_UNLOCK (shadow_caches_mutex);
 }
 
-cairo_list_t *
-_cairo_image_surface_get_shadow_cache (cairo_image_surface_t *surface)
+static cairo_list_t *
+_cairo_image_surface_get_shadow_cache (void *abstract_surface)
 {
-    if (! surface)
+    cairo_image_surface_t *surface = abstract_surface;
+
+    if (! surface || surface->base.type != CAIRO_SURFACE_TYPE_IMAGE)
 	return NULL;
 
     if (unlikely (surface->base.status))
@@ -168,16 +174,28 @@ _cairo_image_surface_get_shadow_cache (cairo_image_surface_t *surface)
     return &shadow_caches;
 }
 
-unsigned long *
-_cairo_image_surface_get_shadow_cache_size (cairo_image_surface_t *surface)
+static unsigned long *
+_cairo_image_surface_get_shadow_cache_size (void *abstract_surface)
 {
-    if (! surface)
+    cairo_image_surface_t *surface = abstract_surface;
+
+    if (! surface || surface->base.type != CAIRO_SURFACE_TYPE_IMAGE)
 	return NULL;
 
     if (unlikely (surface->base.status))
 	return NULL;
 
     return &shadow_caches_size;
+}
+
+static cairo_bool_t
+_cairo_image_surface_has_shadow_cache (void *abstract_surface)
+{
+    cairo_image_surface_t *surface = abstract_surface;
+
+    if (! surface || surface->base.type != CAIRO_SURFACE_TYPE_IMAGE)
+	return FALSE;
+    return TRUE;
 }
 
 static cairo_bool_t
@@ -1305,6 +1323,14 @@ const cairo_surface_backend_t _cairo_image_surface_backend = {
     NULL, /* show_text_glyphs */
     NULL, /* get_supported_mime_types */
     _cairo_image_surface_shadow_surface,
+    NULL, /* get_glyph_shadow_surface */
+    NULL, /* get_shadow_mask_surface */
+    NULL, /* get_glyph_shadow_mask_surface */
+    _cairo_image_surface_shadow_cache_acquire,
+    _cairo_image_surface_shadow_cache_release,
+    _cairo_image_surface_get_shadow_cache,
+    _cairo_image_surface_get_shadow_cache_size,
+    _cairo_image_surface_has_shadow_cache,
 };
 
 /* A convenience function for when one needs to coerce an image
