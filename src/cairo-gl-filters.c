@@ -108,6 +108,7 @@ gaussian_filter_stage_1 (cairo_bool_t x_axis,
 			 cairo_gl_surface_t *src,
 			 cairo_gl_surface_t *dst,
 			 int dst_width, int dst_height,
+			 cairo_bool_t is_opaque,
 			 cairo_gl_context_t **ctx)
 {
     int row, col;
@@ -176,6 +177,17 @@ gaussian_filter_stage_1 (cairo_bool_t x_axis,
 	_cairo_gl_composite_fini (&setup);
 	return status;
     }
+
+    if (is_opaque)
+	_cairo_gl_shader_bind_float (ctx_out,
+				     _cairo_gl_shader_uniform_for_texunit (
+					CAIRO_GL_UNIFORM_ALPHA, CAIRO_GL_TEX_SOURCE),
+					1.0);
+    else
+	_cairo_gl_shader_bind_float (ctx_out,
+				     _cairo_gl_shader_uniform_for_texunit (
+					CAIRO_GL_UNIFORM_ALPHA, CAIRO_GL_TEX_SOURCE),
+					0.0);
 
     rect.x = 0;
     rect.y = 0;
@@ -258,6 +270,9 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
     cairo_bool_t is_source;
 
     int n;
+    cairo_bool_t is_opaque = FALSE;
+
+    cairo_content_t content = cairo_surface_get_content (&src->base);
 
     if (src->operand.type == CAIRO_GL_OPERAND_GAUSSIAN) {
 	extents_out->x = extents_out->y = 0;
@@ -272,6 +287,9 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 
     if (! _cairo_gl_surface_is_texture (src))
 	return (cairo_gl_surface_t *)cairo_surface_reference (&src->base);
+
+    if (content == CAIRO_CONTENT_COLOR)
+	is_opaque = TRUE;
 
     src_width = cairo_gl_surface_get_width (&src->base);
     src_height = cairo_gl_surface_get_height (&src->base);
@@ -369,11 +387,11 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
     if (! skip_stage_0)
 	status = gaussian_filter_stage_1 (TRUE, pattern, &temp_pattern,
 					  scratches[0], scratches[1],
-					  width, height, &ctx_out);
+					  width, height, is_opaque, &ctx_out);
     else {
 	status = gaussian_filter_stage_1 (TRUE, pattern, &temp_pattern,
 					  src, scratches[1],
-					  width, height, &ctx_out);
+					  width, height, is_opaque, &ctx_out);
 	src->operand.type = saved_type;
     }
 	
@@ -385,7 +403,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
     /* y-axis pass */
     status = gaussian_filter_stage_1 (FALSE, pattern, &temp_pattern,
 				      scratches[1], scratches[0],
-				      width, height, &ctx_out);
+				      width, height, is_opaque, &ctx_out);
     if (ctx_out)
 	status = _cairo_gl_context_release (ctx_out, status);
     if (unlikely (status))

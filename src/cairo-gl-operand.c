@@ -1190,7 +1190,6 @@ _cairo_gl_operand_bind_to_shader (cairo_gl_context_t *ctx,
         ASSERT_NOT_REACHED;
     case CAIRO_GL_OPERAND_NONE:
 	return;
-
     case CAIRO_GL_OPERAND_CONSTANT:
 	if (operand->constant.encode_as_attribute)
 	    return;
@@ -1258,6 +1257,7 @@ _cairo_gl_operand_bind_to_shader (cairo_gl_context_t *ctx,
 	operand->pass == 1) {
 	float x_axis = 1.0;
 	float y_axis = 0.0;
+
 	_cairo_gl_shader_bind_float (ctx,
 				    _cairo_gl_shader_uniform_for_texunit (
 					    CAIRO_GL_UNIFORM_BLUR_X_AXIS, tex_unit),
@@ -1286,6 +1286,7 @@ _cairo_gl_operand_bind_to_shader (cairo_gl_context_t *ctx,
 	     operand->pass == 2) {
 	float x_axis = 0.0;
 	float y_axis = 1.0;
+
 	_cairo_gl_shader_bind_float (ctx,
 				    _cairo_gl_shader_uniform_for_texunit (
 					    CAIRO_GL_UNIFORM_BLUR_X_AXIS, tex_unit),

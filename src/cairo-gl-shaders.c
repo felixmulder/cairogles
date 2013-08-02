@@ -64,6 +64,7 @@ _cairo_gl_shader_get_uniform_location (cairo_gl_context_t *ctx,
 	"source_blur_step",
 	"source_blur_x_axis",
 	"source_blur_y_axis",
+	"source_alpha",
 	"mask_texdims",
 	"mask_texgen",
 	"mask_constant",
@@ -76,6 +77,7 @@ _cairo_gl_shader_get_uniform_location (cairo_gl_context_t *ctx,
 	"mask_blur_step",
 	"mask_blur_x_axis",
 	"mask_blur_y_axis",
+	"mask_alpha",
 	"ModelViewProjectionMatrix"
     };
 
@@ -567,8 +569,9 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 		"uniform float %s_blur_step;\n"
 		"uniform float %s_blurs[17];\n"
 		"uniform float %s_blur_x_axis;\n"
-		"uniform float %s_blur_y_axis;\n",
-		namestr, namestr, namestr, namestr, namestr);
+		"uniform float %s_blur_y_axis;\n"
+		"uniform float %s_alpha;\n",
+		namestr, namestr, namestr, namestr, namestr, namestr);
 	}
 
 	_cairo_output_stream_printf (stream,
@@ -620,13 +623,12 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 	    _cairo_output_stream_printf (stream,
 		"    int i;\n"
 		"    vec2 texcoords;\n"
-		"    float alpha;\n"
+		"    float alpha = %s_alpha;\n"
 		"    vec4 texel = vec4 (0.0, 0.0, 0.0, 0.0);\n"
 		"    vec2 wrapped_coords = %s_wrap (%s_texcoords, %s_start_coords, %s_stop_coords);\n"
 		"    if (wrapped_coords == vec2 (-1.0, -1.0))\n"
 		"        return texel;\n"
 		"    texel += texture2D%s (%s_sampler, wrapped_coords);\n"
-		"    alpha = texel.a;\n"
 		"    texel = texel * %s_blurs[%s_blur_radius];\n"
 		"    for (i = -%s_blur_radius; i <= %s_blur_radius; i++) {\n"
 		"        if (i == 0)\n"
@@ -641,7 +643,7 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 		"    }\n"
 		"    return texel;\n"
 		"}\n",
-		namestr, namestr, namestr, namestr,
+		namestr, namestr, namestr, namestr, namestr,
 		rectstr, namestr, namestr, namestr,
 		namestr, namestr, namestr, namestr,
 		namestr, namestr, namestr, namestr,
