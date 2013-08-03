@@ -166,6 +166,7 @@ _cairo_quartz_surface_shadow_caches_destroy (void)
 	    cairo_surface_destroy (shadow->surface);
 	    free (shadow);
 	}
+	shadow_caches_size = 0;
     }
 }
 

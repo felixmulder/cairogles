@@ -182,6 +182,7 @@ _cairo_device_init (cairo_device_t *device,
     _cairo_user_data_array_init (&device->user_data);
 
     cairo_list_init (&device->shadow_caches);
+    device->shadow_caches_size = 0;
 }
 
 /**
@@ -363,6 +364,7 @@ cairo_device_destroy (cairo_device_t *device)
 	cairo_surface_destroy (shadow->surface);
 	free (shadow);
     }
+    device->shadow_caches_size = 0;
 }
 slim_hidden_def (cairo_device_destroy);
 
