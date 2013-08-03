@@ -49,6 +49,7 @@
 #include "cairo-surface-clipper-private.h"
 #include "cairo-recording-surface-private.h"
 #include "cairo-surface-shadow-private.h"
+#include "cairo-list-inline.h"
 
 #include <dlfcn.h>
 
@@ -125,6 +126,120 @@ static unsigned int (*CGContextGetTypePtr) (CGContextRef) = NULL;
 static bool (*CGContextGetAllowsFontSmoothingPtr) (CGContextRef) = NULL;
 
 static cairo_bool_t _cairo_quartz_symbol_lookup_done = FALSE;
+
+/* Shadow cache functions */
+static cairo_list_t shadow_caches;
+static unsigned long shadow_caches_size = 0;
+static cairo_recursive_mutex_t shadow_caches_mutex;
+static unsigned shadow_caches_mutex_depth = 0;
+static cairo_atomic_int_t shadow_caches_ref_count = 0;
+
+static void
+_cairo_quartz_surface_shadow_caches_init (void)
+{
+    _cairo_atomic_int_inc (&shadow_caches_ref_count);
+
+    if (shadow_caches_ref_count == 1)
+	cairo_list_init (&shadow_caches);
+
+    CAIRO_RECURSIVE_MUTEX_INIT (shadow_caches_mutex);
+}
+
+static void
+_cairo_quartz_surface_shadow_caches_destroy (void)
+{
+    assert (shadow_caches_ref_count != 0);
+
+    if (! _cairo_atomic_int_dec_and_test (&shadow_caches_ref_count))
+	return;
+
+    if (shadow_caches_mutex_depth == 0) {
+	CAIRO_MUTEX_FINI (shadow_caches_mutex);
+
+	while (! cairo_list_is_empty (&shadow_caches)) {
+	    cairo_shadow_cache_t *shadow;
+
+	    shadow = cairo_list_first_entry (&shadow_caches,
+					     cairo_shadow_cache_t,
+					     link);
+	    cairo_list_del (&shadow->link);
+	    cairo_surface_destroy (shadow->surface);
+	    free (shadow);
+	}
+    }
+}
+
+static cairo_status_t
+_cairo_quartz_surface_shadow_cache_acquire (void *abstract_surface)
+{
+    cairo_quartz_surface_t *surface = abstract_surface;
+
+    if (! surface || surface->base.type != CAIRO_SURFACE_TYPE_QUARTZ)
+	return CAIRO_STATUS_SURFACE_TYPE_MISMATCH;
+
+    if (unlikely (surface->base.status))
+	return surface->base.status;
+
+    CAIRO_MUTEX_LOCK (shadow_caches_mutex);
+    shadow_caches_mutex_depth++;
+
+    return CAIRO_STATUS_SUCCESS;
+}
+
+static void
+_cairo_quartz_surface_shadow_cache_release (void *abstract_surface)
+{
+    cairo_quartz_surface_t *surface = abstract_surface;
+
+    if (! surface || surface->base.type != CAIRO_SURFACE_TYPE_QUARTZ)
+	return;
+
+    if (unlikely (surface->base.status))
+	return;
+
+    assert (shadow_caches_mutex_depth > 0);
+    shadow_caches_mutex_depth--;
+
+    CAIRO_MUTEX_UNLOCK (shadow_caches_mutex);
+}
+
+static cairo_list_t *
+_cairo_quartz_surface_get_shadow_cache (void *abstract_surface)
+{
+    cairo_quartz_surface_t *surface = abstract_surface;
+
+    if (! surface || surface->base.type != CAIRO_SURFACE_TYPE_QUARTZ)
+	return NULL;
+
+    if (unlikely (surface->base.status))
+	return NULL;
+
+    return &shadow_caches;
+}
+
+static unsigned long *
+_cairo_quartz_surface_get_shadow_cache_size (void *abstract_surface)
+{
+    cairo_quartz_surface_t *surface = abstract_surface;
+
+    if (! surface || surface->base.type != CAIRO_SURFACE_TYPE_QUARTZ)
+	return NULL;
+
+    if (unlikely (surface->base.status))
+	return NULL;
+
+    return &shadow_caches_size;
+}
+
+static cairo_bool_t
+_cairo_quartz_surface_has_shadow_cache (void *abstract_surface)
+{
+    cairo_quartz_surface_t *surface = abstract_surface;
+
+    if (! surface || surface->base.type != CAIRO_SURFACE_TYPE_QUARTZ)
+	return FALSE;
+    return TRUE;
+}
 
 /*
  * Utility functions
@@ -1570,6 +1685,8 @@ _cairo_quartz_surface_finish (void *abstract_surface)
     free (surface->imageData);
     surface->imageData = NULL;
 
+    _cairo_quartz_surface_shadow_caches_destroy ();
+
     return CAIRO_STATUS_SUCCESS;
 }
 
@@ -2371,6 +2488,18 @@ static const struct _cairo_surface_backend cairo_quartz_surface_backend = {
     _cairo_quartz_surface_fill,
     NULL,  /* fill-stroke */
     _cairo_quartz_surface_glyphs,
+    NULL, /* has_text_glyphs */
+    NULL, /* show_text_glyphs */
+    NULL, /* get_supported_mime_types */
+    NULL, /* get_shadow_surface */
+    NULL, /* get_glyph_shadow_surface */
+    NULL, /* get_shadow_mask_surface */
+    NULL, /* get_glyph_shadow_mask_surface */
+    _cairo_quartz_surface_shadow_cache_acquire,
+    _cairo_quartz_surface_shadow_cache_release,
+    _cairo_quartz_surface_get_shadow_cache,
+    _cairo_quartz_surface_get_shadow_cache_size,
+    _cairo_quartz_surface_has_shadow_cache,
 };
 
 cairo_quartz_surface_t *
@@ -2422,6 +2551,8 @@ _cairo_quartz_surface_create_internal (CGContextRef cgContext,
 
     surface->imageData = NULL;
     surface->imageSurfaceEquiv = NULL;
+
+    _cairo_quartz_surface_shadow_caches_init ();
 
     return surface;
 }
