@@ -1707,10 +1707,11 @@ _cairo_gl_surface_stroke (void			        *surface,
     if (unlikely (status))
 	return status;
 
-    status = _cairo_surface_shadow_stroke (surface, op, source, path,
-					   style, ctm, ctm_inverse,
-					   tolerance, antialias,
-					   clip, &source->shadow);
+    if (shadow_type != CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_stroke (surface, op, source, path,
+					       style, ctm, ctm_inverse,
+					       tolerance, antialias,
+					       clip, &source->shadow);
 
     ctx->source_scratch_in_use = FALSE;
     if (unlikely (status)) {
@@ -1718,22 +1719,32 @@ _cairo_gl_surface_stroke (void			        *surface,
 	return status;
     }
 
-    if (shadow_type == CAIRO_SHADOW_INSET ||
+    dst->content_changed = TRUE;
+
+    if (shadow_type != CAIRO_SHADOW_INSET &&
 	source->shadow.draw_shadow_only) {
-	if (likely (status))
-	    dst->content_changed = TRUE;
- 
 	ctx->source_scratch_in_use = FALSE;
 	cairo_device_release (dst->base.device);
 	return status;
     }
 
-    status = _cairo_compositor_stroke (get_compositor (surface), surface,
-				       op, source, path, style,
-				       ctm, ctm_inverse, tolerance,
-				       antialias, clip);
-    if (likely (status))
-	dst->content_changed = TRUE;
+
+    if (! source->shadow.draw_shadow_only)
+	status = _cairo_compositor_stroke (get_compositor (surface), surface,
+				           op, source, path, style,
+				           ctm, ctm_inverse, tolerance,
+				           antialias, clip);
+    if (unlikely (status)) {
+ 	ctx->source_scratch_in_use = FALSE;
+  	cairo_device_release (dst->base.device);
+	return status;
+    }
+
+    if (shadow_type == CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_stroke (surface, op, source, path,
+					       style, ctm, ctm_inverse,
+					       tolerance, antialias,
+					       clip, &source->shadow);
 
     ctx->source_scratch_in_use = FALSE;
     cairo_device_release (dst->base.device);
@@ -1759,9 +1770,10 @@ _cairo_gl_surface_fill (void			*surface,
     if (unlikely (status))
 	return status;
 
-    status = _cairo_surface_shadow_fill (surface, op, source, path,
-					 fill_rule, tolerance, antialias,
-					 clip, &source->shadow);
+    if (shadow_type != CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_fill (surface, op, source, path,
+					     fill_rule, tolerance, antialias,
+					     clip, &source->shadow);
 
     ctx->source_scratch_in_use = FALSE;
     if (unlikely (status)) {
@@ -1769,23 +1781,31 @@ _cairo_gl_surface_fill (void			*surface,
 	return status;
     }
 
-    if (shadow_type == CAIRO_SHADOW_INSET ||
+    dst->content_changed = TRUE;
+
+    if (shadow_type != CAIRO_SHADOW_INSET &&
 	source->shadow.draw_shadow_only) {
-	if (likely (status))
-	    dst->content_changed = TRUE;
- 
 	ctx->source_scratch_in_use = FALSE;
 	cairo_device_release (dst->base.device);
 	return status;
     }
 
-    status = _cairo_compositor_fill (get_compositor (surface), surface,
-				     op, source, path,
-				     fill_rule, tolerance, antialias,
-				     clip);
+    if (! source->shadow.draw_shadow_only)
+	status = _cairo_compositor_fill (get_compositor (surface), surface,
+				         op, source, path,
+				         fill_rule, tolerance, antialias,
+				         clip);
 
-    if (likely (status))
-	dst->content_changed = TRUE;
+    if (unlikely (status)) {
+ 	ctx->source_scratch_in_use = FALSE;
+  	cairo_device_release (dst->base.device);
+	return status;
+    }
+
+    if (shadow_type == CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_fill (surface, op, source, path,
+					     fill_rule, tolerance, antialias,
+					     clip, &source->shadow);
 
     ctx->source_scratch_in_use = FALSE;
     cairo_device_release (dst->base.device);
