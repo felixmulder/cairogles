@@ -1118,8 +1118,15 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 
 	cairo_pattern_destroy (shadow_pattern);
 	shadow_pattern = cairo_pattern_create_for_surface (invert_mask_surface);
-	cairo_matrix_init_translate (&im, shadow_copy.x_offset, shadow_copy.y_offset);
-	_cairo_pattern_transform (&shadow_source.base, &im);
+	cairo_matrix_init_scale (&im, scale, scale);
+	cairo_matrix_translate (&im, -x_offset - shadow_copy.x_offset,
+				     -y_offset - shadow_copy.y_offset);
+	status = cairo_matrix_invert (&im);
+	if (unlikely (status))
+	    goto FINISH;
+
+	cairo_matrix_multiply (&shadow_source.base.matrix, &im, &source->matrix);
+	shadow_source.base.filter = CAIRO_FILTER_DEFAULT;
 	status = _cairo_surface_mask (shadow_surface, 
 				      CAIRO_OPERATOR_OVER,
 				      &shadow_source.base,
@@ -1864,8 +1871,15 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	cairo_pattern_destroy (shadow_pattern);
 	shadow_pattern = cairo_pattern_create_for_surface (invert_mask_surface);
 
-	cairo_matrix_init_translate (&im, shadow_copy.x_offset, shadow_copy.y_offset);
-	_cairo_pattern_transform (&shadow_source.base, &im);
+	cairo_matrix_init_scale (&im, scale, scale);
+	cairo_matrix_translate (&im, -x_offset - shadow_copy.x_offset,
+				     -y_offset - shadow_copy.y_offset);
+	status = cairo_matrix_invert (&im);
+	if (unlikely (status))
+	    goto FINISH;
+
+	cairo_matrix_multiply (&shadow_source.base.matrix, &im, &source->matrix);
+	shadow_source.base.filter = CAIRO_FILTER_DEFAULT;
  	status = _cairo_surface_mask (shadow_surface,
 				      CAIRO_OPERATOR_OVER,
 				      &shadow_source.base,
