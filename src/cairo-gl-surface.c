@@ -241,7 +241,7 @@ _cairo_gl_surface_glyph_shadow_mask_surface (void *surface,
     if (ctx == NULL)
 	return NULL;
 
-    if (index > 2)
+    if (index > 1)
 	return NULL;
 
     mask_surface = ctx->shadow_masks[index + 2];
