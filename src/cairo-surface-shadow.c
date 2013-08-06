@@ -215,7 +215,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     unsigned long	 *shadow_caches_size = 0;
     cairo_bool_t          draw_shadow_only = source->shadow.draw_shadow_only;
 
-    if (shadow->type == CAIRO_SHADOW_NONE)
+    if (shadow->type != CAIRO_SHADOW_DROP)
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->color.alpha == 0.0)
@@ -519,7 +519,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     unsigned long        *shadow_caches_size = 0;
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
-    if (shadow->type == CAIRO_SHADOW_NONE)
+    if (shadow->type != CAIRO_SHADOW_DROP)
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->color.alpha == 0.0)
