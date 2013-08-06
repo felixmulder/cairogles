@@ -218,6 +218,9 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if (shadow->type == CAIRO_SHADOW_NONE)
 	return CAIRO_STATUS_SUCCESS;
 
+    if (shadow->color.alpha == 0.0)
+	return CAIRO_STATUS_SUCCESS;
+
     if (shadow->x_blur <= 0.0 && shadow->y_blur <= 0.0 &&
 	shadow->x_offset == 0.0 && shadow->y_offset == 0.0)
 	return CAIRO_STATUS_SUCCESS;
@@ -517,6 +520,9 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
+	return CAIRO_STATUS_SUCCESS;
+
+    if (shadow->color.alpha == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->x_blur <= 0.0 && shadow->y_blur <= 0.0 &&
@@ -829,6 +835,9 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
     cairo_operator_t	  shadow_op;
 
+    if (shadow->color.alpha == 0.0)
+	return CAIRO_STATUS_SUCCESS;
+
     if (device != NULL) {
 	hash = _cairo_shadow_hash_for_stroke (source, path, stroke_style, ctm, shadow);
 	shadow_caches = &device->shadow_caches;
@@ -978,7 +987,8 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 
     _cairo_surface_get_extents (shadow_surface, &extents);
 
-    if (source->type != CAIRO_PATTERN_TYPE_SOLID) {
+    if (source->type != CAIRO_PATTERN_TYPE_SOLID ||
+	((cairo_solid_pattern_t *)source)->color.alpha != 1.0) {
 	if (target->backend->get_shadow_mask_surface) {
 	    mask_surface = target->backend->get_shadow_mask_surface (shadow_surface,
 								     extents.width,
@@ -1257,6 +1267,9 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
+	return CAIRO_STATUS_SUCCESS;
+
+    if (shadow->color.alpha == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->x_blur <= 0.0 && shadow->y_blur <= 0.0 &&
@@ -1589,6 +1602,9 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     cairo_color_t         bg_color;
     cairo_operator_t      shadow_op;
 
+    if (shadow->color.alpha == 0.0)
+	return CAIRO_STATUS_SUCCESS;
+
     if (device != NULL) {
 	hash = _cairo_shadow_hash_for_fill (source, path, fill_rule, shadow);
 	shadow_caches = &device->shadow_caches;
@@ -1730,7 +1746,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 
     _cairo_surface_get_extents (shadow_surface, &extents);
 
-    if (source->type != CAIRO_PATTERN_TYPE_SOLID) {
+    if (source->type != CAIRO_PATTERN_TYPE_SOLID ||
+	((cairo_solid_pattern_t *)source)->color.alpha != 1.0) {
 	if (target->backend->get_shadow_mask_surface) {
 	    mask_surface = target->backend->get_shadow_mask_surface (shadow_surface,
 								     extents.width,
@@ -2008,6 +2025,9 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
+	return CAIRO_STATUS_SUCCESS;
+
+    if (shadow->color.alpha == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->x_blur <= 0.0 && shadow->y_blur <= 0.0 &&
@@ -2313,6 +2333,9 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     double		  y_offset = shadow->y_offset;
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
+    if (shadow->color.alpha == 0.0)
+	return CAIRO_STATUS_SUCCESS;
+
     ((cairo_pattern_t *)source)->shadow.type = CAIRO_SHADOW_NONE;
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = FALSE;
 
@@ -2491,6 +2514,9 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     if (shadow->type == CAIRO_SHADOW_NONE)
+	return CAIRO_STATUS_SUCCESS;
+
+    if (shadow->color.alpha == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
     if (shadow->x_blur <= 0.0 && shadow->y_blur <= 0.0 &&
