@@ -1077,7 +1077,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 	color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
 						   shadow_copy.color.green,
 						   shadow_copy.color.blue,
-						   shadow_copy.color.alpha);
+						   1.0);
 
 	status = _cairo_surface_paint (mask_surface, CAIRO_OPERATOR_SOURCE,
 				       color_pattern, NULL);
@@ -1811,6 +1811,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 
     if (unlikely (status))
 	goto FINISH;
+cairo_surface_write_to_png (shadow_surface, "./shadow.png");
 
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
@@ -1828,7 +1829,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	color_pattern = cairo_pattern_create_rgba (shadow_copy.color.red,
 						   shadow_copy.color.green,
 						   shadow_copy.color.blue,
-						   shadow_copy.color.alpha);
+						   1.0);
 	
 	status = _cairo_surface_paint (mask_surface,
 				       CAIRO_OPERATOR_SOURCE,
