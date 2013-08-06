@@ -223,7 +223,8 @@ struct _cairo_surface_backend {
     cairo_surface_t *
     (*get_glyph_shadow_mask_surface)  (void		*surface,
 				       int		 width,
-				       int		 height);
+				       int		 height,
+				       unsigned 	 index);
 
     cairo_status_t
     (*shadow_cache_acquire) 	    (void	*surface);

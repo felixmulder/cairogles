@@ -185,7 +185,7 @@ _gl_destroy (void *device)
     if (ctx->shadow_scratch_surfaces[2])
 	cairo_surface_destroy (&ctx->shadow_scratch_surfaces[2]->base);
 
-    for (n = 0; n < 4; n++) {
+    for (n = 0; n < 5; n++) {
 	if (ctx->shadow_masks[n])
 	    cairo_surface_destroy (&ctx->shadow_masks[n]->base);
     }
@@ -394,7 +394,7 @@ _cairo_gl_context_init (cairo_gl_context_t *ctx)
 	ctx->shadow_scratch_surfaces[n] = NULL;
     }
 
-    for (n = 0; n < 4; n++)
+    for (n = 0; n < 5; n++)
     ctx->shadow_masks[n] = NULL;
 
     ctx->source_scratch_in_use = FALSE;
