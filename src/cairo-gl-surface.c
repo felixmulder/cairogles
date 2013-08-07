@@ -1790,11 +1790,20 @@ _cairo_gl_surface_fill (void			*surface,
 	return status;
     }
 
-    if (! source->shadow.draw_shadow_only)
-	status = _cairo_compositor_fill (get_compositor (surface), surface,
-				         op, source, path,
-				         fill_rule, tolerance, antialias,
-				         clip);
+    if (! source->shadow.draw_shadow_only) {
+	if (! source->shadow.path_is_fill_with_spread ||
+	    fill_rule == CAIRO_FILL_RULE_EVEN_ODD)
+	    status = _cairo_compositor_fill (get_compositor (surface),
+					     surface,
+					     op, source, path,
+					     fill_rule, tolerance,
+					     antialias,
+					     clip);
+	else
+	    status = _cairo_compositor_paint (get_compositor (surface),
+					      surface, op, source,
+					      clip);
+    }
 
     if (unlikely (status)) {
  	ctx->source_scratch_in_use = FALSE;
