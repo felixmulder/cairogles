@@ -432,6 +432,7 @@ typedef struct _cairo_shadow {
     double 	x_blur;
     double	y_blur;
     cairo_color_t color;
+    cairo_bool_t path_is_fill_with_spread;
     cairo_bool_t  enable_cache;
     cairo_bool_t draw_shadow_only;
 } cairo_shadow_t;

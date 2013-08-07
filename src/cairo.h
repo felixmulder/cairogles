@@ -2946,6 +2946,10 @@ cairo_set_draw_shadow_only (cairo_t *cr, cairo_bool_t draw_shadow_only);
 cairo_public void
 cairo_shadow_enable_cache (cairo_t *cr, cairo_bool_t enable);
 
+cairo_public void
+cairo_set_path_is_inset_shadow_with_spread (cairo_t *cr,
+					    cairo_bool_t is_spread_path);
+
 cairo_public cairo_status_t
 cairo_pattern_get_rgba (cairo_pattern_t *pattern,
 			double *red, double *green,

@@ -1373,6 +1373,15 @@ _cairo_default_context_shadow_enable_cache (void	*abstract_cr,
     return _cairo_gstate_shadow_enable_cache (cr->gstate, enable);
 }
 
+static void
+_cairo_default_context_set_path_is_inset_shadow_with_spread (void *abstract_cr,
+							     cairo_bool_t is_spread_path)
+{
+    cairo_default_context_t *cr = abstract_cr;
+    return _cairo_gstate_set_path_is_inset_shadow_with_spread (cr->gstate,
+								is_spread_path);
+}
+
 static const cairo_backend_t _cairo_default_context_backend = {
     CAIRO_TYPE_DEFAULT,
     _cairo_default_context_destroy,
@@ -1498,6 +1507,7 @@ static const cairo_backend_t _cairo_default_context_backend = {
     _cairo_default_context_set_shadow_blur,
     _cairo_default_context_set_draw_shadow_only,
     _cairo_default_context_shadow_enable_cache,
+    _cairo_default_context_set_path_is_inset_shadow_with_spread,
 };
 
 cairo_status_t

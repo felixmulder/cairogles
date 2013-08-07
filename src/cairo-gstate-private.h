@@ -408,4 +408,8 @@ _cairo_gstate_set_draw_shadow_only (cairo_gstate_t *gstate,
 cairo_private void
 _cairo_gstate_shadow_enable_cache (cairo_gstate_t *gstate, cairo_bool_t enable);
 
+cairo_private void
+_cairo_gstate_set_path_is_inset_shadow_with_spread (cairo_gstate_t *gstate,
+						    cairo_bool_t   is_spread_path);
+
 #endif /* CAIRO_GSTATE_PRIVATE_H */

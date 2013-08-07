@@ -453,6 +453,7 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
 					double x_offset, double y_offset,
 					const cairo_pattern_t *source,
 					const cairo_path_fixed_t *path,
+					const cairo_fill_rule_t fill_rule,
 					const cairo_clip_t *clip,
 					cairo_pattern_t *source_out,
 					cairo_path_fixed_t *path_out,
@@ -461,6 +462,7 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
     cairo_status_t status;
     cairo_matrix_t m;
     cairo_rectangle_int_t rect, temp;
+    const cairo_rectangle_int_t *clip_rect;
 
     if (unlikely (target->status))
 	return target->status;
@@ -487,8 +489,15 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
 
     _cairo_pattern_get_extents (source_out, &rect);
 
-    _cairo_path_fixed_approximate_fill_extents (path_out, &temp);
-    _cairo_rectangle_intersect (&rect, &temp);
+    if (! source->shadow.path_is_fill_with_spread ||
+	fill_rule == CAIRO_FILL_RULE_EVEN_ODD) {
+	_cairo_path_fixed_approximate_fill_extents (path_out, &temp);
+	_cairo_rectangle_intersect (&rect, &temp);
+    }
+    else {
+	clip_rect = _cairo_clip_get_extents (clip);
+	_cairo_rectangle_intersect (&rect, clip_rect);
+    }
 
     if (is_inset) {
 	rect.x -= x_offset;

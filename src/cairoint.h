@@ -2019,7 +2019,7 @@ slim_hidden_proto (cairo_set_shadow_rgb);
 slim_hidden_proto (cairo_set_shadow_blur);
 slim_hidden_proto (cairo_set_draw_shadow_only);
 slim_hidden_proto (cairo_shadow_enable_cache);
-
+slim_hidden_proto (cairo_set_path_is_inset_shadow_with_spread);
 #if CAIRO_HAS_PNG_FUNCTIONS
 
 slim_hidden_proto (cairo_surface_write_to_png_stream);

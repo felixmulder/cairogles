@@ -187,7 +187,9 @@ struct _cairo_backend {
 				       double y_blur);
     void       (*set_draw_shadow_only) (void *cr,
 					cairo_bool_t draw_shadow_only);
-    void	   (*shadow_enable_cache) (void *cr, cairo_bool_t enable);
+    void        (*shadow_enable_cache) (void *cr, cairo_bool_t enable);
+    void       (*set_path_is_inset_shadow_with_spread) (void *cr,
+						        cairo_bool_t is_spread_path);
 };
 
 static inline void

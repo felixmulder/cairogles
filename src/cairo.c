@@ -4116,3 +4116,12 @@ cairo_shadow_enable_cache (cairo_t *cr, cairo_bool_t enable)
     cr->backend->shadow_enable_cache (cr, enable);
 }
 slim_hidden_def (cairo_shadow_enable_cache);
+
+void
+cairo_set_path_is_inset_shadow_with_spread (cairo_t *cr,
+					    cairo_bool_t is_spread_path)
+{
+    if (unlikely (cr->status))
+	return;
+    cr->backend->set_path_is_inset_shadow_with_spread (cr, is_spread_path);}
+slim_hidden_def (cairo_set_path_is_inset_shadow_with_spread);
