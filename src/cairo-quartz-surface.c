@@ -2252,7 +2252,6 @@ _cairo_quartz_surface_paint (void *surface,
 					  &source->shadow);
 
     if (source->shadow.draw_shadow_only ||
-	shadow_type == CAIRO_SHADOW_INSET ||
 	unlikely (status)) {
 	cairo_device_release (quartz_surface->base.device);
 	return status;
@@ -2284,7 +2283,6 @@ _cairo_quartz_surface_mask (void *surface,
 					  &source->shadow);
 
     if (source->shadow.draw_shadow_only ||
-	shadow_type == CAIRO_SHADOW_INSET ||
 	unlikely (status)) {
 	cairo_device_release (quartz_surface->base.device);
 	return status;
@@ -2316,21 +2314,37 @@ _cairo_quartz_surface_fill (void *surface,
     if (unlikely (status))
 	return status;
 
-    status = _cairo_surface_shadow_fill (surface, op, source, path,
-					 fill_rule, tolerance, antialias,
-					 clip, &source->shadow);
+    if (shadow_type != CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_fill (surface, op, source, path,
+					     fill_rule, tolerance, antialias,
+					     clip, &source->shadow);
 
-    if (source->shadow.draw_shadow_only ||
-	shadow_type == CAIRO_SHADOW_INSET ||
-	unlikely (status)) {
+    if (unlikely (status)) {
 	cairo_device_release (quartz_surface->base.device);
 	return status;
     }
 
-    status = _cairo_compositor_fill (&_cairo_quartz_cg_compositor,
-				     surface, op, source, path,
-				     fill_rule, tolerance, antialias,
-				     clip);
+    if (shadow_type == CAIRO_SHADOW_DROP &&
+	source->shadow.draw_shadow_only) {
+	cairo_device_release (quartz_surface->base.device);
+	return status;
+    }
+
+    if (! source->shadow.draw_shadow_only)
+	status = _cairo_compositor_fill (&_cairo_quartz_cg_compositor,
+					 surface, op, source, path,
+					 fill_rule, tolerance, antialias,
+					 clip);
+
+    if (unlikely (status)) {
+	cairo_device_release (quartz_surface->base.device);
+	return status;
+    }
+
+    if (shadow_type == CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_fill (surface, op, source, path,
+					     fill_rule, tolerance, antialias,
+					     clip, &source->shadow);
 
     cairo_device_release (quartz_surface->base.device);
     return status;
@@ -2356,22 +2370,39 @@ _cairo_quartz_surface_stroke (void *surface,
     if (unlikely (status))
 	return status;
 
-    status = _cairo_surface_shadow_stroke (surface, op, source, path,
-					   style, ctm, ctm_inverse,
-					   tolerance, antialias, clip,
-					   &source->shadow);
+    if (shadow_type != CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_stroke (surface, op, source, path,
+					       style, ctm, ctm_inverse,
+					       tolerance, antialias, clip,
+					       &source->shadow);
 
-    if (source->shadow.draw_shadow_only ||
-	shadow_type == CAIRO_SHADOW_INSET ||
-	unlikely (status)) {
+    if (unlikely (status)) {
 	cairo_device_release (quartz_surface->base.device);
 	return status;
     }
 
-    status = _cairo_compositor_stroke (&_cairo_quartz_cg_compositor,
-				       surface, op, source, path,
-				       style, ctm,ctm_inverse,
-				       tolerance, antialias, clip);
+    if (source->shadow.draw_shadow_only &&
+	shadow_type == CAIRO_SHADOW_DROP) {
+	cairo_device_release (quartz_surface->base.device);
+	return status;
+    }
+
+    if (! source->shadow.draw_shadow_only)
+	status = _cairo_compositor_stroke (&_cairo_quartz_cg_compositor,
+					   surface, op, source, path,
+					   style, ctm,ctm_inverse,
+					   tolerance, antialias, clip);
+
+    if (unlikely (status)) {
+	cairo_device_release (quartz_surface->base.device);
+	return status;
+    }
+
+    if (shadow_type == CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_stroke (surface, op, source, path,
+					       style, ctm, ctm_inverse,
+					       tolerance, antialias, clip,
+					       &source->shadow);
 
     cairo_device_release (quartz_surface->base.device);
     return status;
@@ -2394,23 +2425,39 @@ _cairo_quartz_surface_glyphs (void *surface,
     if (unlikely (status))
 	return status;
 
-    status = _cairo_surface_shadow_glyphs (surface, op, source,
-					   scaled_font,
-					   glyphs, num_glyphs,
-					   clip, &source->shadow);
+    if (shadow_type != CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_glyphs (surface, op, source,
+					       scaled_font,
+					       glyphs, num_glyphs,
+					       clip, &source->shadow);
 
-    if (source->shadow.draw_shadow_only ||
-	shadow_type == CAIRO_SHADOW_INSET ||
-	unlikely (status)) {
+    if (unlikely (status)) {
 	cairo_device_release (quartz_surface->base.device);
 	return status;
     }
 
-    status = _cairo_compositor_glyphs (&_cairo_quartz_cg_compositor,
-				       surface, op, source,
-				       glyphs, num_glyphs, scaled_font,
-				       clip);
+    if (source->shadow.draw_shadow_only &&
+	shadow_type == CAIRO_SHADOW_INSET) {
+	cairo_device_release (quartz_surface->base.device);
+	return status;
+    }
 
+    if (! source->shadow.draw_shadow_only)
+	status = _cairo_compositor_glyphs (&_cairo_quartz_cg_compositor,
+					   surface, op, source,
+					   glyphs, num_glyphs, scaled_font,
+					   clip);
+
+    if (unlikely (status)) {
+	cairo_device_release (quartz_surface->base.device);
+	return;
+    }
+
+    if (shadow_type == CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_glyphs (surface, op, source,
+					       scaled_font,
+					       glyphs, num_glyphs,
+					       clip, &source->shadow);
     cairo_device_release (quartz_surface->base.device);
     return status;
 }
