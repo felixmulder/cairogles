@@ -1577,8 +1577,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	shadow_pattern = cairo_pattern_create_for_surface (shadow_cache->surface);
 	cairo_pattern_set_matrix (shadow_pattern, &m);
 
-	if (! shadow->path_is_fill_with_spread ||
-	    fill_rule == CAIRO_FILL_RULE_EVEN_ODD)
+	if (! shadow->path_is_fill_with_spread)
 	    status = _cairo_surface_fill (target, op, shadow_pattern,
 					  path, fill_rule, tolerance,
 					  antialias, clip);
@@ -1701,7 +1700,6 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 
     if (unlikely (status))
 	goto FINISH;
-
     shadow_pattern = cairo_pattern_create_for_surface (shadow_surface);
     cairo_pattern_set_filter (shadow_pattern, CAIRO_FILTER_GAUSSIAN);
     cairo_pattern_set_sigma (shadow_pattern,
@@ -1753,8 +1751,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	shadow_pattern = cairo_pattern_create_for_surface (cache_surface);
 
 	cairo_pattern_set_matrix (shadow_pattern, &m);
-	if (! shadow_copy.path_is_fill_with_spread ||
-	    fill_rule == CAIRO_FILL_RULE_EVEN_ODD)
+	if (! shadow_copy.path_is_fill_with_spread)
 	    status = _cairo_surface_fill (target, op, shadow_pattern,
 					  path, fill_rule, tolerance,
 					  antialias, clip);
@@ -1764,8 +1761,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     }
     else {
 	cairo_pattern_set_matrix (shadow_pattern, &m);
-	if (! shadow_copy.path_is_fill_with_spread ||
-	    fill_rule == CAIRO_FILL_RULE_EVEN_ODD)
+	if (! shadow_copy.path_is_fill_with_spread)
 	    status = _cairo_surface_fill (target, op, shadow_pattern,
 					  path, fill_rule, tolerance,
 					  antialias, clip);
@@ -1773,7 +1769,6 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	    status = _cairo_surface_paint (target, op, shadow_pattern,
 					   clip);
     }
-
 FINISH:
     _cairo_path_fixed_fini (&shadow_path);
     cairo_pattern_destroy (color_pattern);

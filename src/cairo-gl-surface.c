@@ -1792,7 +1792,7 @@ _cairo_gl_surface_fill (void			*surface,
 
     if (! source->shadow.draw_shadow_only) {
 	if (! source->shadow.path_is_fill_with_spread ||
-	    fill_rule == CAIRO_FILL_RULE_EVEN_ODD)
+	    source->shadow.type != CAIRO_SHADOW_INSET)
 	    status = _cairo_compositor_fill (get_compositor (surface),
 					     surface,
 					     op, source, path,

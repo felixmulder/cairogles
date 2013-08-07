@@ -2466,5 +2466,5 @@ void
 _cairo_gstate_set_path_is_inset_shadow_with_spread (cairo_gstate_t *gstate,
 						    cairo_bool_t   is_spread_path)
 {
-    gstate->shadow.path_is_fill_with_spread;
+    gstate->shadow.path_is_fill_with_spread = is_spread_path;
 }

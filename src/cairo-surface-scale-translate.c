@@ -489,8 +489,7 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
 
     _cairo_pattern_get_extents (source_out, &rect);
 
-    if (! source->shadow.path_is_fill_with_spread ||
-	fill_rule == CAIRO_FILL_RULE_EVEN_ODD) {
+    if (! source->shadow.path_is_fill_with_spread) {
 	_cairo_path_fixed_approximate_fill_extents (path_out, &temp);
 	_cairo_rectangle_intersect (&rect, &temp);
     }
