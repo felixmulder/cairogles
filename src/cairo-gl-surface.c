@@ -1721,7 +1721,7 @@ _cairo_gl_surface_stroke (void			        *surface,
 
     dst->content_changed = TRUE;
 
-    if (shadow_type != CAIRO_SHADOW_INSET &&
+    if (shadow_type == CAIRO_SHADOW_DROP &&
 	source->shadow.draw_shadow_only) {
 	ctx->source_scratch_in_use = FALSE;
 	cairo_device_release (dst->base.device);
@@ -1783,7 +1783,7 @@ _cairo_gl_surface_fill (void			*surface,
 
     dst->content_changed = TRUE;
 
-    if (shadow_type != CAIRO_SHADOW_INSET &&
+    if (shadow_type == CAIRO_SHADOW_DROP &&
 	source->shadow.draw_shadow_only) {
 	ctx->source_scratch_in_use = FALSE;
 	cairo_device_release (dst->base.device);
@@ -1830,10 +1830,11 @@ _cairo_gl_surface_glyphs (void			*surface,
     if (unlikely (status))
 	return status;
 
-    status = _cairo_surface_shadow_glyphs (surface, op, source,
-					   font,
-					   glyphs, num_glyphs,
-					   clip, &source->shadow);
+    if (shadow_type != CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_glyphs (surface, op, source,
+					       font,
+					       glyphs, num_glyphs,
+					       clip, &source->shadow);
 
     ctx->source_scratch_in_use = FALSE;
     if (unlikely (status)) {
@@ -1841,25 +1842,34 @@ _cairo_gl_surface_glyphs (void			*surface,
 	return status;
     }
 
-    if (shadow_type == CAIRO_SHADOW_INSET ||
+    dst->content_changed = TRUE;
+
+    if (shadow_type == CAIRO_SHADOW_DROP &&
 	source->shadow.draw_shadow_only) {
-	if (likely (status))
-	    dst->content_changed = TRUE;
- 
 	ctx->source_scratch_in_use = FALSE;
 	cairo_device_release (dst->base.device);
 	return status;
     }
 
-    status = _cairo_compositor_glyphs (get_compositor (surface), surface,
-				       op, source, glyphs, num_glyphs,
-				       font, clip);
-    if (likely (status))
-	dst->content_changed = TRUE;
+    if (! source->shadow.draw_shadow_only)
+	status = _cairo_compositor_glyphs (get_compositor (surface), surface,
+				           op, source, glyphs, num_glyphs,
+				           font, clip);
+
+    if (unlikely (status)) {
+ 	ctx->source_scratch_in_use = FALSE;
+  	cairo_device_release (dst->base.device);
+	return status;
+    }
+
+    if (shadow_type == CAIRO_SHADOW_INSET)
+	status = _cairo_surface_shadow_glyphs (surface, op, source,
+					       font,
+					       glyphs, num_glyphs,
+					       clip, &source->shadow);
 
     ctx->source_scratch_in_use = FALSE;
     cairo_device_release (dst->base.device);
-
     return status;
 }
 
