@@ -971,7 +971,6 @@ _cairo_xcb_surface_paint (void			*abstract_surface,
 			  const cairo_clip_t	*clip)
 {
     cairo_surface_t *surface = abstract_surface;
-    cairo_shadow_type_t shadow_type = source->shadow.type;
     const cairo_compositor_t *compositor = get_compositor (&surface);
     cairo_int_status_t status;
 
@@ -1000,7 +999,6 @@ _cairo_xcb_surface_mask (void			*abstract_surface,
 			 const cairo_clip_t	*clip)
 {
     cairo_surface_t *surface = abstract_surface;
-    cairo_shadow_type_t shadow_type = source->shadow.type;
     const cairo_compositor_t *compositor = get_compositor (&surface);
     cairo_int_status_t status;
 
@@ -1113,10 +1111,16 @@ _cairo_xcb_surface_fill (void			*abstract_surface,
 	return status;
     }
 
-    if (! source->shadow.draw_shadow_only)
-	status = _cairo_compositor_fill (compositor, surface, op,
-					 source, path, fill_rule,
-					 tolerance, antialias, clip);
+    if (! source->shadow.draw_shadow_only) {
+	if (! source->shadow.path_is_fill_with_spread ||
+	    source->shadow.type != CAIRO_SHADOW_INSET)
+	    status = _cairo_compositor_fill (compositor, surface, op,
+					     source, path, fill_rule,
+					     tolerance, antialias, clip);
+	else
+	    status = _cairo_compositor_paint (compositor, surface, op,
+					      source, clip);
+    }
 
     if (unlikely (status)) {
 	cairo_device_release (surface->device);
