@@ -1280,7 +1280,7 @@ _cairo_gl_operand_bind_to_shader (cairo_gl_context_t *ctx,
 				    _cairo_gl_shader_uniform_for_texunit (
 					    CAIRO_GL_UNIFORM_BLURS, tex_unit),
 				    operand->texture.x_radius * 2 + 1,
-				    operand->texture.coef);
+				    &operand->texture.coef[0]);
     }
     else if (operand->type == CAIRO_GL_OPERAND_GAUSSIAN &&
 	     operand->pass == 2) {
@@ -1309,7 +1309,7 @@ _cairo_gl_operand_bind_to_shader (cairo_gl_context_t *ctx,
 				    _cairo_gl_shader_uniform_for_texunit (
 					    CAIRO_GL_UNIFORM_BLURS, tex_unit),
 				    operand->texture.y_radius * 2 + 1,
-				    operand->texture.coef);
+				    &operand->texture.coef[0]);
     }
 
     if (operand->type == CAIRO_GL_OPERAND_TEXTURE ||

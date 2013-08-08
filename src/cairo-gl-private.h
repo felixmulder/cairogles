@@ -211,7 +211,7 @@ typedef struct cairo_gl_operand {
 	    cairo_bool_t use_atlas;
 	    cairo_extend_t extend;
 	    struct { float x, y; } p1, p2;
-	    float *coef;
+	    float coef[17];        /* max 1x/x1 kernel size */
 	    int x_radius;
 	    int y_radius;
 	} texture;

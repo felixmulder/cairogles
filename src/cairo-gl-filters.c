@@ -112,7 +112,6 @@ gaussian_filter_stage_1 (cairo_bool_t x_axis,
 			 cairo_gl_context_t **ctx)
 {
     int row, col;
-    float *coef;
     cairo_gl_composite_t setup;
     cairo_gl_context_t *ctx_out = NULL;
     cairo_rectangle_int_t rect;
@@ -131,31 +130,23 @@ gaussian_filter_stage_1 (cairo_bool_t x_axis,
 	src->operand.type = CAIRO_GL_OPERAND_GAUSSIAN;
 	src->operand.pass = 1;
 
-	coef = _cairo_malloc_ab (col, sizeof (float));
-	memset (coef, 0, sizeof (float) * col);
-	compute_x_coef_to_float (original_pattern->base.convolution_matrix, row, col, coef);
-
-	if (src->operand.texture.coef)
-	    free (src->operand.texture.coef);
+	memset (&src->operand.texture.coef[0], 0, sizeof (float) * col);
+	compute_x_coef_to_float (original_pattern->base.convolution_matrix,
+				 row, col, &src->operand.texture.coef[0]);
 
 	src->operand.texture.x_radius = original_pattern->base.x_radius;
 	src->operand.texture.y_radius = 1;
-	src->operand.texture.coef = coef;
     }
     else {
 	src->operand.type = CAIRO_GL_OPERAND_GAUSSIAN;
 	src->operand.pass = 2;
 
-	coef = _cairo_malloc_ab (row, sizeof (float));
-	memset (coef, 0, sizeof (float) * row);
-	compute_y_coef_to_float (original_pattern->base.convolution_matrix, row, col, coef);
-
-	if (src->operand.texture.coef)
-	    free (src->operand.texture.coef);
+	memset (&src->operand.texture.coef[0], 0, sizeof (float) * row);
+	compute_y_coef_to_float (original_pattern->base.convolution_matrix,
+				 row, col, &src->operand.texture.coef[0]);
 
 	src->operand.texture.y_radius = original_pattern->base.y_radius;
 	src->operand.texture.x_radius = 1;
-	src->operand.texture.coef = coef;
     }
 
     *ctx = ctx_out;
@@ -215,7 +206,6 @@ gaussian_filter_stage_2 (cairo_bool_t y_axis,
 {
     cairo_int_status_t status;
     int row, col;
-    float *coef;
 
     stage_2_src->image_content_scale_x = (double) dst_width / (double) stage_1_src->width;
     stage_2_src->image_content_scale_y = (double) dst_height / (double) stage_1_src->height;
@@ -227,15 +217,11 @@ gaussian_filter_stage_2 (cairo_bool_t y_axis,
 	row = original_pattern->base.y_radius * 2 + 1;
 	col = original_pattern->base.x_radius * 2 + 1;
 
-	coef = _cairo_malloc_ab (row, sizeof (float));
-	memset (coef, 0, sizeof (float) * row);
- 	compute_y_coef_to_float (original_pattern->base.convolution_matrix, row, col, coef);
-	if (stage_2_src->operand.texture.coef)
-	    free (stage_2_src->operand.texture.coef);
-
+	memset (&stage_2_src->operand.texture.coef[0], 0, sizeof (float) * row);
+ 	compute_y_coef_to_float (original_pattern->base.convolution_matrix,
+				 row, col, &stage_2_src->operand.texture.coef[2]);
 	stage_2_src->operand.texture.y_radius = original_pattern->base.y_radius;
 	stage_2_src->operand.texture.x_radius = 1;
-	stage_2_src->operand.texture.coef = coef;
     }
     else
 	stage_2_src->operand.type = CAIRO_GL_OPERAND_TEXTURE;
