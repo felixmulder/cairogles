@@ -1730,6 +1730,7 @@ _cairo_gl_surface_stroke (void			        *surface,
 	return status;
     }
 
+    ctx->source_scratch_in_use = FALSE;
 
     if (! source->shadow.draw_shadow_only)
 	status = _cairo_compositor_stroke (get_compositor (surface), surface,
@@ -1741,6 +1742,8 @@ _cairo_gl_surface_stroke (void			        *surface,
   	cairo_device_release (dst->base.device);
 	return status;
     }
+
+    ctx->source_scratch_in_use = FALSE;
 
     if (shadow_type == CAIRO_SHADOW_INSET)
 	status = _cairo_surface_shadow_stroke (surface, op, source, path,
@@ -1792,6 +1795,8 @@ _cairo_gl_surface_fill (void			*surface,
 	return status;
     }
 
+    ctx->source_scratch_in_use = FALSE;
+
     if (! source->shadow.draw_shadow_only) {
 	if (! source->shadow.path_is_fill_with_spread ||
 	    source->shadow.type != CAIRO_SHADOW_INSET)
@@ -1812,6 +1817,8 @@ _cairo_gl_surface_fill (void			*surface,
   	cairo_device_release (dst->base.device);
 	return status;
     }
+
+    ctx->source_scratch_in_use = FALSE;
 
     if (shadow_type == CAIRO_SHADOW_INSET)
 	status = _cairo_surface_shadow_fill (surface, op, source, path,
@@ -1862,6 +1869,8 @@ _cairo_gl_surface_glyphs (void			*surface,
 	return status;
     }
 
+    ctx->source_scratch_in_use = FALSE;
+
     if (! source->shadow.draw_shadow_only)
 	status = _cairo_compositor_glyphs (get_compositor (surface), surface,
 				           op, source, glyphs, num_glyphs,
@@ -1872,6 +1881,8 @@ _cairo_gl_surface_glyphs (void			*surface,
   	cairo_device_release (dst->base.device);
 	return status;
     }
+
+    ctx->source_scratch_in_use = FALSE;
 
     if (shadow_type == CAIRO_SHADOW_INSET)
 	status = _cairo_surface_shadow_glyphs (surface, op, source,
