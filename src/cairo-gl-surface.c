@@ -83,8 +83,10 @@ _cairo_gl_surface_shadow_surface (void *surface,
 
 	if (shadow_width * 2 < width ||
 	    shadow_height * 2 < height) {
-	   cairo_surface_destroy (&shadow_surface->base);
-	   shadow_surface = NULL;
+	    if (shadow_width < MAX_SCRATCH_SIZE) {
+		cairo_surface_destroy (&shadow_surface->base);
+		shadow_surface = NULL;
+	    }
 	}
 	else if (shadow_width > 4 * width ||
 		 shadow_height > 4 * height) {
