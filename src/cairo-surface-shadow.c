@@ -952,8 +952,8 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     if (shadow_extents.width == 0 || shadow_extents.height == 0)
 	goto FINISH;
 
-    x_offset = shadow_extents.x - x_offset - x_blur;
-    y_offset = shadow_extents.y - y_offset - y_blur;
+    x_offset = shadow_extents.x  - x_blur;
+    y_offset = shadow_extents.y  - y_blur;
 
     shadow_width = shadow_extents.width + x_blur * 2;
     shadow_height = shadow_extents.height + y_blur * 2;
@@ -1051,8 +1051,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 
     /* blur to mask surface */
     cairo_matrix_init_scale (&m, scale, scale);
-    cairo_matrix_translate (&m, -x_offset - shadow_copy.x_offset,
-			    -y_offset - shadow_copy.y_offset);
+    cairo_matrix_translate (&m, -x_offset, -y_offset);
 
     if ((locked || device) && shadow->enable_cache) {
 	status = _cairo_surface_paint (cache_surface, CAIRO_OPERATOR_OVER,
@@ -1616,8 +1615,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     if (shadow_extents.width == 0 && shadow_extents.height == 0)
 	goto FINISH;
 
-    x_offset = shadow_extents.x - x_offset - x_blur;
-    y_offset = shadow_extents.y - y_offset - y_blur;
+    x_offset = shadow_extents.x  - x_blur;
+    y_offset = shadow_extents.y  - y_blur;
 
     shadow_width = shadow_extents.width + x_blur * 2;
     shadow_height = shadow_extents.height + y_blur * 2;
@@ -1712,8 +1711,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 
     /* blur to cache surface */
     cairo_matrix_init_scale (&m, scale, scale);
-    cairo_matrix_translate (&m, -x_offset - shadow_copy.x_offset,
-			    -y_offset - shadow_copy.y_offset);
+    cairo_matrix_translate (&m, -x_offset, -y_offset);
 
     if ((locked || device) && shadow->enable_cache) {
         status = _cairo_surface_paint (cache_surface, CAIRO_OPERATOR_OVER,
@@ -2170,8 +2168,8 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     if (shadow_extents.width == 0 && shadow_extents.height == 0)
 	goto FINISH;
 
-    x_offset = shadow_extents.x - x_blur - shadow->x_offset;
-    y_offset = shadow_extents.y - y_blur - shadow->y_offset;
+    x_offset = shadow_extents.x - x_blur;
+    y_offset = shadow_extents.y - y_blur;
 
     shadow_width = shadow_extents.width + x_blur * 2 + fabs (shadow->x_offset);
     shadow_height = shadow_extents.height + y_blur * 2 + fabs (shadow->y_offset);
