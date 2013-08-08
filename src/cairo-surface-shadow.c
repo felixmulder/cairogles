@@ -387,6 +387,12 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if (scale > 1.0)
 	scale = 1.0;
 
+    /* FIXME: due to rounding error in get extents, we get slightly
+     * different scale.  The different in scale manifests itself to
+     * the shadow position because it are scaling up */
+    scale *= 10.0;
+    scale = ceil (scale) / 10.0;
+
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -693,6 +699,12 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     scale = MIN (x_scale, y_scale);
     if (scale > 1.0)
 	scale = 1.0;
+
+    /* FIXME: due to rounding error in get extents, we get slightly
+     * different scale.  The different in scale manifests itself to
+     * the shadow position because it are scaling up */
+    scale *= 10.0;
+    scale = ceil (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -1010,6 +1022,12 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     scale = MIN (x_scale, y_scale);
     if (scale > 1.0)
 	scale = 1.0;
+
+    /* FIXME: due to rounding error in get extents, we get slightly
+     * different scale.  The different in scale manifests itself to
+     * the shadow position because it are scaling up */
+    scale *= 10.0;
+    scale = ceil (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -1354,6 +1372,12 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     if (scale > 1.0)
 	scale = 1.0;
 
+    /* FIXME: due to rounding error in get extents, we get slightly
+     * different scale.  The different in scale manifests itself to
+     * the shadow position because it are scaling up */
+    scale *= 10.0;
+    scale = ceil (scale) / 10.0;
+
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -1674,6 +1698,12 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     scale = MIN (x_scale, y_scale);
     if (scale > 1.0)
 	scale = 1.0;
+
+    /* FIXME: due to rounding error in get extents, we get slightly
+     * different scale.  The different in scale manifests itself to
+     * the shadow position because it are scaling up */
+    scale *= 10.0;
+    scale = ceil (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -2009,6 +2039,12 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     scale = MIN (x_scale, y_scale);
     if (scale > 1.0)
 	scale = 1.0;
+
+    /* FIXME: due to rounding error in get extents, we get slightly
+     * different scale.  The different in scale manifests itself to
+     * the shadow position because it are scaling up */
+    scale *= 10.0;
+    scale = ceil (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
