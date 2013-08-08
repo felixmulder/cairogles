@@ -384,8 +384,8 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
     if (is_inset) {
 	rect.x -= x_offset;
 	rect.y -= y_offset;
-	rect.width += x_offset;
-	rect.height += y_offset;
+	rect.width += fabs (x_offset);
+	rect.height += fabs (y_offset);
     }
     *extents = rect;
 
@@ -501,8 +501,8 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
     if (is_inset) {
 	rect.x -= x_offset;
 	rect.y -= y_offset;
-	rect.width += x_offset;
-	rect.height += y_offset;
+	rect.width += abs (x_offset);
+	rect.height += abs (y_offset);
     }
     *extents = rect;
 

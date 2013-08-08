@@ -2173,8 +2173,8 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     x_offset = shadow_extents.x - x_blur - shadow->x_offset;
     y_offset = shadow_extents.y - y_blur - shadow->y_offset;
 
-    shadow_width = shadow_extents.width + x_blur * 2 + shadow->x_offset;
-    shadow_height = shadow_extents.height + y_blur * 2 + shadow->y_offset;
+    shadow_width = shadow_extents.width + x_blur * 2 + fabs (shadow->x_offset);
+    shadow_height = shadow_extents.height + y_blur * 2 + fabs (shadow->y_offset);
 
     if (target->backend->get_glyph_shadow_surface) {
 	shadow_surface = target->backend->get_glyph_shadow_surface (target,
