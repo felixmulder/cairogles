@@ -2443,8 +2443,9 @@ _cairo_gstate_set_shadow_blur (cairo_gstate_t *gstate, double x_blur,
 	x = 0.0;
     if (y < 0.0)
 	y = 0.0;
-    gstate->shadow.x_blur = x;
-    gstate->shadow.y_blur = y;
+
+    gstate->shadow.x_blur = MIN (CAIRO_MAX_BLUR, x);
+    gstate->shadow.y_blur = MIN (CAIRO_MAX_BLUR, y);
 
     return CAIRO_STATUS_SUCCESS;
 }
