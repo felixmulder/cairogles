@@ -245,7 +245,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
     cairo_gl_surface_t *scratches[2];
     int src_width, src_height;
     int width, height;
-    int scratch_width, scratch_height, scratch_size;
+    int scratch_width, scratch_height;
 
     cairo_gl_context_t *ctx, *ctx_out;
     cairo_status_t status;
@@ -316,13 +316,23 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 	}
 
 	if (! scratches[n]) {
-	    scratch_size = MIN_SCRATCH_SIZE;
-	    while (scratch_size < width || scratch_size < height) {
-		scratch_size *= 2;
-		if (scratch_size == MAX_SCRATCH_SIZE)
+	    scratch_width = scratch_height = MIN_SCRATCH_SIZE;
+	    while (scratch_width < width) {
+		scratch_width *= 2;
+		if (scratch_width == MAX_SCRATCH_SIZE)
 		    break;
-		else if (scratch_size > MAX_SCRATCH_SIZE) {
-		    scratch_size *= 0.5;
+		else if (scratch_width > MAX_SCRATCH_SIZE) {
+		    scratch_width *= 0.5;
+		    break;
+		}
+	    }
+
+	    while (scratch_height < height) {
+		scratch_height *= 2;
+		if (scratch_height == MAX_SCRATCH_SIZE)
+		    break;
+		else if (scratch_height > MAX_SCRATCH_SIZE) {
+		    scratch_height *= 0.5;
 		    break;
 		}
 	    }
@@ -330,8 +340,8 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 	    scratches[n] = 
 		(cairo_gl_surface_t *)_cairo_gl_surface_create_scratch (ctx,
 							dst->base.content,
-							scratch_size,
-							scratch_size);
+							scratch_width,
+							scratch_height);
 	}
 
 	if (ctx->source_scratch_in_use)
