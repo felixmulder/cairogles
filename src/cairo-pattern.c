@@ -4514,8 +4514,8 @@ cairo_pattern_set_sigma (cairo_pattern_t *pattern,
                          const double     x_sigma,
                          const double     y_sigma)
 {
-    double transformed_x_sigma = x_sigma;
-    double transformed_y_sigma = y_sigma;
+    double x = x_sigma;
+    double y = y_sigma;
 
     if (pattern->status)
 	return pattern->status;
@@ -4527,17 +4527,22 @@ cairo_pattern_set_sigma (cairo_pattern_t *pattern,
 	return CAIRO_STATUS_PATTERN_TYPE_MISMATCH;
 
 
-    if (transformed_x_sigma < 0.0)
-	transformed_x_sigma = 0.0;
-    if (transformed_y_sigma < 0.0)
-	transformed_y_sigma = 0.0;
+    if (x < 0.0)
+	x = 0.0;
+    if (y < 0.0)
+	y = 0.0;
 
-    if (pattern->x_sigma == transformed_x_sigma &&
-	pattern->y_sigma == transformed_y_sigma)
+    if (pattern->x_sigma == x &&
+	pattern->y_sigma == y)
         return CAIRO_STATUS_SUCCESS;
 
-    pattern->x_sigma = transformed_x_sigma;
-    pattern->y_sigma = transformed_y_sigma;
+    if (x > CAIRO_MAX_BLUR >> 1)
+	x = CAIRO_MAX_BLUR >> 1;
+    if (y > CAIRO_MAX_BLUR >> 1)
+	y = CAIRO_MAX_BLUR >> 1;
+
+    pattern->x_sigma = x;
+    pattern->y_sigma = y;
     pattern->convolution_changed = TRUE;
 
     return CAIRO_STATUS_SUCCESS;

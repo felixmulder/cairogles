@@ -43,8 +43,9 @@
 
 #include <stdio.h> /* FILE* */
 
-#define CAIRO_MAX_SIGMA 2  /* 4 defined in skia */
+#define CAIRO_MAX_SIGMA 4  /* 4 defined in skia */
 #define CAIRO_DEFAULT_SIGMA 0
+#define CAIRO_MAX_BLUR 64
 #define CAIRO_MIN_SHRINK_SIZE 32
 #define CAIRO_MIN_LINE_WIDTH 1.0
 
