@@ -334,6 +334,7 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
 					  const cairo_stroke_style_t *stroke_style,
 					  const cairo_matrix_t *ctm,
 					  const cairo_matrix_t *ctm_inverse,
+					  double tolerance,
 					  const cairo_clip_t *clip,
 					  cairo_pattern_t *source_out,
 					  cairo_path_fixed_t *path_out,
@@ -377,8 +378,20 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
 
     _cairo_pattern_get_extents (source_out, &rect);
 
-    _cairo_path_fixed_approximate_stroke_extents (path_out, stroke_style,
-						  ctm_out, &temp);
+    if (stroke_style->line_join != CAIRO_LINE_JOIN_MITER)
+	_cairo_path_fixed_approximate_stroke_extents (path_out,
+						      stroke_style,
+						      ctm_out, &temp);
+    else {
+	status = _cairo_path_fixed_stroke_extents (path_out, stroke_style,
+						   ctm_out, ctm_inverse_out,
+						   tolerance, &temp);
+	if (unlikely (status)) {
+	    extents->width = extents->height = 0;
+	    return status;
+	}
+    }
+					  
     _cairo_rectangle_intersect (&rect, &temp);
 
     if (is_inset) {
