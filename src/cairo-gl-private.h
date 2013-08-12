@@ -106,7 +106,7 @@
 #define IMAGE_CACHE_MIN_SIZE 1
 #define IMAGE_CACHE_MAX_SIZE 256
 #define MIN_SCRATCH_SIZE 32
-#define MAX_SCRATCH_SIZE 256
+#define MAX_SCRATCH_SIZE 1024
 
 typedef struct _cairo_gl_surface cairo_gl_surface_t;
 typedef struct _cairo_gl_image   cairo_gl_image_t;

@@ -339,7 +339,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 
 	    scratches[n] = 
 		(cairo_gl_surface_t *)_cairo_gl_surface_create_scratch (ctx,
-							dst->base.content,
+							CAIRO_CONTENT_COLOR_ALPHA,
 							scratch_width,
 							scratch_height);
 	}
@@ -358,7 +358,10 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 
     /* we have created two scratch surfaces */
     /* shrink surface to scratches[0] */
-    if ((scratches[0]->width >= src_width && scratches[0]->height >= src_height)) {
+    width = src_width / pattern->base.shrink_factor_x;
+    height = src_height / pattern->base.shrink_factor_y;
+    if (pattern->base.shrink_factor_x == 1.0 &&
+	pattern->base.shrink_factor_y == 1.0) {
 	skip_stage_0 = TRUE;
 	width = src_width;
 	height = src_height;
