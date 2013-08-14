@@ -1,0 +1,7 @@
+Name: cairo-glesv3
+Description: OpenGLESv3 surface backend for cairo graphics library
+Version: 1.12.14
+
+Requires: cairo glesv3
+Libs:  
+Cflags: -I${pc_top_builddir}/${pcfiledir}/./src 

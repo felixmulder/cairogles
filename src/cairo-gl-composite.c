@@ -52,6 +52,68 @@
 #include "cairo-error-private.h"
 #include "cairo-image-surface-private.h"
 
+static cairo_int_status_t
+_blit_texture_to_renderbuffer (cairo_gl_surface_t *surface)
+{
+    cairo_gl_context_t *ctx = NULL;
+    cairo_gl_composite_t setup;
+    cairo_surface_pattern_t pattern;
+    cairo_rectangle_int_t extents;
+    cairo_int_status_t status;
+
+    /* FIXME: we need to take care of certain glesv2 extension too */
+    if (((cairo_gl_context_t *)surface->base.device)->gl_flavor != CAIRO_GL_FLAVOR_ES3)
+	return CAIRO_INT_STATUS_SUCCESS;
+
+    if (! surface->content_in_texture)
+	return CAIRO_INT_STATUS_SUCCESS;
+
+    memset (&setup, 0, sizeof (cairo_gl_composite_t));
+
+    status = _cairo_gl_composite_set_operator (&setup,
+					       CAIRO_OPERATOR_SOURCE,
+					       FALSE);
+    if (status)
+	return status;
+
+    setup.dst = surface;
+    setup.clip_region = surface->clip_region;
+
+    _cairo_pattern_init_for_surface (&pattern, &surface->base);
+    status = _cairo_gl_composite_set_source (&setup, &pattern.base,
+					     NULL, NULL, FALSE, FALSE);
+    _cairo_pattern_fini (&pattern.base);
+
+    if (unlikely (status))
+	goto FAIL;
+
+    _cairo_gl_composite_set_multisample (&setup);
+
+    status = _cairo_gl_composite_begin (&setup, &ctx);
+
+    if (unlikely (status))
+	goto FAIL;
+
+    extents.x = extents.y = 0;
+    extents.width = surface->width;
+    extents.height = surface->height;
+
+    status = _cairo_draw_int_rect (ctx, &setup, &extents);
+
+    if (status == CAIRO_INT_STATUS_SUCCESS)
+	surface->content_in_texture = FALSE;
+
+FAIL:
+    _cairo_gl_composite_fini (&setup);
+
+    if (ctx) {
+	_cairo_gl_composite_flush (ctx);
+	status = _cairo_gl_context_release (ctx, status);
+    }
+
+    return status;
+}
+
 cairo_int_status_t
 _cairo_gl_composite_set_source (cairo_gl_composite_t *setup,
 			        const cairo_pattern_t *pattern,
@@ -70,8 +132,13 @@ void
 _cairo_gl_composite_set_source_operand (cairo_gl_composite_t *setup,
 					const cairo_gl_operand_t *source)
 {
+    cairo_int_status_t status;
+
     _cairo_gl_operand_destroy (&setup->src);
     _cairo_gl_operand_copy (&setup->src, source);
+    if (source->type == CAIRO_GL_OPERAND_TEXTURE ||
+	source->type == CAIRO_GL_OPERAND_GAUSSIAN)
+	status = _cairo_gl_surface_resolve_multisampling (source->texture.surface);	
 }
 
 void
@@ -101,9 +168,14 @@ void
 _cairo_gl_composite_set_mask_operand (cairo_gl_composite_t *setup,
 				      const cairo_gl_operand_t *mask)
 {
+    cairo_int_status_t status;
     _cairo_gl_operand_destroy (&setup->mask);
-    if (mask)
+    if (mask) {
 	_cairo_gl_operand_copy (&setup->mask, mask);
+	if (mask->type == CAIRO_GL_OPERAND_TEXTURE ||
+	    mask->type == CAIRO_GL_OPERAND_GAUSSIAN)
+	    status = _cairo_gl_surface_resolve_multisampling (mask->texture.surface);	
+    }
 }
 
 void
@@ -177,7 +249,8 @@ _cairo_gl_texture_set_extend (cairo_gl_context_t *ctx,
 
     switch (extend) {
     case CAIRO_EXTEND_NONE:
-	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES)
+	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 ||
+	    ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3)
 	    wrap_mode = GL_CLAMP_TO_EDGE;
 	else
 	    wrap_mode = GL_CLAMP_TO_BORDER;
@@ -1386,6 +1459,8 @@ _cairo_gl_composite_init (cairo_gl_composite_t *setup,
                           cairo_bool_t assume_component_alpha)
 {
     cairo_status_t status;
+
+    status = _blit_texture_to_renderbuffer (dst);
 
     memset (setup, 0, sizeof (cairo_gl_composite_t));
 

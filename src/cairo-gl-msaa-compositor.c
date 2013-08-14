@@ -68,7 +68,6 @@ _is_continuous_single_line (const cairo_path_fixed_t   *path,
 	    style->dash == NULL);
 }
 
-
 static cairo_int_status_t
 _draw_trap (cairo_gl_context_t		*ctx,
 	    cairo_gl_composite_t	*setup,
@@ -150,10 +149,10 @@ _draw_traps (cairo_gl_context_t		*ctx,
    return status;
 }
 
-static cairo_int_status_t
-_draw_int_rect (cairo_gl_context_t	*ctx,
-		cairo_gl_composite_t	*setup,
-		cairo_rectangle_int_t	*rect)
+cairo_int_status_t
+_cairo_draw_int_rect (cairo_gl_context_t	*ctx,
+		      cairo_gl_composite_t	*setup,
+		      cairo_rectangle_int_t	*rect)
 {
     cairo_box_t box;
     cairo_point_t quad[4];
@@ -324,8 +323,10 @@ can_use_msaa_compositor (cairo_gl_surface_t *surface,
     /* Multisampling OpenGL ES surfaces only maintain one multisampling
        framebuffer and thus must use the spans compositor to do non-antialiased
        rendering. */
-    if (((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES
+    if ((((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES2 ||
+	((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES3)
 	 && surface->supports_msaa
+	 && surface->num_samples > 1
 	 && antialias == CAIRO_ANTIALIAS_NONE)
 	return FALSE;
 
@@ -408,7 +409,7 @@ _cairo_gl_msaa_compositor_mask_source_operator (const cairo_compositor_t *compos
 	goto finish;
 
     if (! clip)
-	status = _draw_int_rect (ctx, &setup, &composite->bounded);
+	status = _cairo_draw_int_rect (ctx, &setup, &composite->bounded);
     else
 	status = _draw_traps (ctx, &setup, &traps);
 
@@ -431,12 +432,15 @@ _cairo_gl_msaa_compositor_mask_source_operator (const cairo_compositor_t *compos
 					   FALSE);
     if (unlikely (status))
 	goto finish;
+
+    _cairo_gl_context_set_destination (ctx, dst, setup.multisample);
+
     status = _cairo_gl_set_operands_and_operator (&setup, ctx);
     if (unlikely (status))
 	goto finish;
 
     if (! clip)
-	status = _draw_int_rect (ctx, &setup, &composite->bounded);
+	status = _cairo_draw_int_rect (ctx, &setup, &composite->bounded);
     else
 	status = _draw_traps (ctx, &setup, &traps);
 
@@ -544,11 +548,12 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
      _cairo_gl_composite_set_multisample (&setup);
 
     status = _cairo_gl_composite_begin (&setup, &ctx);
+
     if (unlikely (status))
 	goto finish;
 
     if (! clip)
-	status = _draw_int_rect (ctx, &setup, &composite->bounded);
+	status = _cairo_draw_int_rect (ctx, &setup, &composite->bounded);
     else {
 	if (op != CAIRO_OPERATOR_OVER)
 	    status = _cairo_gl_msaa_compositor_draw_clip (ctx, &setup, clip);
@@ -723,6 +728,7 @@ query_surface_capabilities (cairo_gl_surface_t *surface)
     glGetIntegerv(GL_STENCIL_BITS, &stencil_bits);
     surface->supports_stencil = stencil_bits > 0;
     surface->supports_msaa = samples > 1;
+    surface->num_samples = samples;
 
     status = _cairo_gl_context_release (ctx, status);
 }

@@ -580,7 +580,8 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 	    namestr);
 
 	if (op->type == CAIRO_GL_OPERAND_TEXTURE) {
-	    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES &&
+	    if ((ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 || 
+		 ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3) &&
 	        _cairo_gl_shader_needs_border_fade (op))
 	    {
 		if (! use_atlas) {
@@ -660,7 +661,8 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 	    "vec4 get_%s()\n"
 	    "{\n",
 	    namestr, namestr, rectstr, namestr, namestr);
-	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES &&
+	if ((ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 || 
+	     ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3) &&
 	    _cairo_gl_shader_needs_border_fade (op))
 	{
 	    _cairo_output_stream_printf (stream,
@@ -697,7 +699,8 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 	    "    float is_valid = step (-%s_radius_0, t * %s_circle_d.z);\n",
 	    namestr, namestr, rectstr, namestr, namestr, namestr, namestr,
 	    namestr, namestr, namestr, namestr, namestr);
-	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES &&
+	if ((ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 || 
+	     ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3) &&
 	    _cairo_gl_shader_needs_border_fade (op))
 	{
 	    _cairo_output_stream_printf (stream,
@@ -742,7 +745,8 @@ cairo_gl_shader_emit_color (cairo_output_stream_t *stream,
 	    "    float upper_t = mix (t.y, t.x, is_valid.x);\n",
 	    namestr, namestr, rectstr, namestr, namestr, namestr, namestr,
 	    namestr, namestr, namestr, namestr, namestr, namestr);
-	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES &&
+	if ((ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 || 
+	     ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3) &&
 	    _cairo_gl_shader_needs_border_fade (op))
 	{
 	    _cairo_output_stream_printf (stream,
@@ -964,7 +968,8 @@ cairo_gl_shader_get_fragment_source (cairo_gl_context_t *ctx,
     _cairo_gl_shader_emit_wrap (ctx, stream, src, CAIRO_GL_TEX_SOURCE);
     _cairo_gl_shader_emit_wrap (ctx, stream, mask, CAIRO_GL_TEX_MASK);
 
-    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES) {
+    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 ||
+	ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3) {
 	if (_cairo_gl_shader_needs_border_fade (src))
 	    _cairo_gl_shader_emit_border_fade (stream, src, CAIRO_GL_TEX_SOURCE);
 	if (_cairo_gl_shader_needs_border_fade (mask))

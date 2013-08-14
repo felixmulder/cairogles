@@ -63,7 +63,10 @@ _cairo_gl_image_cache_init (cairo_gl_context_t *ctx, int width, int height,
     _cairo_surface_release_device_reference (cache_surface);
     *image_cache = _cairo_malloc (sizeof (cairo_gl_image_cache_t));
     (*image_cache)->surface = (cairo_gl_surface_t *)cache_surface;
-    (*image_cache)->surface->supports_msaa = FALSE;
+    if (ctx->gl_flavor != CAIRO_GL_FLAVOR_ES3)
+	(*image_cache)->surface->supports_msaa = FALSE;
+    else
+	(*image_cache)->surface->supports_msaa = TRUE;
     _cairo_rtree_init (&((*image_cache)->rtree), width, height,
 		       IMAGE_CACHE_MIN_SIZE,
 		       sizeof (cairo_gl_image_t),
@@ -238,7 +241,8 @@ test_can_read_bgra (cairo_gl_flavor_t gl_flavor)
     if (gl_flavor == CAIRO_GL_FLAVOR_DESKTOP)
 	return TRUE;
 
-    assert (gl_flavor == CAIRO_GL_FLAVOR_ES);
+    assert (gl_flavor == CAIRO_GL_FLAVOR_ES2 ||
+	    gl_flavor == CAIRO_GL_FLAVOR_ES3);
 
    /* For OpenGL ES we have to look for the specific extension and BGRA only
     * matches cairo's integer packed bytes on little-endian machines. */
@@ -257,7 +261,8 @@ _cairo_gl_context_init (cairo_gl_context_t *ctx)
     int n;
 
     cairo_bool_t is_desktop = gl_flavor == CAIRO_GL_FLAVOR_DESKTOP;
-    cairo_bool_t is_gles = gl_flavor == CAIRO_GL_FLAVOR_ES;
+    cairo_bool_t is_gles = (gl_flavor == CAIRO_GL_FLAVOR_ES2 ||
+			    gl_flavor == CAIRO_GL_FLAVOR_ES3);
 
     _cairo_device_init (&ctx->base, &_cairo_gl_device_backend);
 
@@ -344,7 +349,17 @@ _cairo_gl_context_init (cairo_gl_context_t *ctx)
     }
 #endif
 
-    ctx->supports_msaa = ctx->num_samples > 1;
+#if CAIRO_HAS_GLESV3_SURFACE
+    if (is_gles && ctx->has_packed_depth_stencil) {
+	glGetIntegerv(GL_MAX_SAMPLES, &ctx->num_samples);
+    }
+#endif
+
+    /* we always use renderbuffer for rendering in glesv3 */
+    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3)
+	ctx->supports_msaa = TRUE;
+    else
+	ctx->supports_msaa = ctx->num_samples > 1;
     if (ctx->num_samples > MAX_MSAA_SAMPLES)
 	ctx->num_samples = MAX_MSAA_SAMPLES;
 
@@ -444,6 +459,8 @@ _get_depth_stencil_format (cairo_gl_context_t *ctx)
     return GL_DEPTH_STENCIL;
 #elif CAIRO_HAS_GLESV2_SURFACE
     return GL_DEPTH24_STENCIL8_OES;
+#elif CAIRO_HAS_GLESV3_SURFACE
+    return GL_DEPTH24_STENCIL8;
 #endif
 }
 
@@ -486,6 +503,7 @@ _cairo_gl_ensure_framebuffer (cairo_gl_context_t *ctx,
                               cairo_gl_surface_t *surface)
 {
     GLenum status;
+    GLenum buf;
     cairo_gl_dispatch_t *dispatch = &ctx->dispatch;
 
     if (likely (surface->fb))
@@ -502,7 +520,7 @@ _cairo_gl_ensure_framebuffer (cairo_gl_context_t *ctx,
        does not require an explicit multisample resolution. */
 #if CAIRO_HAS_GLESV2_SURFACE
     if (surface->supports_msaa && _cairo_gl_msaa_compositor_enabled () &&
-	ctx->gl_flavor == CAIRO_GL_FLAVOR_ES) {
+	ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2) {
 	_cairo_gl_ensure_msaa_gles_framebuffer (ctx, surface);
     } else
 #endif
@@ -514,6 +532,10 @@ _cairo_gl_ensure_framebuffer (cairo_gl_context_t *ctx,
 
 #if CAIRO_HAS_GL_SURFACE
     glDrawBuffer (GL_COLOR_ATTACHMENT0);
+    glReadBuffer (GL_COLOR_ATTACHMENT0);
+#elif CAIRO_HAS_GLESV3_SURFACE
+    buf = GL_COLOR_ATTACHMENT0;
+    glDrawBuffers (1, &buf);
     glReadBuffer (GL_COLOR_ATTACHMENT0);
 #endif
 
@@ -536,13 +558,14 @@ _cairo_gl_ensure_framebuffer (cairo_gl_context_t *ctx,
 		 str, status);
     }
 }
-#if CAIRO_HAS_GL_SURFACE
+#if CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV3_SURFACE
 static void
 _cairo_gl_ensure_multisampling (cairo_gl_context_t *ctx,
 				cairo_gl_surface_t *surface)
 {
     assert (surface->supports_msaa);
-    assert (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP);
+    assert (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP ||
+	    ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3);
 
     if (surface->msaa_fb)
 	return;
@@ -560,9 +583,14 @@ _cairo_gl_ensure_multisampling (cairo_gl_context_t *ctx,
        this information. */
     ctx->dispatch.RenderbufferStorageMultisample (GL_RENDERBUFFER,
 						  ctx->num_samples,
+#if CAIRO_HAS_GLESV3_SURFACE
+						  GL_RGBA8,
+#else
 						  GL_RGBA,
+#endif
 						  surface->width,
 						  surface->height);
+
     ctx->dispatch.FramebufferRenderbuffer (GL_FRAMEBUFFER,
 					   GL_COLOR_ATTACHMENT0,
 					   GL_RENDERBUFFER,
@@ -574,6 +602,11 @@ _cairo_gl_ensure_multisampling (cairo_gl_context_t *ctx,
     // reset cached clear colors
     memset (&ctx->states_cache.clear_red, 0, sizeof (GLclampf) * 4);
     glClear (GL_COLOR_BUFFER_BIT);
+
+    /* for glesv3 with multisample renderbuffer, we always render to
+       this renderbuffer */
+    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3)
+	surface->msaa_active = TRUE;
 }
 #endif
 
@@ -586,8 +619,9 @@ _cairo_gl_ensure_msaa_depth_stencil_buffer (cairo_gl_context_t *ctx,
 	return TRUE;
 
     _cairo_gl_ensure_framebuffer (ctx, surface);
-#if CAIRO_HAS_GL_SURFACE
-    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP)
+#if CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV3_SURFACE
+    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP ||
+	ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3)
 	_cairo_gl_ensure_multisampling (ctx, surface);
 #endif
 
@@ -601,8 +635,9 @@ _cairo_gl_ensure_msaa_depth_stencil_buffer (cairo_gl_context_t *ctx,
 					      surface->width,
 					      surface->height);
 
-#if CAIRO_HAS_GL_SURFACE
-    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP) {
+#if CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV3_SURFACE
+    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP ||
+	ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3) {
 	dispatch->FramebufferRenderbuffer (GL_FRAMEBUFFER,
 					   GL_DEPTH_STENCIL_ATTACHMENT,
 					   GL_RENDERBUFFER,
@@ -611,7 +646,7 @@ _cairo_gl_ensure_msaa_depth_stencil_buffer (cairo_gl_context_t *ctx,
 #endif
 
 #if CAIRO_HAS_GLESV2_SURFACE
-    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES) {
+    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2) {
 	dispatch->FramebufferRenderbuffer (GL_FRAMEBUFFER,
 					   GL_DEPTH_ATTACHMENT,
 					   GL_RENDERBUFFER,
@@ -717,22 +752,29 @@ _gl_identity_ortho (GLfloat *m,
 #undef M
 }
 
-#if CAIRO_HAS_GL_SURFACE
+#if CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV3_SURFACE
 static void
 bind_multisample_framebuffer (cairo_gl_context_t *ctx,
 			       cairo_gl_surface_t *surface)
 {
     cairo_bool_t stencil_test_enabled = ctx->states_cache.stencil_test_enabled;
     cairo_bool_t scissor_test_enabled = ctx->states_cache.scissor_test_enabled;
+
     assert (surface->supports_msaa);
-    assert (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP);
+    assert (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP ||
+	    ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3);
 
     _cairo_gl_ensure_framebuffer (ctx, surface);
     _cairo_gl_ensure_multisampling (ctx, surface);
 
     if (surface->msaa_active) {
+#if CAIRO_HAS_GL_SURFACE
 	glEnable (GL_MULTISAMPLE);
+
+#endif
 	ctx->dispatch.BindFramebuffer (GL_FRAMEBUFFER, surface->msaa_fb);
+	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3)
+	    surface->content_in_texture = FALSE;
 	return;
     }
 
@@ -742,7 +784,9 @@ bind_multisample_framebuffer (cairo_gl_context_t *ctx,
     _disable_stencil_buffer (ctx);
     _disable_scissor_buffer (ctx);
 
+#if CAIRO_HAS_GL_SURFACE
     glEnable (GL_MULTISAMPLE);
+#endif
 
     /* The last time we drew to the surface, we were not using multisampling,
        so we need to blit from the non-multisampling framebuffer into the
@@ -752,8 +796,9 @@ bind_multisample_framebuffer (cairo_gl_context_t *ctx,
     ctx->dispatch.BlitFramebuffer (0, 0, surface->width, surface->height,
 				   0, 0, surface->width, surface->height,
 				   GL_COLOR_BUFFER_BIT |
-				   GL_STENCIL_BUFFER_BIT |
-				   GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+				   GL_STENCIL_BUFFER_BIT,
+				   GL_NEAREST);
+
     ctx->dispatch.BindFramebuffer (GL_FRAMEBUFFER, surface->msaa_fb);
 
     /* re-enable stencil and scissor test */
@@ -761,21 +806,27 @@ bind_multisample_framebuffer (cairo_gl_context_t *ctx,
 	_enable_scissor_buffer (ctx);
     if (stencil_test_enabled)
 	_enable_stencil_buffer (ctx);
+
+    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3)
+	surface->content_in_texture = FALSE;
 }
 #endif
 
-#if CAIRO_HAS_GL_SURFACE
+#if CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV3_SURFACE
 static void
 bind_singlesample_framebuffer (cairo_gl_context_t *ctx,
 			       cairo_gl_surface_t *surface)
 {
     cairo_bool_t stencil_test_enabled = ctx->states_cache.stencil_test_enabled;
     cairo_bool_t scissor_test_enabled = ctx->states_cache.scissor_test_enabled;
-    assert (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP);
+    assert (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP ||
+	    ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3);
     _cairo_gl_ensure_framebuffer (ctx, surface);
 
     if (! surface->msaa_active) {
+#if CAIRO_HAS_GL_SURFACE
 	glDisable (GL_MULTISAMPLE);
+#endif
 	ctx->dispatch.BindFramebuffer (GL_FRAMEBUFFER, surface->fb);
 	return;
     }
@@ -785,7 +836,9 @@ bind_singlesample_framebuffer (cairo_gl_context_t *ctx,
     /* we must disable scissor and stencil test */
     _disable_stencil_buffer (ctx);
     _disable_scissor_buffer (ctx);
+#if CAIRO_HAS_GL_SURFACE
     glDisable (GL_MULTISAMPLE);
+#endif
 
     /* The last time we drew to the surface, we were using multisampling,
        so we need to blit from the multisampling framebuffer into the
@@ -795,8 +848,7 @@ bind_singlesample_framebuffer (cairo_gl_context_t *ctx,
     ctx->dispatch.BlitFramebuffer (0, 0, surface->width, surface->height,
 				   0, 0, surface->width, surface->height,
 				   GL_COLOR_BUFFER_BIT |
-				   GL_STENCIL_BUFFER_BIT |
-				   GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+				   GL_STENCIL_BUFFER_BIT, GL_NEAREST);
     ctx->dispatch.BindFramebuffer (GL_FRAMEBUFFER, surface->fb);
 
     /* re-enable stencil and scissor test */
@@ -815,14 +867,14 @@ _cairo_gl_context_bind_framebuffer (cairo_gl_context_t *ctx,
     if (_cairo_gl_surface_is_texture (surface)) {
 	/* OpenGL ES surfaces only have either a multisample framebuffer or a
 	 * singlesample framebuffer, so we cannot switch back and forth. */
-	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES) {
+	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2) {
 	    _cairo_gl_ensure_framebuffer (ctx, surface);
 	    ctx->dispatch.BindFramebuffer (GL_FRAMEBUFFER, surface->fb);
 	    _cairo_gl_clear_framebuffer (ctx, surface);
 	    return;
 	}
 
-#if CAIRO_HAS_GL_SURFACE
+#if CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV3_SURFACE
 	if (multisampling)
 	    bind_multisample_framebuffer (ctx, surface);
 	else
@@ -841,7 +893,8 @@ _cairo_gl_context_bind_framebuffer (cairo_gl_context_t *ctx,
 #endif
     }
 
-    surface->msaa_active = multisampling;
+    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP)
+	surface->msaa_active = multisampling;
 }
 
 void
@@ -850,14 +903,22 @@ _cairo_gl_context_set_destination (cairo_gl_context_t *ctx,
                                    cairo_bool_t multisampling)
 {
     cairo_bool_t changing_surface, changing_sampling;
+#if CAIRO_HAS_GLESV3_SURFACE
+    GLenum buf;
+#endif
 
     /* The decision whether or not to use multisampling happens when
      * we create an OpenGL ES surface, so we can never switch modes. */
-    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES)
+    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2)
 	multisampling = surface->msaa_active;
+    /* For GLESV3, we always use renderbuffer for drawing */
+    else if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3)
+	multisampling = TRUE;
 
     changing_surface = ctx->current_target != surface || surface->needs_update;
-    changing_sampling = surface->msaa_active != multisampling;
+    changing_sampling = (surface->msaa_active != multisampling ||
+			 surface->content_in_texture);
+
     if (! changing_surface && ! changing_sampling)
 	return;
     if (! changing_surface) {
@@ -881,6 +942,10 @@ _cairo_gl_context_set_destination (cairo_gl_context_t *ctx,
 #if CAIRO_HAS_GL_SURFACE
 	glDrawBuffer (GL_BACK_LEFT);
 	glReadBuffer (GL_BACK_LEFT);
+#elif CAIRO_HAS_GLESV3_SURFACE
+	buf = GL_BACK;
+	glDrawBuffers (1, &buf);
+	glReadBuffer (GL_BACK);
 #endif
     }
 

@@ -67,6 +67,9 @@
 #elif CAIRO_HAS_GLESV2_SURFACE
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#elif CAIRO_HAS_GLESV3_SURFACE
+#include <GLES3/gl3.h>
+#include <GLES3/gl3ext.h>
 #endif
 
 #include "cairo-gl-ext-def-private.h"
@@ -123,7 +126,8 @@ typedef enum _cairo_blur_stage {
 typedef enum cairo_gl_flavor {
     CAIRO_GL_FLAVOR_NONE = 0,
     CAIRO_GL_FLAVOR_DESKTOP = 1,
-    CAIRO_GL_FLAVOR_ES = 2
+    CAIRO_GL_FLAVOR_ES2 = 2,
+    CAIRO_GL_FLAVOR_ES3 = 3
 } cairo_gl_flavor_t;
 
 /* The order here is sensitive because of the logic of 
@@ -246,7 +250,7 @@ struct _cairo_gl_surface {
     GLuint fb; /* GL framebuffer object wrapping our data. */
     GLuint depth_stencil; /* GL renderbuffer object for holding stencil buffer clip. */
 
-#if CAIRO_HAS_GL_SURFACE
+#if CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV3_SURFACE
     GLuint msaa_rb; /* The ARB MSAA path uses a renderbuffer. */
     GLuint msaa_fb;
 #endif
@@ -255,9 +259,13 @@ struct _cairo_gl_surface {
     cairo_bool_t stencil_and_msaa_caps_initialized;
     cairo_bool_t supports_stencil; /* Stencil support for for non-texture surfaces. */
     cairo_bool_t supports_msaa;
+    cairo_bool_t num_samples;
     cairo_bool_t force_no_msaa;
     cairo_bool_t msaa_active; /* Whether the multisampling
 			         framebuffer is active or not. */
+    cairo_bool_t content_in_texture; /* whether we just uploaded image
+					to texture, used for certain
+					gles2 extensions and glesv3 */
     cairo_clip_t *clip_on_stencil_buffer;
 
     int owns_tex;
@@ -1130,6 +1138,11 @@ _cairo_gl_path_fixed_stroke_to_hairline (const cairo_path_fixed_t *path,
                                          cairo_path_fixed_line_to_func_t *line_to,
                                          cairo_path_fixed_curve_to_func_t *curve_to,
                                          cairo_path_fixed_close_path_func_t *close_path);
+
+cairo_private cairo_int_status_t
+_cairo_draw_int_rect (cairo_gl_context_t	*ctx,
+		      cairo_gl_composite_t	*setup,
+		      cairo_rectangle_int_t	*rect);
 
 cairo_private cairo_gl_surface_t *
 _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
