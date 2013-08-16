@@ -552,26 +552,36 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
     if (unlikely (status))
 	goto finish;
 
-    if (! clip)
-	status = _cairo_draw_int_rect (ctx, &setup, &composite->bounded);
-    else {
-	if (op != CAIRO_OPERATOR_OVER)
+    if (op != CAIRO_OPERATOR_OVER) {
+	if (! clip)
+	    status = _cairo_draw_int_rect (ctx, &setup, &composite->bounded);
+	else
 	    status = _cairo_gl_msaa_compositor_draw_clip (ctx, &setup, clip);
-	else {
-	    cairo_rectangle_int_t rect, temp;
+    }
+    else {
+	/* fast path for CAIRO_OVER_OPERATOR */
+	cairo_rectangle_int_t rect, temp;
+
+	_cairo_surface_get_extents (&dst->base, &rect);
+	_cairo_pattern_get_extents (composite->original_source_pattern,
+				    &temp);
+	_cairo_rectangle_intersect (&rect, &temp);
+	if (composite->original_mask_pattern) {
+	    _cairo_pattern_get_extents (composite->original_mask_pattern,
+					&temp);
+	    _cairo_rectangle_intersect (&rect, &temp);
+	}
+
+	if (clip) {
 	    cairo_clip_t *clip_copy = _cairo_clip_copy (clip);
 	
-	    _cairo_surface_get_extents (&dst->base, &rect);
-	    _cairo_pattern_get_extents (composite->original_source_pattern, &temp);
-	    _cairo_rectangle_intersect (&rect, &temp);
-	    if (composite->original_mask_pattern) {
-		_cairo_pattern_get_extents (composite->original_mask_pattern, &temp);
-		_cairo_rectangle_intersect (&rect, &temp);
-	    }
 	    clip_copy = _cairo_clip_intersect_rectangle (clip_copy, &rect);
-	    status = _cairo_gl_msaa_compositor_draw_clip (ctx, &setup, clip_copy);
+	    status = _cairo_gl_msaa_compositor_draw_clip (ctx, &setup,
+							  clip_copy);
 	    _cairo_clip_destroy (clip_copy);
 	}
+	else
+	    status = _cairo_draw_int_rect (ctx, &setup, &rect);
     }
 
 finish:
