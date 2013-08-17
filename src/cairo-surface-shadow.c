@@ -48,7 +48,7 @@
 #include "cairo-device-private.h"
 #include "cairo-image-surface-private.h"
 
-#define MAX_SHADOW_SIZE 256
+#define MAX_SHADOW_SIZE 1024
 
 static unsigned long
 _cairo_stroke_style_hash (unsigned long hash, 
@@ -343,8 +343,8 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = shadow_width;
-	int scaled_height = shadow_height;
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	int scaled_height = MIN (shadow_height, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
  	if (content == CAIRO_CONTENT_COLOR)
@@ -389,7 +389,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
      * different scale.  The different in scale manifests itself to
      * the shadow position because it are scaling up */
     scale *= 10.0;
-    scale = ceil (scale) / 10.0;
+    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -655,8 +655,8 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
 	content = cairo_surface_get_content (target);
@@ -702,7 +702,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
      * different scale.  The different in scale manifests itself to
      * the shadow position because it are scaling up */
     scale *= 10.0;
-    scale = ceil (scale) / 10.0;
+    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -975,8 +975,8 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
@@ -1025,7 +1025,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
      * different scale.  The different in scale manifests itself to
      * the shadow position because it are scaling up */
     scale *= 10.0;
-    scale = ceil (scale) / 10.0;
+    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -1328,8 +1328,8 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
@@ -1374,7 +1374,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
      * different scale.  The different in scale manifests itself to
      * the shadow position because it are scaling up */
     scale *= 10.0;
-    scale = ceil (scale) / 10.0;
+    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -1650,8 +1650,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
@@ -1701,7 +1701,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
      * different scale.  The different in scale manifests itself to
      * the shadow position because it are scaling up */
     scale *= 10.0;
-    scale = ceil (scale) / 10.0;
+    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -1996,8 +1996,8 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE);
-	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE);
+	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
@@ -2042,7 +2042,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
      * different scale.  The different in scale manifests itself to
      * the shadow position because it are scaling up */
     scale *= 10.0;
-    scale = ceil (scale) / 10.0;
+    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
