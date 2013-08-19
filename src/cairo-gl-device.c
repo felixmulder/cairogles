@@ -795,8 +795,11 @@ bind_multisample_framebuffer (cairo_gl_context_t *ctx,
     ctx->dispatch.BindFramebuffer (GL_READ_FRAMEBUFFER, surface->fb);
     ctx->dispatch.BlitFramebuffer (0, 0, surface->width, surface->height,
 				   0, 0, surface->width, surface->height,
-				   GL_COLOR_BUFFER_BIT |
-				   GL_STENCIL_BUFFER_BIT,
+				   GL_COLOR_BUFFER_BIT
+#if CAIRO_HAS_GL_SURFACE
+				   | GL_STENCIL_BUFFER_BIT
+#endif
+				   ,
 				   GL_NEAREST);
 
     ctx->dispatch.BindFramebuffer (GL_FRAMEBUFFER, surface->msaa_fb);
