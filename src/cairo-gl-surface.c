@@ -787,6 +787,7 @@ _cairo_gl_surface_clear (cairo_gl_surface_t  *surface,
 
 	glClearColor (r, g, b, a);
     }
+
     glClear (GL_COLOR_BUFFER_BIT);
 
     if (a == 0)
@@ -1257,7 +1258,9 @@ _cairo_gl_surface_draw_image (cairo_gl_surface_t *dst,
 						  width, height);
 
 	}
-	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3)
+	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3 ||
+	    (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
+	     ctx->has_angle_multisampling))
 	    dst->content_in_texture = TRUE;
     } else {
         cairo_surface_t *tmp;
@@ -1298,7 +1301,9 @@ _cairo_gl_surface_draw_image (cairo_gl_surface_t *dst,
         }
 
         cairo_surface_destroy (tmp);
-	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3)
+	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3 ||
+	    (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
+	     ctx->has_angle_multisampling))
 	    dst->content_in_texture = TRUE;
     }
 
@@ -1354,12 +1359,10 @@ _cairo_gl_surface_finish (void *abstract_surface)
 
     if (surface->msaa_depth_stencil)
 	ctx->dispatch.DeleteRenderbuffers (1, &surface->msaa_depth_stencil);
-#if CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV3_SURFACE
     if (surface->msaa_fb)
 	ctx->dispatch.DeleteFramebuffers (1, &surface->msaa_fb);
     if (surface->msaa_rb)
 	ctx->dispatch.DeleteRenderbuffers (1, &surface->msaa_rb);
-#endif
 
     if (surface->image_node) {
         surface->image_node->node.pinned = FALSE;
@@ -1464,7 +1467,9 @@ _cairo_gl_surface_map_to_image (void      *abstract_surface,
      */
     _cairo_gl_composite_flush (ctx);
 
-    if (ctx->gl_flavor != CAIRO_GL_FLAVOR_ES3)
+    if (! (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3 ||
+	   (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
+	    ctx->has_angle_multisampling)))
 	_cairo_gl_context_set_destination (ctx, surface, FALSE);
     else {
 	if (surface->content_in_texture) {
@@ -1654,10 +1659,10 @@ _cairo_gl_surface_resolve_multisampling (cairo_gl_surface_t *surface)
 	return CAIRO_INT_STATUS_SUCCESS;
 
     /* GLES surfaces do not need explicit resolution. */
-    if (((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES2)
+    if (((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
+	!((cairo_gl_context_t *) surface->base.device)->has_angle_multisampling)
 	return CAIRO_INT_STATUS_SUCCESS;
-    else if (((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES3 && 
-	     surface->content_in_texture)
+    else if (surface->content_in_texture)
 	return CAIRO_INT_STATUS_SUCCESS;
 
     if (! _cairo_gl_surface_is_texture (surface))
@@ -1671,11 +1676,11 @@ _cairo_gl_surface_resolve_multisampling (cairo_gl_surface_t *surface)
 
     ctx->current_target = NULL;
 
-#if CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV3_SURFACE
     _cairo_gl_context_bind_framebuffer (ctx, surface, FALSE);
-    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3)
+    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3 ||
+	(ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
+	 ctx->has_angle_multisampling))
 	surface->content_in_texture = TRUE;
-#endif
 
     status = _cairo_gl_context_release (ctx, status);
     return status;
@@ -2050,4 +2055,3 @@ cairo_gl_surface_set_binding_texture (cairo_surface_t *abstract_surface,
 
     return CAIRO_STATUS_SUCCESS;
 }
-

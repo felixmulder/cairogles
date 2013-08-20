@@ -250,10 +250,8 @@ struct _cairo_gl_surface {
     GLuint fb; /* GL framebuffer object wrapping our data. */
     GLuint depth_stencil; /* GL renderbuffer object for holding stencil buffer clip. */
 
-#if CAIRO_HAS_GL_SURFACE || CAIRO_HAS_GLESV3_SURFACE
     GLuint msaa_rb; /* The ARB MSAA path uses a renderbuffer. */
     GLuint msaa_fb;
-#endif
     GLuint msaa_depth_stencil;
 
     cairo_bool_t stencil_and_msaa_caps_initialized;
@@ -550,6 +548,7 @@ struct _cairo_gl_context {
     cairo_gl_surface_t *shadow_scratch_surfaces[3];
     cairo_gl_surface_t *shadow_masks[4];
     cairo_bool_t source_scratch_in_use;
+    cairo_bool_t has_angle_multisampling;
 
     void (*acquire) (void *ctx);
     void (*release) (void *ctx);

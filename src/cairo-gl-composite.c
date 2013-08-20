@@ -62,7 +62,7 @@ _blit_texture_to_renderbuffer (cairo_gl_surface_t *surface)
     cairo_int_status_t status;
 
     /* FIXME: we need to take care of certain glesv2 extension too */
-    if (((cairo_gl_context_t *)surface->base.device)->gl_flavor != CAIRO_GL_FLAVOR_ES3)
+    if (((cairo_gl_context_t *)surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP)
 	return CAIRO_INT_STATUS_SUCCESS;
 
     if (! surface->content_in_texture)
