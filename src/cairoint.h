@@ -305,6 +305,10 @@ cairo_private_no_warn cairo_bool_t
 _cairo_rectangle_intersect (cairo_rectangle_int_t *dst,
 			    const cairo_rectangle_int_t *src);
 
+cairo_private_no_warn cairo_bool_t
+_cairo_rectangle_exact_intersect (cairo_rectangle_t *dst,
+				  const cairo_rectangle_t *src);
+
 static inline cairo_bool_t
 _cairo_rectangle_intersects (const cairo_rectangle_int_t *dst,
 			     const cairo_rectangle_int_t *src)
@@ -979,16 +983,32 @@ _cairo_path_fixed_approximate_fill_extents (const cairo_path_fixed_t *path,
 					    cairo_rectangle_int_t *extents);
 
 cairo_private void
+_cairo_path_fixed_approximate_fill_exact_extents (const cairo_path_fixed_t *path,
+						  cairo_rectangle_t *extents);
+
+cairo_private void
 _cairo_path_fixed_fill_extents (const cairo_path_fixed_t	*path,
 				cairo_fill_rule_t	 fill_rule,
 				double			 tolerance,
 				cairo_rectangle_int_t	*extents);
 
 cairo_private void
+_cairo_path_fixed_fill_exact_extents (const cairo_path_fixed_t	*path,
+				      cairo_fill_rule_t	 fill_rule,
+				      double			 tolerance,
+				      cairo_rectangle_t	*extents);
+
+cairo_private void
 _cairo_path_fixed_approximate_stroke_extents (const cairo_path_fixed_t *path,
 					      const cairo_stroke_style_t *style,
 					      const cairo_matrix_t *ctm,
 					      cairo_rectangle_int_t *extents);
+
+cairo_private void
+_cairo_path_fixed_approximate_stroke_exact_extents (const cairo_path_fixed_t *path,
+					 	    const cairo_stroke_style_t *style,
+						    const cairo_matrix_t *ctm,
+						    cairo_rectangle_t *extents);
 
 cairo_private cairo_status_t
 _cairo_path_fixed_stroke_extents (const cairo_path_fixed_t *path,
@@ -997,6 +1017,14 @@ _cairo_path_fixed_stroke_extents (const cairo_path_fixed_t *path,
 				  const cairo_matrix_t *ctm_inverse,
 				  double tolerance,
 				  cairo_rectangle_int_t *extents);
+
+cairo_private cairo_status_t
+_cairo_path_fixed_stroke_exact_extents (const cairo_path_fixed_t *path,
+					const cairo_stroke_style_t *style,
+					const cairo_matrix_t *ctm,
+					const cairo_matrix_t *ctm_inverse,
+					double tolerance,
+					cairo_rectangle_t *extents);
 
 cairo_private void
 _cairo_path_fixed_transform (cairo_path_fixed_t	*path,

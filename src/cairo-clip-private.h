@@ -138,6 +138,9 @@ _cairo_clip_intersect_path (cairo_clip_t       *clip,
 cairo_private const cairo_rectangle_int_t *
 _cairo_clip_get_extents (const cairo_clip_t *clip);
 
+cairo_private const cairo_rectangle_t *
+_cairo_clip_get_exact_extents (const cairo_clip_t *clip);
+
 cairo_private cairo_surface_t *
 _cairo_clip_get_surface (const cairo_clip_t *clip, cairo_surface_t *dst, int *tx, int *ty);
 

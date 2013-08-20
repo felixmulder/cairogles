@@ -184,7 +184,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 {
     cairo_status_t	  status;
     cairo_pattern_union_t shadow_source;
-    cairo_rectangle_int_t shadow_extents;
+    cairo_rectangle_t     shadow_extents;
     cairo_pattern_t 	 *shadow_pattern = NULL;
     cairo_pattern_t	 *color_pattern = NULL;
     cairo_surface_t	 *shadow_surface = NULL;
@@ -289,8 +289,8 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
 
-	shadow_width = shadow_extents.width + x_blur * 2;
-	shadow_height = shadow_extents.height + y_blur * 2;
+	shadow_width = ceil (shadow_extents.width + x_blur * 2);
+	shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
 	scale = shadow_cache->scale;
 
@@ -333,8 +333,8 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     x_offset = shadow_extents.x - x_blur;
     y_offset = shadow_extents.y - y_blur;
 
-    shadow_width = shadow_extents.width + x_blur * 2;
-    shadow_height = shadow_extents.height + y_blur * 2;
+    shadow_width = ceil (shadow_extents.width + x_blur * 2);
+    shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
     if (target->backend->get_shadow_surface)
 	shadow_surface = target->backend->get_shadow_surface (target,
@@ -384,12 +384,6 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     scale = MIN (x_scale, y_scale);
     if (scale > 1.0)
 	scale = 1.0;
-
-    /* FIXME: due to rounding error in get extents, we get slightly
-     * different scale.  The different in scale manifests itself to
-     * the shadow position because it are scaling up */
-    scale *= 10.0;
-    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -492,7 +486,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     cairo_status_t	  status;
     cairo_pattern_union_t shadow_source;
     cairo_pattern_union_t shadow_mask;
-    cairo_rectangle_int_t shadow_extents;
+    cairo_rectangle_t     shadow_extents;
     cairo_pattern_t 	 *shadow_pattern = NULL;
     cairo_pattern_t	 *color_pattern = NULL;
     cairo_surface_t	 *shadow_surface = NULL;
@@ -599,8 +593,8 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
 
-	shadow_width = shadow_extents.width + x_blur * 2;
-	shadow_height = shadow_extents.height + y_blur * 2;
+	shadow_width = ceil (shadow_extents.width + x_blur * 2);
+	shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
 	scale = shadow_cache->scale;
 
@@ -645,8 +639,8 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     x_offset = shadow_extents.x - x_blur;
     y_offset = shadow_extents.y - y_blur;
 
-    shadow_width = shadow_extents.width + x_blur * 2;
-    shadow_height = shadow_extents.height + y_blur * 2;
+    shadow_width = ceil (shadow_extents.width + x_blur * 2);
+    shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
     if (target->backend->get_shadow_surface)
 	shadow_surface = target->backend->get_shadow_surface (target,
@@ -697,12 +691,6 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     scale = MIN (x_scale, y_scale);
     if (scale > 1.0)
 	scale = 1.0;
-
-    /* FIXME: due to rounding error in get extents, we get slightly
-     * different scale.  The different in scale manifests itself to
-     * the shadow position because it are scaling up */
-    scale *= 10.0;
-    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -810,7 +798,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     cairo_status_t	  status;
     cairo_pattern_union_t shadow_source;
     cairo_path_fixed_t    shadow_path;
-    cairo_rectangle_int_t shadow_extents;
+    cairo_rectangle_t     shadow_extents;
     cairo_pattern_t 	 *shadow_pattern = NULL;
     cairo_pattern_t	 *color_pattern = NULL;
     cairo_surface_t	 *shadow_surface = NULL;
@@ -913,8 +901,8 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
 
-	shadow_width = shadow_extents.width + x_blur * 2;
-	shadow_height = shadow_extents.height + y_blur * 2;
+	shadow_width = ceil (shadow_extents.width + x_blur * 2);
+	shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
 	scale = shadow_cache->scale;
 
@@ -965,8 +953,8 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     x_offset = shadow_extents.x  - x_blur;
     y_offset = shadow_extents.y  - y_blur;
 
-    shadow_width = shadow_extents.width + x_blur * 2;
-    shadow_height = shadow_extents.height + y_blur * 2;
+    shadow_width = ceil (shadow_extents.width + x_blur * 2);
+    shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
     if (target->backend->get_shadow_surface)
 	shadow_surface = target->backend->get_shadow_surface (target,
@@ -1020,12 +1008,6 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     scale = MIN (x_scale, y_scale);
     if (scale > 1.0)
 	scale = 1.0;
-
-    /* FIXME: due to rounding error in get extents, we get slightly
-     * different scale.  The different in scale manifests itself to
-     * the shadow position because it are scaling up */
-    scale *= 10.0;
-    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -1150,7 +1132,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     cairo_status_t	  status;
     cairo_pattern_union_t shadow_source;
     cairo_path_fixed_t    shadow_path;
-    cairo_rectangle_int_t shadow_extents;
+    cairo_rectangle_t     shadow_extents;
     cairo_pattern_t 	 *shadow_pattern = NULL;
     cairo_pattern_t	 *color_pattern = NULL;
     cairo_surface_t	 *shadow_surface = NULL;
@@ -1268,8 +1250,8 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
 
-	shadow_width = shadow_extents.width + x_blur * 2;
-	shadow_height = shadow_extents.height + y_blur * 2;
+	shadow_width = ceil (shadow_extents.width + x_blur * 2);
+	shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
 	scale = shadow_cache->scale;
 
@@ -1318,8 +1300,8 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     x_offset = shadow_extents.x - x_blur;
     y_offset = shadow_extents.y - y_blur;
 
-    shadow_width = shadow_extents.width + x_blur * 2;
-    shadow_height = shadow_extents.height + y_blur * 2;
+    shadow_width = ceil (shadow_extents.width + x_blur * 2);
+    shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
     if (target->backend->get_shadow_surface)
 	shadow_surface = target->backend->get_shadow_surface (target,
@@ -1369,12 +1351,6 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     scale = MIN (x_scale, y_scale);
     if (scale > 1.0)
 	scale = 1.0;
-
-    /* FIXME: due to rounding error in get extents, we get slightly
-     * different scale.  The different in scale manifests itself to
-     * the shadow position because it are scaling up */
-    scale *= 10.0;
-    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -1490,7 +1466,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     cairo_status_t	  status;
     cairo_pattern_union_t shadow_source;
     cairo_path_fixed_t    shadow_path;
-    cairo_rectangle_int_t shadow_extents;
+    cairo_rectangle_t shadow_extents;
     cairo_pattern_t 	 *shadow_pattern = NULL;
     cairo_pattern_t	 *color_pattern = NULL;
     cairo_surface_t	 *shadow_surface = NULL;
@@ -1587,8 +1563,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
 
-	shadow_width = shadow_extents.width + x_blur * 2;
-	shadow_height = shadow_extents.height + y_blur * 2;
+	shadow_width = ceil (shadow_extents.width + x_blur * 2);
+	shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
 	scale = shadow_cache->scale;
 
@@ -1640,8 +1616,8 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     x_offset = shadow_extents.x  - x_blur;
     y_offset = shadow_extents.y  - y_blur;
 
-    shadow_width = shadow_extents.width + x_blur * 2;
-    shadow_height = shadow_extents.height + y_blur * 2;
+    shadow_width = ceil (shadow_extents.width + x_blur * 2);
+    shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
     if (target->backend->get_shadow_surface)
 	shadow_surface = target->backend->get_shadow_surface (target,
@@ -1696,12 +1672,6 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     scale = MIN (x_scale, y_scale);
     if (scale > 1.0)
 	scale = 1.0;
-
-    /* FIXME: due to rounding error in get extents, we get slightly
-     * different scale.  The different in scale manifests itself to
-     * the shadow position because it are scaling up */
-    scale *= 10.0;
-    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -1826,7 +1796,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     cairo_status_t	  status;
     cairo_pattern_union_t shadow_source;
     cairo_path_fixed_t    shadow_path;
-    cairo_rectangle_int_t shadow_extents;
+    cairo_rectangle_t shadow_extents;
     cairo_pattern_t 	 *shadow_pattern = NULL;
     cairo_pattern_t	 *color_pattern = NULL;
     cairo_surface_t	 *shadow_surface = NULL;
@@ -1939,8 +1909,8 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
 
-	shadow_width = shadow_extents.width + x_blur * 2;
-	shadow_height = shadow_extents.height + y_blur * 2;
+	shadow_width = ceil (shadow_extents.width + x_blur * 2);
+	shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
 	scale = shadow_cache->scale;
 
@@ -1986,8 +1956,8 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     x_offset = shadow_extents.x - x_blur;
     y_offset = shadow_extents.y - y_blur;
 
-    shadow_width = shadow_extents.width + x_blur * 2;
-    shadow_height = shadow_extents.height + y_blur * 2;
+    shadow_width = ceil (shadow_extents.width + x_blur * 2);
+    shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
     if (target->backend->get_shadow_surface)
 	shadow_surface = target->backend->get_shadow_surface (target,
@@ -2037,12 +2007,6 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     scale = MIN (x_scale, y_scale);
     if (scale > 1.0)
 	scale = 1.0;
-
-    /* FIXME: due to rounding error in get extents, we get slightly
-     * different scale.  The different in scale manifests itself to
-     * the shadow position because it are scaling up */
-    scale *= 10.0;
-    scale = floor (scale) / 10.0;
 
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -2154,7 +2118,7 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
 {
     cairo_status_t	  status;
     cairo_pattern_union_t shadow_source;
-    cairo_rectangle_int_t shadow_extents;
+    cairo_rectangle_t     shadow_extents;
     cairo_pattern_t 	 *shadow_pattern = NULL;
     cairo_pattern_t	 *color_pattern = NULL;
     cairo_surface_t	 *shadow_surface = NULL;
@@ -2205,8 +2169,8 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
     x_offset = shadow_extents.x - x_blur;
     y_offset = shadow_extents.y - y_blur;
 
-    shadow_width = shadow_extents.width + x_blur * 2 + fabs (shadow->x_offset);
-    shadow_height = shadow_extents.height + y_blur * 2 + fabs (shadow->y_offset);
+    shadow_width = ceil (shadow_extents.width + x_blur * 2 + fabs (shadow->x_offset));
+    shadow_height = ceil (shadow_extents.height + y_blur * 2 + fabs (shadow->y_offset));
 
     if (target->backend->get_glyph_shadow_surface) {
 	shadow_surface = target->backend->get_glyph_shadow_surface (target,
@@ -2334,7 +2298,7 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 {
     cairo_status_t	  status;
     cairo_pattern_union_t shadow_source;
-    cairo_rectangle_int_t shadow_extents;
+    cairo_rectangle_t     shadow_extents;
     cairo_pattern_t 	 *shadow_pattern = NULL;
     cairo_pattern_t	 *color_pattern;
     cairo_surface_t	 *shadow_surface = NULL;
@@ -2405,8 +2369,8 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
     x_offset = shadow_extents.x - x_blur;
     y_offset = shadow_extents.y - y_blur;
 
-    shadow_width = shadow_extents.width + x_blur * 2;
-    shadow_height = shadow_extents.height + y_blur * 2;
+    shadow_width = ceil (shadow_extents.width + x_blur * 2);
+    shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
     if (target->backend->get_glyph_shadow_surface)
 	shadow_surface = target->backend->get_glyph_shadow_surface (target,

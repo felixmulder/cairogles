@@ -316,6 +316,10 @@ cairo_private void
 _cairo_pattern_get_extents (const cairo_pattern_t	    *pattern,
 			    cairo_rectangle_int_t           *extents);
 
+cairo_private void
+_cairo_pattern_get_exact_extents (const cairo_pattern_t	    *pattern,
+				  cairo_rectangle_t         *extents);
+
 cairo_private cairo_int_status_t
 _cairo_pattern_get_ink_extents (const cairo_pattern_t	    *pattern,
 				cairo_rectangle_int_t       *extents);

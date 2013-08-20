@@ -3675,6 +3675,202 @@ _cairo_pattern_get_extents (const cairo_pattern_t         *pattern,
     return;
 }
 
+void
+_cairo_pattern_get_exact_extents (const cairo_pattern_t         *pattern,
+				  cairo_rectangle_t             *extents)
+{
+    double x1, y1, x2, y2;
+    cairo_status_t status;
+    cairo_rectangle_int_t int_rect;;
+
+    switch (pattern->type) {
+    case CAIRO_PATTERN_TYPE_SOLID:
+	goto UNBOUNDED;
+
+    case CAIRO_PATTERN_TYPE_SURFACE:
+	{
+	    cairo_rectangle_int_t surface_extents;
+	    const cairo_surface_pattern_t *surface_pattern =
+		(const cairo_surface_pattern_t *) pattern;
+	    cairo_surface_t *surface = surface_pattern->surface;
+
+	    if (! _cairo_surface_get_extents (surface, &surface_extents))
+		goto UNBOUNDED;
+
+	    if (surface_extents.width == 0 || surface_extents.height == 0)
+		goto EMPTY;
+
+	    if (pattern->extend != CAIRO_EXTEND_NONE)
+		goto UNBOUNDED;
+
+	    x1 = surface_extents.x;
+	    y1 = surface_extents.y;
+	    x2 = surface_extents.x + surface_extents.width;
+	    y2 = surface_extents.y + surface_extents.height;
+	}
+	break;
+
+    case CAIRO_PATTERN_TYPE_RASTER_SOURCE:
+	{
+	    const cairo_raster_source_pattern_t *raster =
+		(const cairo_raster_source_pattern_t *) pattern;
+
+	    if (raster->extents.width == 0 || raster->extents.height == 0)
+		goto EMPTY;
+
+	    if (pattern->extend != CAIRO_EXTEND_NONE)
+		goto UNBOUNDED;
+
+	    x1 = raster->extents.x;
+	    y1 = raster->extents.y;
+	    x2 = raster->extents.x + raster->extents.width;
+	    y2 = raster->extents.y + raster->extents.height;
+	}
+	break;
+
+    case CAIRO_PATTERN_TYPE_RADIAL:
+	{
+	    const cairo_radial_pattern_t *radial =
+		(const cairo_radial_pattern_t *) pattern;
+	    double cx1, cy1;
+	    double cx2, cy2;
+	    double r1, r2;
+
+	    if (_radial_pattern_is_degenerate (radial)) {
+		/* cairo-gstate should have optimised degenerate
+		 * patterns to solid clear patterns, so we can ignore
+		 * them here. */
+		goto EMPTY;
+	    }
+
+	    /* TODO: in some cases (focus outside/on the circle) it is
+	     * half-bounded. */
+	    if (pattern->extend != CAIRO_EXTEND_NONE)
+		goto UNBOUNDED;
+
+	    cx1 = radial->cd1.center.x;
+	    cy1 = radial->cd1.center.y;
+	    r1  = radial->cd1.radius;
+
+	    cx2 = radial->cd2.center.x;
+	    cy2 = radial->cd2.center.y;
+	    r2  = radial->cd2.radius;
+
+	    x1 = MIN (cx1 - r1, cx2 - r2);
+	    y1 = MIN (cy1 - r1, cy2 - r2);
+	    x2 = MAX (cx1 + r1, cx2 + r2);
+	    y2 = MAX (cy1 + r1, cy2 + r2);
+	}
+	break;
+
+    case CAIRO_PATTERN_TYPE_LINEAR:
+	{
+	    const cairo_linear_pattern_t *linear =
+		(const cairo_linear_pattern_t *) pattern;
+
+	    if (pattern->extend != CAIRO_EXTEND_NONE)
+		goto UNBOUNDED;
+
+	    if (_linear_pattern_is_degenerate (linear)) {
+		/* cairo-gstate should have optimised degenerate
+		 * patterns to solid ones, so we can again ignore
+		 * them here. */
+		goto EMPTY;
+	    }
+
+	    /* TODO: to get tight extents, use the matrix to transform
+	     * the pattern instead of transforming the extents later. */
+	    if (pattern->matrix.xy != 0. || pattern->matrix.yx != 0.)
+		goto UNBOUNDED;
+
+	    if (linear->pd1.x == linear->pd2.x) {
+		x1 = -HUGE_VAL;
+		x2 = HUGE_VAL;
+		y1 = MIN (linear->pd1.y, linear->pd2.y);
+		y2 = MAX (linear->pd1.y, linear->pd2.y);
+	    } else if (linear->pd1.y == linear->pd2.y) {
+		x1 = MIN (linear->pd1.x, linear->pd2.x);
+		x2 = MAX (linear->pd1.x, linear->pd2.x);
+		y1 = -HUGE_VAL;
+		y2 = HUGE_VAL;
+	    } else {
+		goto  UNBOUNDED;
+	    }
+	}
+	break;
+
+    case CAIRO_PATTERN_TYPE_MESH:
+	{
+	    const cairo_mesh_pattern_t *mesh =
+		(const cairo_mesh_pattern_t *) pattern;
+	    double padx, pady;
+	    cairo_bool_t is_valid;
+
+	    is_valid = _cairo_mesh_pattern_coord_box (mesh, &x1, &y1, &x2, &y2);
+	    if (!is_valid)
+		goto EMPTY;
+
+	    padx = pady = 1.;
+	    cairo_matrix_transform_distance (&pattern->matrix, &padx, &pady);
+	    padx = fabs (padx);
+	    pady = fabs (pady);
+
+	    x1 -= padx;
+	    y1 -= pady;
+	    x2 += padx;
+	    y2 += pady;
+	}
+	break;
+
+    default:
+	ASSERT_NOT_REACHED;
+    }
+
+    if (_cairo_matrix_is_translation (&pattern->matrix)) {
+	x1 -= pattern->matrix.x0; x2 -= pattern->matrix.x0;
+	y1 -= pattern->matrix.y0; y2 -= pattern->matrix.y0;
+    } else {
+	cairo_matrix_t imatrix;
+
+	imatrix = pattern->matrix;
+	status = cairo_matrix_invert (&imatrix);
+	/* cairo_pattern_set_matrix ensures the matrix is invertible */
+	assert (status == CAIRO_STATUS_SUCCESS);
+
+	_cairo_matrix_transform_bounding_box (&imatrix,
+					      &x1, &y1, &x2, &y2,
+					      NULL);
+    }
+
+    if (x1 < CAIRO_RECT_INT_MIN)
+	x1 = CAIRO_RECT_INT_MIN;
+    if (y1 < CAIRO_RECT_INT_MIN)
+	y1 = CAIRO_RECT_INT_MIN;
+
+    if (x2 > CAIRO_RECT_INT_MAX)
+	x2 = CAIRO_RECT_INT_MAX;
+    if (y2 > CAIRO_RECT_INT_MAX)
+	y2 = CAIRO_RECT_INT_MAX;
+
+    extents->x = x1; extents->width  = x2 - x1;
+    extents->y = y1; extents->height = y2 - y1;
+    return;
+
+  UNBOUNDED:
+    /* unbounded patterns -> 'infinite' extents */
+    _cairo_unbounded_rectangle_init (&int_rect);
+    extents->x = int_rect.x;
+    extents->y = int_rect.y;
+    extents->width = int_rect.width;
+    extents->height = int_rect.height;
+    return;
+
+  EMPTY:
+    extents->x = extents->y = 0;
+    extents->width = extents->height = 0;
+    return;
+}
+
 /**
  * _cairo_pattern_get_ink_extents:
  *

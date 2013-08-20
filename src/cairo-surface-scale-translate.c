@@ -112,11 +112,12 @@ _cairo_surface_paint_get_offset_extents (cairo_surface_t *target,
 					 const cairo_pattern_t *source,
 					 const cairo_clip_t *clip,
 					 cairo_pattern_t *source_out,
-					 cairo_rectangle_int_t *extents,
+					 cairo_rectangle_t *extents,
 					 cairo_bool_t *bounded)
 {
     cairo_matrix_t m;
-    cairo_rectangle_int_t rect, temp;
+    cairo_rectangle_t rect, temp;
+    cairo_rectangle_int_t int_rect;
 
     if (unlikely (target->status))
 	return target->status;
@@ -130,10 +131,14 @@ _cairo_surface_paint_get_offset_extents (cairo_surface_t *target,
     cairo_matrix_init_translate (&m, -x_offset, -y_offset);
     _copy_transformed_pattern (source_out, source, &m);
 
-    _cairo_surface_get_extents (target, &rect);
+    _cairo_surface_get_extents (target, &int_rect);
+    rect.x = int_rect.x;
+    rect.y = int_rect.y;
+    rect.width = int_rect.width;
+    rect.height = int_rect.height;
 
-    _cairo_pattern_get_extents (source_out, &temp);
-    _cairo_rectangle_intersect (&rect, &temp);
+    _cairo_pattern_get_exact_extents (source_out, &temp);
+    _cairo_rectangle_exact_intersect (&rect, &temp);
 
     *bounded = TRUE;
 
@@ -141,7 +146,11 @@ _cairo_surface_paint_get_offset_extents (cairo_surface_t *target,
 	rect.height == _cairo_unbounded_rectangle.height) {
 	const cairo_rectangle_int_t *clip_extent = _cairo_clip_get_extents (clip);
 	*bounded = FALSE;
-	_cairo_rectangle_intersect (&rect, clip_extent);
+	temp.x = clip_extent->x;
+	temp.y = clip_extent->y;
+	temp.width = clip_extent->width;
+	temp.height = clip_extent->height;
+	_cairo_rectangle_exact_intersect (&rect, &temp);
 	if (rect.width == _cairo_unbounded_rectangle.width ||
 	    rect.height == _cairo_unbounded_rectangle.height)
 	    rect.width = rect.height = 0;
@@ -206,11 +215,12 @@ _cairo_surface_mask_get_offset_extents (cairo_surface_t *target,
 					const cairo_clip_t *clip,
 					cairo_pattern_t *source_out,
 					cairo_pattern_t *mask_out,
-					cairo_rectangle_int_t *extents,
+					cairo_rectangle_t *extents,
 					cairo_bool_t *bounded)
 {
     cairo_matrix_t m;
-    cairo_rectangle_int_t rect, temp;
+    cairo_rectangle_t rect, temp;
+    cairo_rectangle_int_t int_rect;
 
     if (unlikely (target->status))
 	return target->status;
@@ -225,13 +235,17 @@ _cairo_surface_mask_get_offset_extents (cairo_surface_t *target,
     _copy_transformed_pattern (source_out, source, &m);
     _copy_transformed_pattern (mask_out, mask, &m);
 
-    _cairo_surface_get_extents (target, &rect);
+    _cairo_surface_get_extents (target, &int_rect);
+    rect.x = int_rect.x;
+    rect.y = int_rect.y;
+    rect.width = int_rect.width;
+    rect.height = int_rect.height;
 
-    _cairo_pattern_get_extents (source_out, &temp);
-    _cairo_rectangle_intersect (&rect, &temp);
+    _cairo_pattern_get_exact_extents (source_out, &temp);
+    _cairo_rectangle_exact_intersect (&rect, &temp);
 
-    _cairo_pattern_get_extents (mask_out, &temp);
-    _cairo_rectangle_intersect (&rect, &temp);
+    _cairo_pattern_get_exact_extents (mask_out, &temp);
+    _cairo_rectangle_exact_intersect (&rect, &temp);
 
     *bounded = TRUE;
 
@@ -239,8 +253,12 @@ _cairo_surface_mask_get_offset_extents (cairo_surface_t *target,
 	rect.height == _cairo_unbounded_rectangle.height) {
 	const cairo_rectangle_int_t *clip_extent = _cairo_clip_get_extents (clip);
 	*bounded = FALSE;
+	temp.x = clip_extent->x;
+	temp.y = clip_extent->y;
+	temp.width = clip_extent->width;
+	temp.height = clip_extent->height;
+	_cairo_rectangle_exact_intersect (&rect, &temp);
 
-	_cairo_rectangle_intersect (&rect, clip_extent);
 	if (rect.width == _cairo_unbounded_rectangle.width ||
 	    rect.height == _cairo_unbounded_rectangle.height)
 	    rect.width = rect.height = 0;
@@ -340,11 +358,11 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
 					  cairo_path_fixed_t *path_out,
 					  cairo_matrix_t *ctm_out,
 					  cairo_matrix_t *ctm_inverse_out,
-					  cairo_rectangle_int_t *extents)
+					  cairo_rectangle_t *extents)
 {
     cairo_status_t status;
     cairo_matrix_t m;
-    cairo_rectangle_int_t rect, temp;
+    cairo_rectangle_t rect, temp;
 
     if (unlikely (target->status))
 	return target->status;
@@ -376,23 +394,25 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
 	cairo_matrix_multiply (ctm_out, ctm_out, &m);
     }
 
-    _cairo_pattern_get_extents (source_out, &rect);
+    _cairo_pattern_get_exact_extents (source_out, &rect);
 
     if (stroke_style->line_join != CAIRO_LINE_JOIN_MITER)
-	_cairo_path_fixed_approximate_stroke_extents (path_out,
-						      stroke_style,
-						      ctm_out, &temp);
+	_cairo_path_fixed_approximate_stroke_exact_extents (path_out,
+							    stroke_style,
+							    ctm_out, &temp);
     else {
-	status = _cairo_path_fixed_stroke_extents (path_out, stroke_style,
-						   ctm_out, ctm_inverse_out,
-						   tolerance, &temp);
+	status = _cairo_path_fixed_stroke_exact_extents (path_out,
+							 stroke_style,
+							 ctm_out,
+							 ctm_inverse_out,
+							 tolerance, &temp);
 	if (unlikely (status)) {
 	    extents->width = extents->height = 0;
 	    return status;
 	}
     }
 					  
-    _cairo_rectangle_intersect (&rect, &temp);
+    _cairo_rectangle_exact_intersect (&rect, &temp);
 
     if (is_inset) {
 	rect.x -= x_offset;
@@ -470,11 +490,11 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
 					const cairo_clip_t *clip,
 					cairo_pattern_t *source_out,
 					cairo_path_fixed_t *path_out,
-					cairo_rectangle_int_t *extents)
+					cairo_rectangle_t *extents)
 {
     cairo_status_t status;
     cairo_matrix_t m;
-    cairo_rectangle_int_t rect, temp;
+    cairo_rectangle_t rect, temp;
     const cairo_rectangle_int_t *clip_rect;
 
     if (unlikely (target->status))
@@ -500,15 +520,19 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
 
     }
 
-    _cairo_pattern_get_extents (source_out, &rect);
+    _cairo_pattern_get_exact_extents (source_out, &rect);
 
     if (! source->shadow.path_is_fill_with_spread) {
-	_cairo_path_fixed_approximate_fill_extents (path_out, &temp);
-	_cairo_rectangle_intersect (&rect, &temp);
+	_cairo_path_fixed_approximate_fill_exact_extents (path_out, &temp);
+	_cairo_rectangle_exact_intersect (&rect, &temp);
     }
     else {
 	clip_rect = _cairo_clip_get_extents (clip);
-	_cairo_rectangle_intersect (&rect, clip_rect);
+	temp.x = clip_rect->x;
+	temp.y = clip_rect->y;
+	temp.width = clip_rect->width;
+	temp.height = clip_rect->height;
+	_cairo_rectangle_exact_intersect (&rect, &temp);
     }
 
     if (is_inset) {
@@ -593,10 +617,11 @@ _cairo_surface_glyphs_get_offset_extents (cairo_surface_t *target,
 					  const cairo_clip_t *clip,
 					  cairo_pattern_t *source_out,
 					  cairo_glyph_t *glyphs_out,
-					  cairo_rectangle_int_t *extents)
+					  cairo_rectangle_t *extents)
 {
     cairo_matrix_t m;
-    cairo_rectangle_int_t rect, temp;
+    cairo_rectangle_t rect, temp;
+    cairo_rectangle_int_t int_rect;
     const cairo_rectangle_int_t *clip_rect;
     int i;
     cairo_bool_t result;
@@ -625,21 +650,30 @@ _cairo_surface_glyphs_get_offset_extents (cairo_surface_t *target,
 	    glyphs_out[i].y += y_offset;
     }
 
-    _cairo_surface_get_extents (target, &rect);
+    _cairo_surface_get_extents (target, &int_rect);
     clip_rect = _cairo_clip_get_extents (clip);
-    _cairo_rectangle_intersect (&rect, clip_rect);
+    _cairo_rectangle_intersect (&int_rect, clip_rect);
 
-    _cairo_pattern_get_extents (source_out, &temp);
-    _cairo_rectangle_intersect (&rect, &temp);
+    rect.x = int_rect.x;
+    rect.y = int_rect.y;
+    rect.width = int_rect.width;
+    rect.height = int_rect.height;
+
+    _cairo_pattern_get_exact_extents (source_out, &temp);
+    _cairo_rectangle_exact_intersect (&rect, &temp);
 
     result = _cairo_scaled_font_glyph_approximate_extents (scaled_font,
 							   glyphs_out,
 							   num_glyphs,
-							   &temp);
+							   &int_rect);
     if (! result)
 	return CAIRO_STATUS_USER_FONT_ERROR;
 
-    _cairo_rectangle_intersect (&rect, &temp);
+    temp.x = int_rect.x;
+    temp.y = int_rect.y;
+    temp.width = int_rect.width;
+    temp.height = int_rect.height;
+    _cairo_rectangle_exact_intersect (&rect, &temp);
     *extents = rect;
 
     return CAIRO_STATUS_SUCCESS;

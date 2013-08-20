@@ -146,6 +146,37 @@ _cairo_rectangle_intersect (cairo_rectangle_int_t *dst,
     }
 }
 
+cairo_bool_t
+_cairo_rectangle_exact_intersect (cairo_rectangle_t *dst,
+				  const cairo_rectangle_t *src)
+{
+    double x1, y1, x2, y2;
+
+    x1 = MAX (dst->x, src->x);
+    y1 = MAX (dst->y, src->y);
+    /* Beware the unsigned promotion, fortunately we have bits to spare
+     * as (CAIRO_RECT_INT_MAX - CAIRO_RECT_INT_MIN) < UINT_MAX
+     */
+    x2 = MIN (dst->x + dst->width,  src->x + src->width);
+    y2 = MIN (dst->y + dst->height, src->y + src->height);
+
+    if (x1 >= x2 || y1 >= y2) {
+	dst->x = 0;
+	dst->y = 0;
+	dst->width  = 0;
+	dst->height = 0;
+
+	return FALSE;
+    } else {
+	dst->x = x1;
+	dst->y = y1;
+	dst->width  = x2 - x1;
+	dst->height = y2 - y1;
+
+	return TRUE;
+    }
+}
+
 /* Extends the dst rectangle to also contain src.
  * If one of the rectangles is empty, the result is undefined
  */

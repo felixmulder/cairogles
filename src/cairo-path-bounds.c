@@ -135,6 +135,13 @@ _cairo_path_fixed_approximate_fill_extents (const cairo_path_fixed_t *path,
 }
 
 void
+_cairo_path_fixed_approximate_fill_exact_extents (const cairo_path_fixed_t *path,
+						  cairo_rectangle_t *extents)
+{
+    _cairo_path_fixed_fill_exact_extents (path, CAIRO_FILL_RULE_WINDING, 0, extents);
+}
+
+void
 _cairo_path_fixed_fill_extents (const cairo_path_fixed_t	*path,
 				cairo_fill_rule_t	 fill_rule,
 				double			 tolerance,
@@ -146,6 +153,27 @@ _cairo_path_fixed_fill_extents (const cairo_path_fixed_t	*path,
     } else {
 	extents->x = extents->y = 0;
 	extents->width = extents->height = 0;
+    }
+}
+
+void
+_cairo_path_fixed_fill_exact_extents (const cairo_path_fixed_t	*path,
+				      cairo_fill_rule_t	 fill_rule,
+				      double			 tolerance,
+				      cairo_rectangle_t	*extents)
+{
+    if (path->extents.p1.x < path->extents.p2.x &&
+	path->extents.p1.y < path->extents.p2.y) {
+	double x1, y1, x2, y2;
+	_cairo_box_to_doubles (&path->extents, &x1, &y1, &x2, &y2);
+
+	extents->x = x1;
+	extents->y = y1;
+	extents->width = x2 - x1;
+	extents->height = y2 - y1;
+    } else {
+	extents->x = extents->y = 0.0;
+	extents->width = extents->height = 0.0;
     }
 }
 
@@ -175,6 +203,37 @@ _cairo_path_fixed_approximate_stroke_extents (const cairo_path_fixed_t *path,
     }
 }
 
+void
+_cairo_path_fixed_approximate_stroke_exact_extents (const cairo_path_fixed_t *path,
+					  	     const cairo_stroke_style_t *style,
+						     const cairo_matrix_t *ctm,
+						     cairo_rectangle_t *extents)
+{
+    if (path->has_extents) {
+	cairo_box_t box_extents;
+	double dx, dy;
+	double x1, y1, x2, y2;
+
+	_cairo_stroke_style_max_distance_from_path (style, path, ctm, &dx, &dy);
+
+	box_extents = path->extents;
+	box_extents.p1.x -= _cairo_fixed_from_double (dx);
+	box_extents.p1.y -= _cairo_fixed_from_double (dy);
+	box_extents.p2.x += _cairo_fixed_from_double (dx);
+	box_extents.p2.y += _cairo_fixed_from_double (dy);
+    
+	_cairo_box_to_doubles (&box_extents, &x1, &y1, &x2, &y2);
+
+	extents->x = x1;
+	extents->y = y1;
+	extents->width = x2 - x1;
+	extents->height = y2 - y1;
+    } else {
+	extents->x = extents->y = 0.0;
+	extents->width = extents->height = 0.0;
+    }
+}
+
 cairo_status_t
 _cairo_path_fixed_stroke_extents (const cairo_path_fixed_t	*path,
 				  const cairo_stroke_style_t	*stroke_style,
@@ -194,6 +253,35 @@ _cairo_path_fixed_stroke_extents (const cairo_path_fixed_t	*path,
 						  &polygon);
     _cairo_box_round_to_rectangle (&polygon.extents, extents);
     _cairo_polygon_fini (&polygon);
+
+    return status;
+}
+
+cairo_status_t
+_cairo_path_fixed_stroke_exact_extents (const cairo_path_fixed_t   *path,
+					const cairo_stroke_style_t *style,
+					const cairo_matrix_t	   *ctm,
+					const cairo_matrix_t       *ctm_inverse,
+					double			    tolerance,
+					cairo_rectangle_t	   *extents)
+{
+    cairo_polygon_t polygon;
+    cairo_status_t status;
+    double x1, x2, y1, y2;
+
+    _cairo_polygon_init (&polygon, NULL, 0);
+    status = _cairo_path_fixed_stroke_to_polygon (path,
+						  style,
+						  ctm, ctm_inverse,
+						  tolerance,
+						  &polygon);
+    _cairo_box_to_doubles (&polygon.extents, &x1, &y1, &x2, &y2);
+    _cairo_polygon_fini (&polygon);
+
+    extents->x = x1;
+    extents->y = y1;
+    extents->width = x2 - x1;
+    extents->height = y2 - y1;
 
     return status;
 }
