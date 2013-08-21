@@ -268,6 +268,7 @@ struct _cairo_gl_surface {
 
     int owns_tex;
     cairo_bool_t needs_update;
+    cairo_bool_t size_changed;
 
     cairo_region_t *clip_region;
     GLuint bounded_tex;		/* bounded tex for non-texture surface */

@@ -61,11 +61,11 @@ _blit_texture_to_renderbuffer (cairo_gl_surface_t *surface)
     cairo_rectangle_int_t extents;
     cairo_int_status_t status;
 
-    /* FIXME: we need to take care of certain glesv2 extension too */
     if (((cairo_gl_context_t *)surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP)
 	return CAIRO_INT_STATUS_SUCCESS;
-
-    if (! surface->content_in_texture)
+    else if (! _cairo_gl_surface_is_texture (surface))
+	return CAIRO_INT_STATUS_SUCCESS;
+    else if (! surface->content_in_texture)
 	return CAIRO_INT_STATUS_SUCCESS;
 
     memset (&setup, 0, sizeof (cairo_gl_composite_t));
@@ -869,7 +869,6 @@ _cairo_gl_set_operands_and_operator (cairo_gl_composite_t *setup,
 				     dst_size, vertex_size_changed);
     _cairo_gl_context_setup_operand (ctx, CAIRO_GL_TEX_MASK, &setup->mask,
 				     dst_size + src_size, vertex_size_changed);
-
 
     _cairo_gl_set_operator (ctx, setup->op, component_alpha);
 

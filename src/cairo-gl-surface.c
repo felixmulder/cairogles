@@ -612,6 +612,7 @@ _cairo_gl_surface_init (cairo_device_t *device,
 			cairo_content_t content,
 			int width, int height)
 {
+    cairo_gl_context_t *ctx = (cairo_gl_context_t *) device;
     assert (width > 0 && height > 0);
 
     _cairo_surface_init (&surface->base,
@@ -622,6 +623,7 @@ _cairo_gl_surface_init (cairo_device_t *device,
     surface->width = width;
     surface->height = height;
     surface->needs_update = FALSE;
+    surface->size_changed = FALSE;
     surface->needs_to_cache = FALSE;
     surface->image_node = NULL;
     surface->force_no_cache = FALSE;
@@ -633,6 +635,12 @@ _cairo_gl_surface_init (cairo_device_t *device,
     surface->clip_on_stencil_buffer = NULL;
 
     surface->content_in_texture = FALSE;
+
+    if ((ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3 ||
+	(ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
+	 ctx->has_angle_multisampling)) &&
+	! surface->tex)
+	surface->msaa_active = TRUE;
 
     _cairo_gl_surface_embedded_operand_init (surface);
 }
@@ -952,7 +960,7 @@ cairo_gl_surface_set_size (cairo_surface_t *abstract_surface,
     }
 
     if (surface->width != width || surface->height != height) {
-	surface->needs_update = TRUE;
+	surface->size_changed = TRUE;
 	surface->width = width;
 	surface->height = height;
     }
@@ -1301,10 +1309,6 @@ _cairo_gl_surface_draw_image (cairo_gl_surface_t *dst,
         }
 
         cairo_surface_destroy (tmp);
-	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3 ||
-	    (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
-	     ctx->has_angle_multisampling))
-	    dst->content_in_texture = TRUE;
     }
 
 FAIL:
@@ -1470,6 +1474,8 @@ _cairo_gl_surface_map_to_image (void      *abstract_surface,
     if (! (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3 ||
 	   (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
 	    ctx->has_angle_multisampling)))
+	_cairo_gl_context_set_destination (ctx, surface, FALSE);
+    else if (! _cairo_gl_surface_is_texture (surface))
 	_cairo_gl_context_set_destination (ctx, surface, FALSE);
     else {
 	if (surface->content_in_texture) {
@@ -1677,9 +1683,10 @@ _cairo_gl_surface_resolve_multisampling (cairo_gl_surface_t *surface)
     ctx->current_target = NULL;
 
     _cairo_gl_context_bind_framebuffer (ctx, surface, FALSE);
-    if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3 ||
+    if ((ctx->gl_flavor == CAIRO_GL_FLAVOR_ES3 ||
 	(ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
-	 ctx->has_angle_multisampling))
+	 ctx->has_angle_multisampling)) &&
+	 _cairo_gl_surface_is_texture (surface))
 	surface->content_in_texture = TRUE;
 
     status = _cairo_gl_context_release (ctx, status);
