@@ -130,7 +130,6 @@ cairo_private cairo_gl_dispatch_entry_t dispatch_multisampling_entries[] = {
 #if CAIRO_HAS_GLES2_SURFACE
     DISPATCH_ENTRY_ES_ANGLE_EXT_IMG (BlitFramebuffer),
     DISPATCH_ENTRY_ES_ANGLE_EXT_IMG (RenderbufferStorageMultisample),
-    DISPATCH_ENTRY_ES_ANGLE_EXT_IMG (RenderbufferStorageMultisample),
     DISPATCH_ENTRY_ES_ANGLE_EXT_IMG (FramebufferTexture2DMultisample),
 #else
     DISPATCH_ENTRY_EXT_IMG (BlitFramebuffer),
