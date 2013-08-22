@@ -316,6 +316,8 @@ static cairo_bool_t
 can_use_msaa_compositor (cairo_gl_surface_t *surface,
 			 cairo_antialias_t antialias)
 {
+    cairo_gl_flavor_t flavor = ((cairo_gl_context_t *) surface->base.device)->gl_flavor;
+
     query_surface_capabilities (surface);
     if (! surface->supports_stencil)
 	return FALSE;
@@ -323,11 +325,10 @@ can_use_msaa_compositor (cairo_gl_surface_t *surface,
     /* Multisampling OpenGL ES surfaces only maintain one multisampling
        framebuffer and thus must use the spans compositor to do non-antialiased
        rendering. */
-    if ((((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES2 ||
-	((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES3)
-	 && surface->supports_msaa
-	 && surface->num_samples > 1
-	 && antialias == CAIRO_ANTIALIAS_NONE)
+    if (flavor != CAIRO_GL_FLAVOR_DESKTOP &&
+	surface->supports_msaa &&
+	surface->num_samples > 1 &&
+	antialias == CAIRO_ANTIALIAS_NONE)
 	return FALSE;
 
     /* The MSAA compositor has a single-sample mode, so we can
@@ -335,7 +336,9 @@ can_use_msaa_compositor (cairo_gl_surface_t *surface,
     if (antialias == CAIRO_ANTIALIAS_NONE)
 	return TRUE;
 
-    if (antialias == CAIRO_ANTIALIAS_FAST || antialias == CAIRO_ANTIALIAS_DEFAULT)
+    if ((antialias == CAIRO_ANTIALIAS_FAST ||
+	 antialias == CAIRO_ANTIALIAS_DEFAULT) &&
+	surface->num_samples > 1)
 	return surface->supports_msaa;
     return FALSE;
 }
