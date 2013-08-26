@@ -261,9 +261,6 @@ struct _cairo_gl_surface {
     cairo_bool_t force_no_msaa;
     cairo_bool_t msaa_active; /* Whether the multisampling
 			         framebuffer is active or not. */
-    cairo_bool_t content_in_texture; /* whether we just uploaded image
-					to texture, used for certain
-					gles2 extensions and glesv3 */
     cairo_clip_t *clip_on_stencil_buffer;
 
     int owns_tex;
@@ -1138,11 +1135,6 @@ _cairo_gl_path_fixed_stroke_to_hairline (const cairo_path_fixed_t *path,
                                          cairo_path_fixed_line_to_func_t *line_to,
                                          cairo_path_fixed_curve_to_func_t *curve_to,
                                          cairo_path_fixed_close_path_func_t *close_path);
-
-cairo_private cairo_int_status_t
-_cairo_draw_int_rect (cairo_gl_context_t	*ctx,
-		      cairo_gl_composite_t	*setup,
-		      cairo_rectangle_int_t	*rect);
 
 cairo_private cairo_gl_surface_t *
 _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,

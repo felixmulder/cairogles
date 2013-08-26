@@ -324,6 +324,9 @@ render_glyphs (cairo_gl_surface_t *dst,
 	    *has_component_alpha |= cache->surface->operand.texture.attributes.has_component_alpha;
 
 	    /* XXX Shoot me. */
+	    if (dst->msaa_active)
+		_cairo_gl_composite_set_multisample (&setup);
+
             status = _cairo_gl_composite_begin (&setup, &ctx);
             status = _cairo_gl_context_release (ctx, status);
 	    if (unlikely (status))
