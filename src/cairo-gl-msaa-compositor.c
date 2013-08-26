@@ -271,6 +271,8 @@ _blit_texture_to_renderbuffer (cairo_gl_surface_t *surface)
 	return CAIRO_INT_STATUS_SUCCESS;
     else if (surface->msaa_active)
 	return CAIRO_INT_STATUS_SUCCESS;
+    else if (surface->content_synced)
+	return CAIRO_INT_STATUS_SUCCESS;
 
     memset (&setup, 0, sizeof (cairo_gl_composite_t));
 
@@ -304,6 +306,11 @@ _blit_texture_to_renderbuffer (cairo_gl_surface_t *surface)
 	goto FAIL;
 
     status = _draw_int_rect (ctx, &setup, &extents);
+
+    if (unlikely (status))
+	goto FAIL;
+
+    surface->content_synced = TRUE;
 FAIL:
     _cairo_gl_composite_fini (&setup);
 
@@ -515,6 +522,11 @@ _cairo_gl_msaa_compositor_mask_source_operator (const cairo_compositor_t *compos
     else
 	status = _draw_traps (ctx, &setup, &traps);
 
+    if (unlikely (status))
+	goto finish;
+
+    dst->content_synced = FALSE;
+
 finish:
     _cairo_gl_composite_fini (&setup);
     if (ctx)
@@ -658,6 +670,11 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
 	else
 	    status = _draw_int_rect (ctx, &setup, &rect);
     }
+
+    if (unlikely (status))
+	goto finish;
+
+    dst->content_synced = FALSE;
 
 finish:
     _cairo_gl_composite_fini (&setup);
@@ -857,9 +874,11 @@ _cairo_gl_msaa_compositor_stroke (const cairo_compositor_t	*compositor,
 	return _paint_back_unbounded_surface (compositor, composite, surface);
     }
 
-    status = _blit_texture_to_renderbuffer (dst);
-    if (unlikely (status))
-	return status;
+    if (antialias != CAIRO_ANTIALIAS_NONE) {
+	status = _blit_texture_to_renderbuffer (dst);
+	if (unlikely (status))
+	    return status;
+    }
 
     status = _cairo_gl_composite_init (&info.setup,
 				       composite->op,
@@ -952,6 +971,12 @@ _cairo_gl_msaa_compositor_stroke (const cairo_compositor_t	*compositor,
 	if (unlikely (status))
 	    goto finish;
     }
+
+    if (unlikely (status))
+	goto finish;
+
+    dst->content_synced = FALSE;
+
 finish:
     _cairo_gl_composite_fini (&info.setup);
 
@@ -1023,9 +1048,11 @@ _cairo_gl_msaa_compositor_fill (const cairo_compositor_t	*compositor,
 	return _paint_back_unbounded_surface (compositor, composite, surface);
     }
 
-    status = _blit_texture_to_renderbuffer (dst);
-    if (unlikely (status))
-	return status;
+    if (antialias != CAIRO_ANTIALIAS_NONE) {
+	status = _blit_texture_to_renderbuffer (dst);
+	if (unlikely (status))
+	    return status;
+    }
 
     draw_path_with_traps = ! _cairo_path_fixed_is_simple_quad (path);
 
@@ -1065,6 +1092,8 @@ _cairo_gl_msaa_compositor_fill (const cairo_compositor_t	*compositor,
 	status = _draw_traps (ctx, &setup, &traps);
     if (unlikely (status))
         goto cleanup_setup;
+
+    dst->content_synced = FALSE;
 
 cleanup_setup:
     _cairo_gl_composite_fini (&setup);
@@ -1121,9 +1150,11 @@ _cairo_gl_msaa_compositor_glyphs (const cairo_compositor_t	*compositor,
 	return _paint_back_unbounded_surface (compositor, composite, surface);
     }
 
-    status = _blit_texture_to_renderbuffer (dst);
-    if (unlikely (status))
-	return status;
+    if (scaled_font->options.antialias != CAIRO_ANTIALIAS_NONE) {
+	status = _blit_texture_to_renderbuffer (dst);
+	if (unlikely (status))
+	    return status;
+    }
 
     src = _cairo_gl_pattern_to_source (&dst->base,
 				       composite->original_source_pattern,
@@ -1156,6 +1187,10 @@ _cairo_gl_msaa_compositor_glyphs (const cairo_compositor_t	*compositor,
 						   composite->clip);
 
     _cairo_scaled_font_thaw_cache (scaled_font);
+    if (unlikely (status))
+        goto finish;
+
+    dst->content_synced = FALSE;
 
 finish:
     if (src)

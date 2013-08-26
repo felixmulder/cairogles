@@ -792,6 +792,7 @@ bind_multisample_framebuffer (cairo_gl_context_t *ctx,
 				   0, 0, surface->width, surface->height,
 				   GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
 				   GL_NEAREST);
+    surface->content_synced = TRUE;
 #endif
     ctx->dispatch.BindFramebuffer (GL_FRAMEBUFFER, surface->msaa_fb);
 
@@ -853,6 +854,7 @@ bind_singlesample_framebuffer (cairo_gl_context_t *ctx,
 				   , GL_NEAREST);
     ctx->dispatch.BindFramebuffer (GL_FRAMEBUFFER, surface->fb);
 
+    surface->content_synced = TRUE;
     /* re-enable stencil and scissor test */
     if (scissor_test_enabled)
 	_enable_scissor_buffer (ctx);

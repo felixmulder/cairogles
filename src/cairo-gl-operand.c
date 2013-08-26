@@ -437,11 +437,9 @@ _cairo_gl_subsurface_clone_operand_init (cairo_gl_operand_t *operand,
 	_cairo_surface_subsurface_set_snapshot (&sub->base, &surface->base);
     }
 
-    if (surface != dst) {
-	status = _cairo_gl_surface_resolve_multisampling (surface);
-	if (unlikely (status))
-	    return status;
-    }
+    status = _cairo_gl_surface_resolve_multisampling (surface);
+    if (unlikely (status))
+	return status;
 
     attributes = &operand->texture.attributes;
 
@@ -504,11 +502,9 @@ _cairo_gl_subsurface_operand_init (cairo_gl_operand_t *operand,
          (! _cairo_gl_surface_is_texture (surface) && ! surface->bounded_tex)))
 	return CAIRO_INT_STATUS_UNSUPPORTED;
 
-    if (surface != dst) {
-	status = _cairo_gl_surface_resolve_multisampling (surface);
-	if (unlikely (status))
-	    return status;
-    }
+    status = _cairo_gl_surface_resolve_multisampling (surface);
+    if (unlikely (status))
+	return status;
 
     blur_extents.x = blur_extents.y = 0;
     blur_extents.width = cairo_gl_surface_get_height (&surface->base);
@@ -656,11 +652,9 @@ _cairo_gl_surface_operand_init (cairo_gl_operand_t *operand,
 	! surface->bounded_tex)
 	return CAIRO_INT_STATUS_UNSUPPORTED;
 
-    if (dst != surface) {
-	status = _cairo_gl_surface_resolve_multisampling (surface);
-	if (unlikely (status))
-	    return status;
-    }
+    status = _cairo_gl_surface_resolve_multisampling (surface);
+    if (unlikely (status))
+	return status;
 
     blur_extents.x = blur_extents.y = 0;
     blur_extents.width = cairo_gl_surface_get_height (&surface->base);
