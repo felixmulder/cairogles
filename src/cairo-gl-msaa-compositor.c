@@ -990,6 +990,22 @@ _draw_simple_quad_path (cairo_gl_context_t *ctx,
     const cairo_point_t *points;
 
     points = cairo_path_head (path)->points;
+
+    if (path->fill_maybe_region) {
+	int quad[8];
+
+	quad[0] = _cairo_fixed_integer_part (points[0].x);
+	quad[1] = _cairo_fixed_integer_part (points[0].y);
+	quad[2] = _cairo_fixed_integer_part (points[1].x);
+	quad[3] = _cairo_fixed_integer_part (points[1].y);
+	quad[4] = _cairo_fixed_integer_part (points[2].x);
+	quad[5] = _cairo_fixed_integer_part (points[2].y);
+	quad[6] = _cairo_fixed_integer_part (points[3].x);
+	quad[7] = _cairo_fixed_integer_part (points[3].y);
+
+	return _cairo_gl_composite_emit_int_quad_as_tristrip (ctx, setup, quad);
+    }
+
     triangle[0] = points[0];
     triangle[1] = points[1];
     triangle[2] = points[2];
