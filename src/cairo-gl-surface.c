@@ -798,7 +798,12 @@ _cairo_gl_surface_clear (cairo_gl_surface_t  *surface,
 	glClearColor (r, g, b, a);
     }
 
-    glClear (GL_COLOR_BUFFER_BIT);
+    /* optimize for mobile gl driver with deferred rendering */
+    if (surface->clip_on_stencil_buffer ||
+	ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP)
+	glClear (GL_COLOR_BUFFER_BIT);
+    else
+	glClear (GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (a == 0)
 	surface->base.is_clear = TRUE;
