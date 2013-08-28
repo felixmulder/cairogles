@@ -151,23 +151,17 @@ _draw_traps (cairo_gl_context_t		*ctx,
 
 static cairo_int_status_t
 _draw_int_rect (cairo_gl_context_t	*ctx,
-		      cairo_gl_composite_t	*setup,
-		      cairo_rectangle_int_t	*rect)
+		cairo_gl_composite_t	*setup,
+		cairo_rectangle_int_t	*rect)
 {
-    cairo_box_t box;
-    cairo_point_t quad[4];
+    int quad[8];
 
-    _cairo_box_from_rectangle (&box, rect);
-    quad[0].x = box.p1.x;
-    quad[0].y = box.p1.y;
-    quad[1].x = box.p1.x;
-    quad[1].y = box.p2.y;
-    quad[2].x = box.p2.x;
-    quad[2].y = box.p2.y;
-    quad[3].x = box.p2.x;
-    quad[3].y = box.p1.y;
+    quad[0] = quad[2] = rect->x;
+    quad[1] = quad[7] = rect->y;
+    quad[3] = quad[5] = rect->y + rect->height;
+    quad[4] = quad[6] = rect->x + rect->width;
 
-    return _cairo_gl_composite_emit_quad_as_tristrip (ctx, setup, quad);
+    return _cairo_gl_composite_emit_int_quad_as_tristrip (ctx, setup, quad);
 }
 
 static cairo_int_status_t

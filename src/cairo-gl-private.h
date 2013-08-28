@@ -814,6 +814,11 @@ _cairo_gl_composite_emit_quad_as_tristrip (cairo_gl_context_t	*ctx,
 					   const cairo_point_t	 quad[4]);
 
 cairo_private cairo_int_status_t
+_cairo_gl_composite_emit_int_quad_as_tristrip (cairo_gl_context_t *ctx,
+					       cairo_gl_composite_t *setup,
+					       const int	 quad[8]);
+
+cairo_private cairo_int_status_t
 _cairo_gl_composite_emit_triangle_as_tristrip (cairo_gl_context_t	*ctx,
 					       cairo_gl_composite_t	*setup,
 					       const cairo_point_t	 triangle[3]);

@@ -1042,6 +1042,16 @@ _cairo_gl_composite_emit_point (cairo_gl_context_t	*ctx,
 }
 
 static void
+_cairo_gl_composite_emit_int (cairo_gl_context_t *ctx,
+			      int x, int y)
+{
+    float fx = x;
+    float fy = y;
+
+    _cairo_gl_composite_emit_vertex (ctx, fx, fy);
+}
+
+static void
 _cairo_gl_composite_emit_rect (cairo_gl_context_t *ctx,
                                GLfloat x1, GLfloat y1,
                                GLfloat x2, GLfloat y2)
@@ -1449,6 +1459,31 @@ _cairo_gl_composite_append_vertex_indices (cairo_gl_context_t	*ctx,
     }
 
     return CAIRO_STATUS_SUCCESS;
+}
+
+cairo_int_status_t
+_cairo_gl_composite_emit_int_quad_as_tristrip (cairo_gl_context_t *ctx,
+					       cairo_gl_composite_t *setup,
+					       const int            quad[8])
+{
+    if (ctx->draw_mode != CAIRO_GL_VERTEX) {
+	_cairo_gl_composite_flush (ctx);
+	ctx->draw_mode = CAIRO_GL_VERTEX;
+    }
+
+    _cairo_gl_composite_prepare_buffer (ctx, 4,
+					CAIRO_GL_PRIMITIVE_TYPE_TRISTRIPS);
+
+    _cairo_gl_composite_emit_int (ctx, quad[0], quad[1]);
+    _cairo_gl_composite_emit_int (ctx, quad[2], quad[3]);
+
+    /* Cairo stores quad vertices in counter-clockwise order, but we need to
+       emit them from top to bottom in the triangle strip, so we need to reverse
+       the order of the last two vertices. */
+    _cairo_gl_composite_emit_int (ctx, quad[6], quad[7]);
+    _cairo_gl_composite_emit_int (ctx, quad[4], quad[5]);
+
+    return _cairo_gl_composite_append_vertex_indices (ctx, 4, TRUE);
 }
 
 cairo_int_status_t
