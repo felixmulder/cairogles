@@ -607,6 +607,8 @@ _cairo_gl_subsurface_operand_init (cairo_gl_operand_t *operand,
 			       &matrix,
 			       &ctx->image_cache->surface->operand.texture.attributes.matrix);
     }
+
+    status = CAIRO_STATUS_SUCCESS;
     cairo_surface_destroy (&blur_surface->base);
 
     if (ctx_acquired)
@@ -748,6 +750,8 @@ _cairo_gl_surface_operand_init (cairo_gl_operand_t *operand,
     }
 
     cairo_surface_destroy (&blur_surface->base);
+
+    status = CAIRO_STATUS_SUCCESS;
 
     if (ctx_acquired)
 	return _cairo_gl_context_release (ctx, status);
