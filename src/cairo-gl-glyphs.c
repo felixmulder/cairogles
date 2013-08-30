@@ -394,6 +394,9 @@ render_glyphs_via_mask (cairo_gl_surface_t *dst,
     cairo_bool_t has_component_alpha;
     cairo_gl_context_t *ctx;
 
+    int width = info->extents.width;
+    int height = info->extents.height;
+
     TRACE ((stderr, "%s\n", __FUNCTION__));
 
     status = _cairo_gl_context_acquire (dst->base.device, &ctx);
@@ -403,18 +406,22 @@ render_glyphs_via_mask (cairo_gl_surface_t *dst,
     if (ctx->glyph_mask &&
 	(ctx->glyph_mask->width < info->extents.width ||
 	 ctx->glyph_mask->height < info->extents.height)) {
+	width = ctx->glyph_mask->width;
+	height = ctx->glyph_mask->height;
+
 	cairo_surface_destroy (&ctx->glyph_mask->base);
 	ctx->glyph_mask = NULL;
     }
 
     /* Create the mask if it has not yet been initialized or it was too small and deleted above. */
     if(!ctx->glyph_mask) {
+	width = MAX (width, info->extents.width);
+	height = MAX (height, info->extents.height);
 	/* XXX: For non-CA, this should be CAIRO_CONTENT_ALPHA to save memory */
 	ctx->glyph_mask = (cairo_gl_surface_t *)
 	     cairo_gl_surface_create (dst->base.device,
 				      CAIRO_CONTENT_COLOR_ALPHA,
-				      info->extents.width,
-				      info->extents.height);
+				      width, height);
 	if (unlikely (ctx->glyph_mask->base.status)) {
 	    status = ctx->glyph_mask->base.status;
 	    status = _cairo_gl_context_release (ctx, status);
