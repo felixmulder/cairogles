@@ -1188,7 +1188,7 @@ _cairo_gl_msaa_compositor_glyphs (const cairo_compositor_t	*compositor,
     info.num_glyphs = num_glyphs;
     info.use_mask = overlap || ! composite->is_bounded ||
 		    composite->op == CAIRO_OPERATOR_SOURCE;
-    info.extents = composite->bounded;
+    info.extents = composite->source;
 
     _cairo_scaled_font_freeze_cache (scaled_font);
     status = _cairo_gl_composite_glyphs_with_clip (dst, composite->op,

@@ -245,7 +245,10 @@ static void _cairo_gl_surface_clear_with_extent (cairo_gl_context_t *ctx,
 	}
 	_enable_scissor_buffer (ctx);
 	glScissor(0, 0, extent->width, extent->height);
-	glClear(GL_COLOR_BUFFER_BIT);
+	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP)
+	    glClear (GL_COLOR_BUFFER_BIT);
+	else
+	    glClear (GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 
