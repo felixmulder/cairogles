@@ -759,6 +759,9 @@ bind_multisample_framebuffer (cairo_gl_context_t *ctx,
 #if CAIRO_HAS_GL_SURFACE
     cairo_bool_t stencil_test_enabled = ctx->states_cache.stencil_test_enabled;
     cairo_bool_t scissor_test_enabled = ctx->states_cache.scissor_test_enabled;
+
+    cairo_bool_t has_stencil_cache = surface->clip_on_stencil_buffer ? TRUE : FALSE;
+    GLbitfield mask = GL_COLOR_BUFFER_BIT;
 #endif
     assert (surface->supports_msaa);
 
@@ -783,6 +786,9 @@ bind_multisample_framebuffer (cairo_gl_context_t *ctx,
 
     glEnable (GL_MULTISAMPLE);
 
+    if (has_stencil_cache)
+	mask |= GL_STENCIL_BUFFER_BIT;
+
     /* The last time we drew to the surface, we were not using multisampling,
        so we need to blit from the non-multisampling framebuffer into the
        multisampling framebuffer. */
@@ -790,8 +796,7 @@ bind_multisample_framebuffer (cairo_gl_context_t *ctx,
     ctx->dispatch.BindFramebuffer (GL_READ_FRAMEBUFFER, surface->fb);
     ctx->dispatch.BlitFramebuffer (0, 0, surface->width, surface->height,
 				   0, 0, surface->width, surface->height,
-				   GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-				   GL_NEAREST);
+				   mask, GL_NEAREST);
     surface->content_synced = TRUE;
 #endif
     ctx->dispatch.BindFramebuffer (GL_FRAMEBUFFER, surface->msaa_fb);
@@ -809,8 +814,10 @@ static void
 bind_singlesample_framebuffer (cairo_gl_context_t *ctx,
 			       cairo_gl_surface_t *surface)
 {
+    cairo_bool_t has_stencil_cache = surface->clip_on_stencil_buffer ? TRUE : FALSE;
     cairo_bool_t stencil_test_enabled = ctx->states_cache.stencil_test_enabled;
     cairo_bool_t scissor_test_enabled = ctx->states_cache.scissor_test_enabled;
+    GLbitfield mask = GL_COLOR_BUFFER_BIT;
 
     if (ctx->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
 	! ctx->has_angle_multisampling)
@@ -835,6 +842,9 @@ bind_singlesample_framebuffer (cairo_gl_context_t *ctx,
     glDisable (GL_MULTISAMPLE);
 #endif
 
+    if (has_stencil_cache)
+	mask |= GL_STENCIL_BUFFER_BIT;
+
     /* The last time we drew to the surface, we were using multisampling,
        so we need to blit from the multisampling framebuffer into the
        non-multisampling framebuffer. */
@@ -847,11 +857,7 @@ bind_singlesample_framebuffer (cairo_gl_context_t *ctx,
 #endif
     ctx->dispatch.BlitFramebuffer (0, 0, surface->width, surface->height,
 				   0, 0, surface->width, surface->height,
-				   GL_COLOR_BUFFER_BIT
-#if CAIRO_HAS_GL_SURFACE
-				   | GL_STENCIL_BUFFER_BIT
-#endif
-				   , GL_NEAREST);
+				   mask, GL_NEAREST);
     ctx->dispatch.BindFramebuffer (GL_FRAMEBUFFER, surface->fb);
 
     surface->content_synced = TRUE;
