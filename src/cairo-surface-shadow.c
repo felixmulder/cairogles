@@ -148,7 +148,10 @@ _cairo_shadow_hash_for_fill (const cairo_pattern_t      *source,
 			    const cairo_shadow_t	*shadow)
 {
     unsigned long hash = _CAIRO_HASH_INIT_VALUE;
+    /* FIXME: for OVER operator, we don't need to hash the source
+     * color, for other operators, we might */
     cairo_bool_t use_color = shadow->type == CAIRO_SHADOW_INSET;
+    use_color = FALSE;
 
     hash = _cairo_pattern_hash_with_hash (hash, source, use_color);
     hash = _cairo_path_fixed_rel_hash (hash, path);
@@ -164,7 +167,11 @@ _cairo_shadow_hash_for_stroke (const cairo_pattern_t      *source,
 			       const cairo_shadow_t     *shadow)
 {
     unsigned long hash = _CAIRO_HASH_INIT_VALUE;
+
+    /* FIXME: for OVER operator, we don't need to hash the source
+     * color, for other operators, we might */
     cairo_bool_t use_color = shadow->type == CAIRO_SHADOW_INSET;
+    use_color = FALSE;
 
     hash = _cairo_pattern_hash_with_hash (hash, source, use_color);
     hash = _cairo_path_fixed_rel_hash (hash, path);
