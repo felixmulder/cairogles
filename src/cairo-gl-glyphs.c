@@ -243,12 +243,17 @@ static void _cairo_gl_surface_clear_with_extent (cairo_gl_context_t *ctx,
 
 	    glClearColor (0, 0, 0, 0);
 	}
-	_enable_scissor_buffer (ctx);
-	glScissor(0, 0, extent->width, extent->height);
-	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP)
+	if (ctx->gl_flavor == CAIRO_GL_FLAVOR_DESKTOP) {
+	    _enable_scissor_buffer (ctx);
+	    glScissor(0, 0, extent->width, extent->height);
+	    _disable_stencil_buffer (ctx);
 	    glClear (GL_COLOR_BUFFER_BIT);
-	else
+	}
+	else {
+	    _disable_stencil_buffer (ctx);
+	    _disable_scissor_buffer (ctx);
 	    glClear (GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
 }
 
 
