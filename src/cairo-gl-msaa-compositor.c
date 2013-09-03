@@ -882,8 +882,7 @@ _cairo_gl_msaa_compositor_stroke (const cairo_compositor_t	*compositor,
 	return status;
 
     info.ctx = NULL;
-    use_color_attribute = _cairo_path_fixed_stroke_is_rectilinear (path) ||
-			  _cairo_gl_hairline_style_is_hairline (style, ctm);
+    use_color_attribute = _cairo_gl_hairline_style_is_hairline (style, ctm);
 
     status = _cairo_gl_composite_set_source (&info.setup,
 					     composite->original_source_pattern,
@@ -929,43 +928,23 @@ _cairo_gl_msaa_compositor_stroke (const cairo_compositor_t	*compositor,
 	goto finish;
     }
 
-    if (use_color_attribute) {
-	cairo_traps_t traps;
-
-	_cairo_traps_init (&traps);
-
-	status = _cairo_path_fixed_stroke_to_traps (path, style,
-						    ctm, ctm_inverse,
-						    tolerance, &traps);
-	if (unlikely (status)) {
-	    _cairo_traps_fini (&traps);
-	    goto finish;
-	}
-
-	status = _draw_traps (info.ctx, &info.setup, &traps);
-	_cairo_traps_fini (&traps);
-    } else {
-	if (!_is_continuous_single_line (path, style)) {
-	    status = _prevent_overlapping_strokes (info.ctx, &info.setup,
-						   composite, path, style, ctm);
-	    if (unlikely (status))
-		goto finish;
-	}
-
-	status =
-	    _cairo_path_fixed_stroke_to_shaper ((cairo_path_fixed_t *) path,
-						style,
-						ctm,
-						ctm_inverse,
-						tolerance,
-						_stroke_shaper_add_triangle,
-						_stroke_shaper_add_triangle_fan,
-						_stroke_shaper_add_quad,
-						&info);
+    if (!_is_continuous_single_line (path, style)) {
+	status = _prevent_overlapping_strokes (info.ctx, &info.setup,
+					       composite, path, style, ctm);
 	if (unlikely (status))
 	    goto finish;
     }
 
+    status =
+	_cairo_path_fixed_stroke_to_shaper ((cairo_path_fixed_t *) path,
+					    style,
+					    ctm,
+					    ctm_inverse,
+					    tolerance,
+					    _stroke_shaper_add_triangle,
+					    _stroke_shaper_add_triangle_fan,
+					    _stroke_shaper_add_quad,
+					    &info);
     if (unlikely (status))
 	goto finish;
 
