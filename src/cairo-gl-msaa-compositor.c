@@ -401,7 +401,9 @@ can_use_msaa_compositor (cairo_gl_surface_t *surface,
     if (antialias == CAIRO_ANTIALIAS_NONE)
 	return TRUE;
 
-    if ((antialias == CAIRO_ANTIALIAS_FAST ||
+    if ((antialias == CAIRO_ANTIALIAS_GRAY ||
+	 antialias== CAIRO_ANTIALIAS_SUBPIXEL ||
+	 antialias == CAIRO_ANTIALIAS_FAST ||
 	 antialias == CAIRO_ANTIALIAS_DEFAULT) &&
 	surface->num_samples > 1)
 	return surface->supports_msaa;
