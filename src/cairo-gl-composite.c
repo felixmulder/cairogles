@@ -835,6 +835,8 @@ _cairo_gl_composite_begin (cairo_gl_composite_t *setup,
     if (unlikely (status))
 	return status;
 
+    setup->dst->content_cleared = FALSE;
+
     _cairo_gl_context_set_destination (ctx, setup->dst, setup->multisample);
     if (ctx->states_cache.blend_enabled == FALSE) {
 	glEnable (GL_BLEND);

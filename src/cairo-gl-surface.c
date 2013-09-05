@@ -634,6 +634,7 @@ _cairo_gl_surface_init (cairo_device_t *device,
     surface->clip_on_stencil_buffer = NULL;
 
     surface->content_synced = TRUE;
+    surface->content_cleared = FALSE;
 
     _cairo_gl_surface_embedded_operand_init (surface);
 }
@@ -810,6 +811,7 @@ _cairo_gl_surface_clear (cairo_gl_surface_t  *surface,
 
     surface->content_changed = TRUE;
     surface->content_synced = FALSE;
+    surface->content_cleared = TRUE;
     return _cairo_gl_context_release (ctx, status);
 }
 
@@ -1646,20 +1648,19 @@ _cairo_gl_surface_resolve_multisampling (cairo_gl_surface_t *surface)
     cairo_gl_context_t *ctx;
     cairo_int_status_t status;
 
-    if (! surface->msaa_active)
-	return CAIRO_INT_STATUS_SUCCESS;
-
     if (surface->base.device == NULL)
 	return CAIRO_INT_STATUS_SUCCESS;
 
-    /* GLES surfaces do not need explicit resolution. */
-    if (((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
-	!((cairo_gl_context_t *) surface->base.device)->has_angle_multisampling)
-	return CAIRO_INT_STATUS_SUCCESS;
-    else if (! _cairo_gl_surface_is_texture (surface))
-	return CAIRO_INT_STATUS_SUCCESS;
-    else if (! surface->msaa_active)
-	return CAIRO_INT_STATUS_SUCCESS;
+    if (! surface->content_cleared) {
+	/* GLES surfaces do not need explicit resolution. */
+	if (! surface->msaa_active)
+	    return CAIRO_INT_STATUS_SUCCESS;
+	else if (((cairo_gl_context_t *) surface->base.device)->gl_flavor == CAIRO_GL_FLAVOR_ES2 &&
+		 !((cairo_gl_context_t *) surface->base.device)->has_angle_multisampling)
+	    return CAIRO_INT_STATUS_SUCCESS;
+	else if (! _cairo_gl_surface_is_texture (surface))
+	    return CAIRO_INT_STATUS_SUCCESS;
+    }
 
     status = _cairo_gl_context_acquire (surface->base.device, &ctx);
     if (unlikely (status))
@@ -1668,6 +1669,9 @@ _cairo_gl_surface_resolve_multisampling (cairo_gl_surface_t *surface)
     _cairo_gl_context_set_destination (ctx, surface, FALSE);
 
     status = _cairo_gl_context_release (ctx, status);
+
+    surface->content_cleared = FALSE;
+
     return status;
 }
 

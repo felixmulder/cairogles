@@ -263,6 +263,7 @@ struct _cairo_gl_surface {
 			         framebuffer is active or not. */
     cairo_bool_t content_synced; /* texture and renderbuffer content
 				    synced */
+    cairo_bool_t content_cleared; /* last draw is glClear */
     cairo_clip_t *clip_on_stencil_buffer;
 
     int owns_tex;
