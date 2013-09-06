@@ -462,8 +462,6 @@ render_glyphs_via_mask (cairo_gl_surface_t *dst,
 		                     dst_x-info->extents.x, dst_y-info->extents.y);
 
 	_cairo_pattern_init_for_surface (&source_pattern, source);
-	cairo_matrix_init_translate (&source_pattern.base.matrix,
-		                     dst_x-info->extents.x, dst_y-info->extents.y);
 
 	clip = _cairo_clip_copy (clip);
 	clip_extents.x = info->extents.x - dst_x;
