@@ -1145,13 +1145,7 @@ _cairo_gl_msaa_compositor_glyphs (const cairo_compositor_t	*compositor,
 
 	return _paint_back_unbounded_surface (compositor, composite, surface);
     }
-/*
-    if (scaled_font->options.antialias != CAIRO_ANTIALIAS_NONE) {
-	status = _blit_texture_to_renderbuffer (dst);
-	if (unlikely (status))
-	    return status;
-    }
-*/
+
     src = _cairo_gl_pattern_to_source (&dst->base,
 				       composite->original_source_pattern,
 				       FALSE,
