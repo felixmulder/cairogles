@@ -265,8 +265,13 @@ _blit_texture_to_renderbuffer (cairo_gl_surface_t *surface)
 	return CAIRO_INT_STATUS_SUCCESS;
     else if (surface->msaa_active)
 	return CAIRO_INT_STATUS_SUCCESS;
-    else if (surface->content_synced)
-	return CAIRO_INT_STATUS_SUCCESS;
+    else if (surface->content_synced) {
+	status = _cairo_gl_context_acquire (surface->base.device, &ctx);
+	if (unlikely (status))
+	    return status;
+	_cairo_gl_context_set_destination (ctx, surface, TRUE);
+	return _cairo_gl_context_release (ctx, status);
+    }
 
     memset (&setup, 0, sizeof (cairo_gl_composite_t));
 
@@ -1140,13 +1145,13 @@ _cairo_gl_msaa_compositor_glyphs (const cairo_compositor_t	*compositor,
 
 	return _paint_back_unbounded_surface (compositor, composite, surface);
     }
-
+/*
     if (scaled_font->options.antialias != CAIRO_ANTIALIAS_NONE) {
 	status = _blit_texture_to_renderbuffer (dst);
 	if (unlikely (status))
 	    return status;
     }
-
+*/
     src = _cairo_gl_pattern_to_source (&dst->base,
 				       composite->original_source_pattern,
 				       FALSE,
