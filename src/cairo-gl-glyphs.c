@@ -435,6 +435,7 @@ render_glyphs_via_mask (cairo_gl_surface_t *dst,
 	    status = _cairo_gl_context_release (ctx, status);
 	    return status;
 	}
+	_cairo_surface_release_device_reference (&ctx->glyph_mask->base);
     }
 
     /* clear it */
