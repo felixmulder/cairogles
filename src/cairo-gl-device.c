@@ -607,6 +607,14 @@ _cairo_gl_ensure_multisampling (cairo_gl_context_t *ctx,
 					   GL_RENDERBUFFER,
 					   surface->msaa_rb);
 
+    if (ctx->dispatch.CheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+	ctx->dispatch.DeleteRenderbuffers (1, &surface->msaa_rb);
+	surface->msaa_rb = 0;
+	ctx->dispatch.DeleteRenderbuffers (1, &surface->msaa_fb);
+	surface->msaa_fb = 0;
+	return;
+    }
+
     /* Cairo surfaces start out initialized to transparent (black) */
     _disable_scissor_buffer (ctx);
     glClearColor (0, 0, 0, 0);
@@ -623,7 +631,7 @@ _cairo_gl_ensure_msaa_depth_stencil_buffer (cairo_gl_context_t *ctx,
     if (surface->msaa_depth_stencil)
 	return TRUE;
 
-    _cairo_gl_ensure_framebuffer (ctx, surface);
+    _cairo_gl_ensure_multisampling (ctx, surface);
 
     dispatch->GenRenderbuffers (1, &surface->msaa_depth_stencil);
     dispatch->BindRenderbuffer (GL_RENDERBUFFER,
