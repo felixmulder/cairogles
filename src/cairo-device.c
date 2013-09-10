@@ -342,17 +342,6 @@ cairo_device_destroy (cairo_device_t *device)
     if (! _cairo_reference_count_dec_and_test (&device->ref_count))
 	return;
 
-    cairo_device_finish (device);
-
-    assert (device->mutex_depth == 0);
-    CAIRO_MUTEX_FINI (device->mutex);
-
-    user_data = device->user_data;
-
-    device->backend->destroy (device);
-
-    _cairo_user_data_array_fini (&user_data);
-
     while (! cairo_list_is_empty (&device->shadow_caches)) {
 	cairo_shadow_cache_t *shadow;
 
@@ -365,6 +354,18 @@ cairo_device_destroy (cairo_device_t *device)
 	free (shadow);
     }
     device->shadow_caches_size = 0;
+
+    cairo_device_finish (device);
+
+    assert (device->mutex_depth == 0);
+    CAIRO_MUTEX_FINI (device->mutex);
+
+    user_data = device->user_data;
+
+    device->backend->destroy (device);
+
+    _cairo_user_data_array_fini (&user_data);
+
 }
 slim_hidden_def (cairo_device_destroy);
 
