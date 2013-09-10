@@ -126,6 +126,8 @@ _cairo_gl_surface_shadow_surface (void *surface,
 	    cairo_surface_destroy (&shadow_surface->base);
 	    return NULL;
 	}
+
+	_cairo_surface_release_device_reference (&shadow_surface->base);
     }
 
     ctx->shadow_scratch_surfaces[0] = shadow_surface;
@@ -182,6 +184,7 @@ _cairo_gl_surface_shadow_mask_surface (void *surface,
 	    cairo_surface_destroy (&mask_surface->base);
 	    return NULL;
 	}
+	_cairo_surface_release_device_reference (&mask_surface->base);
     }
 
     ctx->shadow_masks[index] = mask_surface;
@@ -230,6 +233,7 @@ _cairo_gl_surface_glyph_shadow_surface (void *surface,
 	    cairo_surface_destroy (&shadow_surface->base);
 	    return NULL;
 	}
+	_cairo_surface_release_device_reference (&shadow_surface->base);
     }
 
     if (! for_source)
@@ -279,6 +283,7 @@ _cairo_gl_surface_glyph_shadow_mask_surface (void *surface,
 	    cairo_surface_destroy (&mask_surface->base);
 	    return NULL;
 	}
+	_cairo_surface_release_device_reference (&mask_surface->base);
     }
 
     ctx->shadow_masks[index + 2] = mask_surface;

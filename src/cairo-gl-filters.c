@@ -336,6 +336,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 							CAIRO_CONTENT_COLOR_ALPHA,
 							scratch_width,
 							scratch_height);
+	    _cairo_surface_release_device_reference (&scratches[n]->base);
 	}
 
 	if (ctx->source_scratch_in_use)
