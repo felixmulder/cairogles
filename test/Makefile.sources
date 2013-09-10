@@ -24,6 +24,7 @@ test_sources = \
 	bug-spline.c					\
 	big-trap.c					\
 	bilevel-image.c					\
+	blur.c						\
 	bug-40410.c					\
 	bug-51910.c					\
 	bug-bo-rectangular.c				\
