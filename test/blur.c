@@ -104,7 +104,7 @@ draw (cairo_t *cr, int width, int height)
     return CAIRO_TEST_SUCCESS;
 }
 
-CAIRO_TEST (gl_blur,
+CAIRO_TEST (blur,
 	    "Tests gaussian blur of a drawn image",
 	    "gl, blur, operator", /* keywords */
 	    NULL, /* requirements */
