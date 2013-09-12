@@ -262,10 +262,8 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
     }
 
     if (pattern->base.filter != CAIRO_FILTER_GAUSSIAN ||
-	! pattern->base.convolution_matrix)
-	return (cairo_gl_surface_t *)cairo_surface_reference (&src->base);
-
-    if (! _cairo_gl_surface_is_texture (src))
+	! pattern->base.convolution_matrix ||
+	! _cairo_gl_surface_is_texture (src))
 	return (cairo_gl_surface_t *)cairo_surface_reference (&src->base);
 
     if (content == CAIRO_CONTENT_COLOR)
