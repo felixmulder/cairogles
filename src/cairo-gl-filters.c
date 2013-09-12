@@ -73,7 +73,7 @@ gaussian_filter_stage_0 (cairo_surface_pattern_t *pattern,
 
     src->blur_stage = CAIRO_GL_BLUR_STAGE_0;
     _cairo_pattern_init_for_surface (pattern, &src->base);
-    
+
     cairo_matrix_init_scale (&pattern->base.matrix,
 			(double) src_width / (double) dst_width,
 			(double) src_height / (double) dst_height);
@@ -85,8 +85,8 @@ gaussian_filter_stage_0 (cairo_surface_pattern_t *pattern,
     clip = _cairo_clip_intersect_rectangle (NULL, &rect);
 
     status = _cairo_surface_paint (&dst->base,
-                                   CAIRO_OPERATOR_SOURCE,
-                                   &pattern->base, clip);
+				   CAIRO_OPERATOR_SOURCE,
+				   &pattern->base, clip);
 
     _cairo_clip_destroy (clip);
     status = _cairo_gl_surface_resolve_multisampling (dst);
@@ -256,8 +256,8 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 
     if (src->operand.type == CAIRO_GL_OPERAND_GAUSSIAN) {
 	extents_out->x = extents_out->y = 0;
-        extents_out->width = cairo_gl_surface_get_width (&src->base) * src->image_content_scale_x;
-        extents_out->height = cairo_gl_surface_get_height (&src->base) * src->image_content_scale_y;
+	extents_out->width = cairo_gl_surface_get_width (&src->base) * src->image_content_scale_x;
+	extents_out->height = cairo_gl_surface_get_height (&src->base) * src->image_content_scale_y;
 	return (cairo_gl_surface_t *)cairo_surface_reference (&src->base);
     }
 
@@ -290,7 +290,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 	    scratches[n] = ctx->source_scratch_surfaces[n];
 	    is_source = TRUE;
 	}
-    
+
 	if (scratches[n]) {
 	    scratch_width = cairo_gl_surface_get_width (&scratches[n]->base);
 	    scratch_height = cairo_gl_surface_get_height (&scratches[n]->base);
@@ -331,7 +331,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 		}
 	    }
 
-	    scratches[n] = 
+	    scratches[n] =
 		(cairo_gl_surface_t *)_cairo_gl_surface_create_scratch (ctx,
 							CAIRO_CONTENT_COLOR_ALPHA,
 							scratch_width,
@@ -344,7 +344,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 	else
 	    ctx->source_scratch_surfaces[n] = scratches[n];
 
-        scratches[n]->needs_to_cache = FALSE;
+	scratches[n]->needs_to_cache = FALSE;
 	scratches[n]->force_no_cache = TRUE;
     }
 
@@ -388,7 +388,7 @@ _cairo_gl_gaussian_filter (cairo_gl_surface_t *dst,
 					  width, height, is_opaque, &ctx_out);
 	src->operand.type = saved_type;
     }
-	
+
     if (ctx_out)
 	status = _cairo_gl_context_release (ctx_out, status);
     if (unlikely (status))
