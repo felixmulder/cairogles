@@ -47,29 +47,18 @@ _add_cap (cairo_gl_hairline_closure_t *hairline,
           cairo_point_t	    *outp)
 {
     double dx, dy;
-    if (lead_cap) {
-        if (hairline->cap_style == CAIRO_LINE_CAP_BUTT)
-            return FALSE;
 
-        dx = slope_dx * POINT_ADJUST;
-        dy = slope_dy * POINT_ADJUST;
+    if (hairline->cap_style == CAIRO_LINE_CAP_BUTT)
+	return FALSE;
 
-        cairo_matrix_transform_distance (hairline->ctm, &dx, &dy);
-        outp->x -= _cairo_fixed_from_double (dx);
-        outp->y -= _cairo_fixed_from_double (dy);
-        return TRUE;
-    } else {
-        if (hairline->cap_style == CAIRO_LINE_CAP_BUTT)
-            return FALSE;
+    dx = slope_dx * POINT_ADJUST;
+    dy = slope_dy * POINT_ADJUST;
+    hairline->line_last_capped = lead_cap;
+    cairo_matrix_transform_distance (hairline->ctm, &dx, &dy);
+    outp->x += _cairo_fixed_from_double (dx);
+    outp->y += _cairo_fixed_from_double (dy);
 
-        dx = slope_dx * POINT_ADJUST;
-        dy = slope_dy * POINT_ADJUST;
-        hairline->line_last_capped = TRUE;
-        cairo_matrix_transform_distance (hairline->ctm, &dx, &dy);
-        outp->x += _cairo_fixed_from_double (dx);
-        outp->y += _cairo_fixed_from_double (dy);
-        return TRUE;
-    }
+    return TRUE;
 }
 
 static inline cairo_bool_t
