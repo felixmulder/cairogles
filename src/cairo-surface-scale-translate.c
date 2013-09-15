@@ -320,7 +320,7 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
 	if (_cairo_stroke_style_dash_can_approximate (&style_copy, matrix, tolerance)) {
 	    style_copy.dash = dash;
 	    _cairo_stroke_style_dash_approximate (stroke_style, matrix,
-						  tolerance, 
+						  tolerance,
 						  &style_copy.dash_offset,
 						  style_copy.dash,
 						  &style_copy.num_dashes);
@@ -411,7 +411,7 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
 	    return status;
 	}
     }
-					  
+
     _cairo_rectangle_exact_intersect (&rect, &temp);
 
     if (is_inset) {
@@ -424,7 +424,7 @@ _cairo_surface_stroke_get_offset_extents (cairo_surface_t *target,
 
     return CAIRO_STATUS_SUCCESS;
 }
- 
+
 cairo_status_t
 _cairo_surface_scale_translate_fill (cairo_surface_t	*surface,
 				     const cairo_color_t *bg_color,
@@ -517,7 +517,6 @@ _cairo_surface_fill_get_offset_extents (cairo_surface_t *target,
 	_cairo_path_fixed_translate (path_out,
 				     _cairo_fixed_from_double (x_offset),
 				     _cairo_fixed_from_double (y_offset));
-
     }
 
     _cairo_pattern_get_exact_extents (source_out, &rect);
@@ -576,10 +575,10 @@ _cairo_surface_translate_glyphs (cairo_surface_t 	*surface,
 	return status;
 
     if (! _cairo_matrix_is_identity (matrix)) {
-	dev_clip = _cairo_clip_copy_with_translation (clip, matrix->x0, 
+	dev_clip = _cairo_clip_copy_with_translation (clip, matrix->x0,
 						      matrix->y0);
 
-        _transformed_pattern (source, matrix);
+	_transformed_pattern (source, matrix);
 
 	for (i = 0; i < num_glyphs; i++) {
 	    dev_glyphs[i].x += matrix->x0;
@@ -640,7 +639,7 @@ _cairo_surface_glyphs_get_offset_extents (cairo_surface_t *target,
     cairo_matrix_init_translate (&m, -x_offset, -y_offset);
     _copy_transformed_pattern (source_out, source, &m);
 
-    if (x_offset != 0.0) {	
+    if (x_offset != 0.0) {
 	for (i = 0; i < num_glyphs; i++)
 	    glyphs_out[i].x += x_offset;
     }
