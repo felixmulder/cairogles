@@ -86,11 +86,11 @@ _cairo_quartz_pattern_create_gaussian_matrix (const cairo_pattern_t *pattern,
     }
 
     if (x_sigma == 0.0)
-        x_radius = 0;
+	x_radius = 0;
     else {
 	while (x_sigma >= max_sigma) {
 	    if (width <= CAIRO_MIN_SHRINK_SIZE || x_factor >= max_factor)
-	        break;
+		break;
 
 	    x_sigma *= 0.5;
 	    x_factor *= 2;
@@ -99,11 +99,11 @@ _cairo_quartz_pattern_create_gaussian_matrix (const cairo_pattern_t *pattern,
     }
 
     if (y_sigma == 0.0)
-        y_radius = 0;
+	y_radius = 0;
     else {
 	while (y_sigma >= max_sigma) {
 	    if (height <= CAIRO_MIN_SHRINK_SIZE || y_factor >= max_factor)
-	        break;
+		break;
 
 	    y_sigma *= 0.5;
 	    y_factor *= 2;
@@ -136,9 +136,9 @@ _cairo_quartz_pattern_create_gaussian_matrix (const cairo_pattern_t *pattern,
     *sum = 0;
 
     for (y = -i_row; y <= i_row; y++) {
-        for (x = -i_col; x <= i_col; x++) {
-            u = x * x;
-            v = y * y;
+	for (x = -i_col; x <= i_col; x++) {
+	    u = x * x;
+	    v = y * y;
 	    if (u == 0.0)
 		u1 = 0.0;
 	    else
@@ -148,11 +148,11 @@ _cairo_quartz_pattern_create_gaussian_matrix (const cairo_pattern_t *pattern,
 		v1 = 0.0;
 	    else
 		v1 = v / y_sigma_sq;
-            buffer[i] = exp (-(u1 + v1));
+	    buffer[i] = exp (-(u1 + v1));
 	    i_buffer[i] = ceil (buffer[i] - 0.5);
-            *sum += i_buffer[i];
-            i++;
-        }
+	    *sum += i_buffer[i];
+	    i++;
+	}
     }
 
     free (buffer);
@@ -266,7 +266,7 @@ _cairo_quartz_resize_image (CGImageRef src, double x_resize_factor,
 }
 
 static cairo_int_status_t
-_cairo_quartz_convolve_pass (vImage_Buffer *src, 
+_cairo_quartz_convolve_pass (vImage_Buffer *src,
 			     const int16_t *kernel,
 			     int kernel_width, int kernel_height,
 			     const int32_t divisor,
@@ -296,7 +296,7 @@ _cairo_quartz_convolve_pass (vImage_Buffer *src,
 
     return CAIRO_INT_STATUS_SUCCESS;
 }
-    
+
 cairo_status_t
 _cairo_quartz_gaussian_filter (const cairo_pattern_t *src,
 			       const CGImageRef image,
@@ -330,7 +330,7 @@ _cairo_quartz_gaussian_filter (const cairo_pattern_t *src,
 	! src->convolution_matrix) {
 	*out_image = CGImageRetain (image);
 	return CAIRO_INT_STATUS_SUCCESS;
-    } 
+    }
 
     /* re-compute scaling */
     kernel = _cairo_quartz_pattern_create_gaussian_matrix ((cairo_pattern_t *)src,
