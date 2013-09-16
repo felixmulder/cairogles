@@ -180,6 +180,24 @@ _cairo_shadow_hash_for_stroke (const cairo_pattern_t      *source,
     return _cairo_shadow_hash (hash, shadow);
 }
 
+static void
+_cairo_shadow_cache_init (cairo_shadow_cache_t *shadow_cache,
+			  cairo_surface_t      *cache_surface,
+			  unsigned long         size,
+			  unsigned long         hash,
+			  int		        x_blur,
+			  int                   y_blur,
+			  double                scale)
+{
+    cairo_list_init (&shadow_cache->link);
+    shadow_cache->surface = cairo_surface_reference (cache_surface);
+    shadow_cache->size = size;
+    shadow_cache->hash = hash;
+    shadow_cache->x_blur = x_blur;
+    shadow_cache->y_blur = y_blur;
+    shadow_cache->scale = scale;
+}
+
 /* A collection of routines to draw shadow*/
 
 cairo_status_t
@@ -437,13 +455,13 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 	}
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
-	cairo_list_init (&shadow_cache->link);
-	shadow_cache->surface = cairo_surface_reference (cache_surface);
-	shadow_cache->size = size;
-	shadow_cache->hash = hash;
-	shadow_cache->x_blur = x_blur;
-	shadow_cache->y_blur = y_blur;
-	shadow_cache->scale = scale;
+	_cairo_shadow_cache_init (shadow_cache,
+				  cache_surface,
+				  size,
+				  hash,
+				  x_blur,
+				  y_blur,
+				  scale);
 
 	cairo_list_add (&shadow_cache->link, shadow_caches);
 	*shadow_caches_size += size;
@@ -744,13 +762,13 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 	}
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
-	cairo_list_init (&shadow_cache->link);
-	shadow_cache->surface = cairo_surface_reference (cache_surface);
-	shadow_cache->size = size;
-	shadow_cache->hash = hash;
-	shadow_cache->x_blur = x_blur;
-	shadow_cache->y_blur = y_blur;
-	shadow_cache->scale = scale;
+	_cairo_shadow_cache_init (shadow_cache,
+				  cache_surface,
+				  size,
+				  hash,
+				  x_blur,
+				  y_blur,
+				  scale);
 
 	cairo_list_add (&shadow_cache->link, shadow_caches);
 	*shadow_caches_size += size;
@@ -1079,13 +1097,13 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 	}
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
-	cairo_list_init (&shadow_cache->link);
-	shadow_cache->surface = cairo_surface_reference (cache_surface);
-	shadow_cache->size = size;
-	shadow_cache->hash = hash;
-	shadow_cache->x_blur = x_blur;
-	shadow_cache->y_blur = y_blur;
-	shadow_cache->scale = scale;
+        _cairo_shadow_cache_init (shadow_cache,
+                                  cache_surface,
+                                  size,
+                                  hash,
+                                  x_blur,
+                                  y_blur,
+				  scale);
 
 	cairo_list_add (&shadow_cache->link, shadow_caches);
 	*shadow_caches_size += size;
@@ -1414,13 +1432,13 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 	}
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
-	cairo_list_init (&shadow_cache->link);
-	shadow_cache->surface = cairo_surface_reference (cache_surface);
-	shadow_cache->size = size;
-	shadow_cache->hash = hash;
-	shadow_cache->x_blur = x_blur;
-	shadow_cache->y_blur = y_blur;
-	shadow_cache->scale = scale;
+        _cairo_shadow_cache_init (shadow_cache,
+                                  cache_surface,
+                                  size,
+                                  hash,
+                                  x_blur,
+                                  y_blur,
+				  scale);
 
 	cairo_list_add (&shadow_cache->link, shadow_caches);
 	*shadow_caches_size += size;
@@ -1743,13 +1761,13 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	}
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
-	cairo_list_init (&shadow_cache->link);
-	shadow_cache->surface = cairo_surface_reference (cache_surface);
-	shadow_cache->size = size;
-	shadow_cache->hash = hash;
-	shadow_cache->x_blur = x_blur;
-	shadow_cache->y_blur = y_blur;
-	shadow_cache->scale = scale;
+        _cairo_shadow_cache_init (shadow_cache,
+                                  cache_surface,
+                                  size,
+                                  hash,
+                                  x_blur,
+                                  y_blur,
+				  scale);
 
 	cairo_list_add (&shadow_cache->link, shadow_caches);
 	*shadow_caches_size += size;
@@ -2069,13 +2087,13 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 	}
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
-	cairo_list_init (&shadow_cache->link);
-	shadow_cache->surface = cairo_surface_reference (cache_surface);
-	shadow_cache->size = size;
-	shadow_cache->hash = hash;
-	shadow_cache->x_blur = x_blur;
-	shadow_cache->y_blur = y_blur;
-	shadow_cache->scale = scale;
+        _cairo_shadow_cache_init (shadow_cache,
+                                  cache_surface,
+                                  size,
+                                  hash,
+                                  x_blur,
+                                  y_blur,
+				  scale);
 
 	cairo_list_add (&shadow_cache->link, shadow_caches);
 	*shadow_caches_size += size;
