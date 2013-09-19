@@ -206,6 +206,21 @@ _cairo_shadow_cache_destroy (cairo_shadow_cache_t *shadow_cache)
     free (shadow_cache);
 }
 
+static void
+_cairo_shadow_cache_list_shrink_to_accomodate (cairo_list_t *shadow_caches,
+					       unsigned long *shadow_caches_size,
+					       unsigned long additional)
+{
+    cairo_shadow_cache_t *shadow_cache;
+    while (*shadow_caches_size + additional > MAX_SHADOW_CACHE_SIZE) {
+	shadow_cache = cairo_list_last_entry (shadow_caches,
+					      cairo_shadow_cache_t,
+					      link);
+	*shadow_caches_size -= shadow_cache->size;
+	_cairo_shadow_cache_destroy (shadow_cache);
+    }
+}
+
 /* A collection of routines to draw shadow*/
 
 cairo_status_t
@@ -451,14 +466,9 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 	cairo_pattern_destroy (shadow_pattern);
 
 	size = shadow_surface_extents.width * shadow_surface_extents.height;
-
-	while (*shadow_caches_size + size > MAX_SHADOW_CACHE_SIZE) {
-	    shadow_cache = cairo_list_last_entry (shadow_caches,
-						  cairo_shadow_cache_t,
-						  link);
-	    *shadow_caches_size -= shadow_cache->size;
-	    _cairo_shadow_cache_destroy (shadow_cache);
-	}
+	_cairo_shadow_cache_list_shrink_to_accomodate (shadow_caches,
+						       shadow_caches_size,
+						       size);
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
 	_cairo_shadow_cache_init (shadow_cache,
@@ -756,14 +766,9 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 	cairo_pattern_destroy (shadow_pattern);
 
 	size = shadow_surface_extents.width * shadow_surface_extents.height;
-
-	while (*shadow_caches_size + size > MAX_SHADOW_CACHE_SIZE) {
-	    shadow_cache = cairo_list_last_entry (shadow_caches,
-						  cairo_shadow_cache_t,
-						  link);
-	    *shadow_caches_size -= shadow_cache->size;
-	    _cairo_shadow_cache_destroy (shadow_cache);
-	}
+        _cairo_shadow_cache_list_shrink_to_accomodate (shadow_caches,
+                                                       shadow_caches_size,
+                                                       size);
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
 	_cairo_shadow_cache_init (shadow_cache,
@@ -1090,13 +1095,9 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 	cairo_pattern_destroy (shadow_pattern);
 
 	size = shadow_surface_extents.width * shadow_surface_extents.height;
-	while (*shadow_caches_size + size > MAX_SHADOW_CACHE_SIZE) {
-	    shadow_cache = cairo_list_last_entry (shadow_caches,
-						  cairo_shadow_cache_t,
-						  link);
-	    *shadow_caches_size -= shadow_cache->size;
-	    _cairo_shadow_cache_destroy (shadow_cache);
-	}
+        _cairo_shadow_cache_list_shrink_to_accomodate (shadow_caches,
+                                                       shadow_caches_size,
+                                                       size);
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
         _cairo_shadow_cache_init (shadow_cache,
@@ -1422,14 +1423,9 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 	cairo_pattern_destroy (shadow_pattern);
 
 	size = shadow_surface_extents.width * shadow_surface_extents.height;
-
-	while (*shadow_caches_size + size > MAX_SHADOW_CACHE_SIZE) {
-	    shadow_cache = cairo_list_last_entry (shadow_caches,
-						  cairo_shadow_cache_t,
-						  link);
-	    *shadow_caches_size -= shadow_cache->size;
-	    _cairo_shadow_cache_destroy (shadow_cache);
-	}
+        _cairo_shadow_cache_list_shrink_to_accomodate (shadow_caches,
+                                                       shadow_caches_size,
+                                                       size);
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
         _cairo_shadow_cache_init (shadow_cache,
@@ -1749,14 +1745,9 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
  	cairo_pattern_destroy (shadow_pattern);
 
 	size = shadow_surface_extents.width * shadow_surface_extents.height;
-
-	while (*shadow_caches_size + size > MAX_SHADOW_CACHE_SIZE) {
-	    shadow_cache = cairo_list_last_entry (shadow_caches,
-						  cairo_shadow_cache_t,
-						  link);
-	    *shadow_caches_size -= shadow_cache->size;
-	    _cairo_shadow_cache_destroy (shadow_cache);
-	}
+        _cairo_shadow_cache_list_shrink_to_accomodate (shadow_caches,
+                                                       shadow_caches_size,
+                                                       size);
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
         _cairo_shadow_cache_init (shadow_cache,
@@ -2073,14 +2064,9 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
  	cairo_pattern_destroy (shadow_pattern);
 
 	size = shadow_surface_extents.width * shadow_surface_extents.height;
-
-	while (*shadow_caches_size + size > MAX_SHADOW_CACHE_SIZE) {
-	    shadow_cache = cairo_list_last_entry (shadow_caches,
-						  cairo_shadow_cache_t,
-						  link);
-	    *shadow_caches_size -= shadow_cache->size;
-	    _cairo_shadow_cache_destroy (shadow_cache);
-	}
+        _cairo_shadow_cache_list_shrink_to_accomodate (shadow_caches,
+                                                       shadow_caches_size,
+                                                       size);
 
 	shadow_cache = malloc (sizeof (cairo_shadow_cache_t));
         _cairo_shadow_cache_init (shadow_cache,
