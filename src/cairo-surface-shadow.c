@@ -490,15 +490,12 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 						   shadow_copy.color.green,
 						   shadow_copy.color.blue,
 						   1.0);
-
-	status = _cairo_surface_mask (target, op, color_pattern,
-				      shadow_pattern, clip);
     }
-    else {
+    else
 	cairo_pattern_set_matrix (shadow_pattern, &m);
-	status = _cairo_surface_mask (target, op,
-				      color_pattern, shadow_pattern, clip);
-    }
+
+    status = _cairo_surface_mask (target, op,
+				  color_pattern, shadow_pattern, clip);
 
 FINISH:
     cairo_pattern_destroy (color_pattern);
@@ -790,15 +787,12 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 						   shadow_copy.color.green,
 						   shadow_copy.color.blue,
 						   1.0);
-
-	status = _cairo_surface_mask (target, op, color_pattern,
-				      shadow_pattern, clip);
     }
-    else {
+    else
 	cairo_pattern_set_matrix (shadow_pattern, &m);
-	status = _cairo_surface_mask (target, op,
-				      color_pattern, shadow_pattern, clip);
-    }
+
+    status = _cairo_surface_mask (target, op,
+				  color_pattern, shadow_pattern, clip);
 
 FINISH:
     cairo_pattern_destroy (color_pattern);
@@ -1447,16 +1441,12 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 						   shadow_copy.color.green,
 						   shadow_copy.color.blue,
 						   1.0);
-
-
-	status = _cairo_surface_mask (target, op, color_pattern,
-				      shadow_pattern, clip);
     }
-    else {
+    else
 	cairo_pattern_set_matrix (shadow_pattern, &m);
-	status = _cairo_surface_mask (target, op,
-				      color_pattern, shadow_pattern, clip);
-    }
+
+    status = _cairo_surface_mask (target, op,
+				  color_pattern, shadow_pattern, clip);
 
 FINISH:
     _cairo_path_fixed_fini (&shadow_path);
@@ -2088,16 +2078,12 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 						   shadow_copy.color.green,
 						   shadow_copy.color.blue,
 						   1.0);
-
-
-	status = _cairo_surface_mask (target, op, color_pattern,
-				      shadow_pattern, clip);
     }
-    else {
+    else
 	cairo_pattern_set_matrix (shadow_pattern, &m);
-	status = _cairo_surface_mask (target, op,
-				      color_pattern, shadow_pattern, clip);
-    }
+
+    status = _cairo_surface_mask (target, op,
+				  color_pattern, shadow_pattern, clip);
 
 FINISH:
     _cairo_path_fixed_fini (&shadow_path);
