@@ -545,6 +545,26 @@ _stroke_shaper_add_quad (void			*closure,
 						      quad);
 }
 
+static cairo_bool_t
+_stroke_components_may_overlap (const cairo_path_fixed_t *path,
+				const cairo_stroke_style_t *style)
+{
+    const cairo_path_buf_t *buf;
+
+    if (style->dash)
+	return TRUE;
+
+    buf  = cairo_path_head (path);
+    if (buf->num_ops > 2)
+	return TRUE;
+
+    if (buf->num_ops < 2)
+	return TRUE;
+
+    return buf->op[0] != CAIRO_PATH_OP_MOVE_TO ||
+	   buf->op[1] != CAIRO_PATH_OP_LINE_TO;
+}
+
 static cairo_int_status_t
 _prevent_overlapping_strokes (cairo_gl_context_t 		*ctx,
 			      cairo_gl_composite_t 		*setup,
@@ -554,6 +574,9 @@ _prevent_overlapping_strokes (cairo_gl_context_t 		*ctx,
 			      const cairo_matrix_t		*ctm)
 {
     cairo_rectangle_int_t stroke_extents;
+
+    if (! _stroke_components_may_overlap (path, style))
+	return CAIRO_INT_STATUS_SUCCESS;
 
     if (! _cairo_gl_ensure_stencil (ctx, setup->dst))
 	return CAIRO_INT_STATUS_UNSUPPORTED;
