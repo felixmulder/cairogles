@@ -305,6 +305,8 @@ _tessellate_fan (cairo_stroker_t *stroker,
 	    num_points = stop - start;
 	    if (num_points < 0)
 		num_points += pen->num_vertices;
+	    else
+		num_points = pen->num_vertices - stop + start;
 	    num_points += 2;
 	    if (num_points > ARRAY_LENGTH(stack_points)) {
 		points = _cairo_malloc_ab (num_points, sizeof (cairo_point_t));
@@ -353,6 +355,8 @@ _tessellate_fan (cairo_stroker_t *stroker,
 	    num_points = stop - start;
 	    if (num_points < 0)
 		num_points += pen->num_vertices;
+	    else
+		num_points = pen->num_vertices - stop + start;
 	    num_points += 2;
 	    if (num_points > ARRAY_LENGTH(stack_points)) {
 		points = _cairo_malloc_ab (num_points, sizeof (cairo_point_t));
