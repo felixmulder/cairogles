@@ -347,9 +347,6 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
 
-	shadow_width = ceil (shadow_extents.width + x_blur * 2);
-	shadow_height = ceil (shadow_extents.height + y_blur * 2);
-
 	cairo_matrix_init_scale (&m, shadow_cache->scale, shadow_cache->scale);
 	cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -617,9 +614,6 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
-
-	shadow_width = ceil (shadow_extents.width + x_blur * 2);
-	shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
 	cairo_matrix_init_scale (&m, shadow_cache->scale, shadow_cache->scale);
 	cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -892,9 +886,6 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
-
-	shadow_width = ceil (shadow_extents.width + x_blur * 2);
-	shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
 	cairo_matrix_init_scale (&m, shadow_cache->scale, shadow_cache->scale);
 	cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -1214,9 +1205,6 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
 
-	shadow_width = ceil (shadow_extents.width + x_blur * 2);
-	shadow_height = ceil (shadow_extents.height + y_blur * 2);
-
 	cairo_matrix_init_scale (&m, shadow_cache->scale, shadow_cache->scale);
 	cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -1493,9 +1481,6 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
-
-	shadow_width = ceil (shadow_extents.width + x_blur * 2);
-	shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
 	cairo_matrix_init_scale (&m, shadow_cache->scale, shadow_cache->scale);
 	cairo_matrix_translate (&m, -x_offset, -y_offset);
@@ -1809,9 +1794,6 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 
  	x_offset = shadow_extents.x - x_blur;
 	y_offset = shadow_extents.y - y_blur;
-
-	shadow_width = ceil (shadow_extents.width + x_blur * 2);
-	shadow_height = ceil (shadow_extents.height + y_blur * 2);
 
 	cairo_matrix_init_scale (&m, shadow_cache->scale, shadow_cache->scale);
 	cairo_matrix_translate (&m, -x_offset, -y_offset);
