@@ -221,6 +221,16 @@ _cairo_shadow_cache_list_shrink_to_accomodate (cairo_list_t *shadow_caches,
     }
 }
 
+static double
+_calculate_shadow_extents_scale (cairo_rectangle_int_t *extents,
+				 int shadow_width,  int shadow_height)
+{
+    double x_scale = (double)extents->width / (double)shadow_width;
+    double y_scale = (double)extents->height / (double)shadow_height;
+
+    return MIN (1.0, MIN (x_scale, y_scale));
+}
+
 /* A collection of routines to draw shadow*/
 
 cairo_status_t
@@ -245,8 +255,6 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 
     cairo_matrix_t 	  m;
     double 		  scale;
-    double		  x_scale = 1.0;
-    double		  y_scale = 1.0;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
     cairo_content_t       content;
@@ -427,13 +435,9 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 	    _cairo_surface_release_device_reference (cache_surface);
     }
 
-    x_scale = (double) shadow_surface_extents.width / (double) shadow_width;
-    y_scale = (double) shadow_surface_extents.height / (double) shadow_height;
-
-    scale = MIN (x_scale, y_scale);
-    if (scale > 1.0)
-	scale = 1.0;
-
+    scale = _calculate_shadow_extents_scale (&shadow_surface_extents,
+                                             shadow_width,
+                                             shadow_height);
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -538,8 +542,6 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 
     cairo_matrix_t 	  m;
     double 		  scale;
-    double		  x_scale = 1.0;
-    double		  y_scale = 1.0;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
 
@@ -724,13 +726,9 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 	    _cairo_surface_release_device_reference (cache_surface);
     }
 
-    x_scale = (double) shadow_surface_extents.width / (double) shadow_width;
-    y_scale = (double) shadow_surface_extents.height / (double) shadow_height;
-
-    scale = MIN (x_scale, y_scale);
-    if (scale > 1.0)
-	scale = 1.0;
-
+    scale = _calculate_shadow_extents_scale (&shadow_surface_extents,
+                                             shadow_width,
+                                             shadow_height);
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -843,8 +841,6 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 
     cairo_matrix_t 	  m;
     double 		  scale;
-    double		  x_scale = 1.0;
-    double		  y_scale = 1.0;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
     unsigned long         hash = 0;
@@ -1031,13 +1027,9 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 	    _cairo_surface_release_device_reference (cache_surface);
     }
 
-    x_scale = (double) shadow_surface_extents.width / (double) shadow_width;
-    y_scale = (double) shadow_surface_extents.height / (double) shadow_height;
-
-    scale = MIN (x_scale, y_scale);
-    if (scale > 1.0)
-	scale = 1.0;
-
+    scale = _calculate_shadow_extents_scale (&shadow_surface_extents,
+					     shadow_width,
+					     shadow_height);
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -1171,8 +1163,6 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 
     cairo_matrix_t 	  m;
     double 		  scale;
-    double		  x_scale = 1.0;
-    double		  y_scale = 1.0;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
     unsigned long         hash = 0;
@@ -1369,13 +1359,9 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 	    _cairo_surface_release_device_reference (cache_surface);
     }
 
-    x_scale = (double) shadow_surface_extents.width / (double) shadow_width;
-    y_scale = (double) shadow_surface_extents.height / (double) shadow_height;
-
-    scale = MIN (x_scale, y_scale);
-    if (scale > 1.0)
-	scale = 1.0;
-
+    scale = _calculate_shadow_extents_scale (&shadow_surface_extents,
+					     shadow_width,
+					     shadow_height);
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -1495,8 +1481,6 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 
     cairo_matrix_t 	  m;
     double 		  scale;
-    double		  x_scale = 1.0;
-    double		  y_scale = 1.0;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
     unsigned long         hash = 0;
@@ -1680,13 +1664,9 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 	    _cairo_surface_release_device_reference (cache_surface);
     }
 
-    x_scale = (double) shadow_surface_extents.width / (double) shadow_width;
-    y_scale = (double) shadow_surface_extents.height / (double) shadow_height;
-
-    scale = MIN (x_scale, y_scale);
-    if (scale > 1.0)
-	scale = 1.0;
-
+    scale = _calculate_shadow_extents_scale (&shadow_surface_extents,
+                                             shadow_width,
+                                             shadow_height);
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -1818,8 +1798,6 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 
     cairo_matrix_t 	  m;
     double 		  scale;
-    double		  x_scale = 1.0;
-    double		  y_scale = 1.0;
     double		  x_offset = shadow->x_offset;
     double		  y_offset = shadow->y_offset;
     unsigned long         hash = 0;
@@ -2009,13 +1987,9 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 	    _cairo_surface_release_device_reference (cache_surface);
     }
 
-    x_scale = (double) shadow_surface_extents.width / (double) shadow_width;
-    y_scale = (double) shadow_surface_extents.height / (double) shadow_height;
-
-    scale = MIN (x_scale, y_scale);
-    if (scale > 1.0)
-	scale = 1.0;
-
+    scale = _calculate_shadow_extents_scale (&shadow_surface_extents,
+                                             shadow_width,
+                                             shadow_height);
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
