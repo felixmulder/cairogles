@@ -399,19 +399,17 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
 							      &width_out,
 							      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
-	int scaled_height = MIN (shadow_height, MAX_SHADOW_SIZE) * 0.5;
+	width_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	height_out = MIN (shadow_height, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
  	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
 						       content,
-						       scaled_width,
-						       scaled_height);
+						       width_out,
+						       height_out);
 	_cairo_surface_release_device_reference (shadow_surface);
-	width_out = scaled_width;
-	height_out = scaled_height;
     }
     if (! shadow_surface || unlikely (shadow_surface->status))
 	goto FINISH;
@@ -674,8 +672,8 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
-	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	width_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	height_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
 	content = cairo_surface_get_content (target);
@@ -683,11 +681,9 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
 						       content,
-						       scaled_width,
-						       scaled_height);
+						       width_out,
+						       height_out);
 	_cairo_surface_release_device_reference (shadow_surface);
-	width_out = scaled_width;
-	height_out = scaled_height;
     }
     if (! shadow_surface || unlikely (shadow_surface->status))
 	goto FINISH;
@@ -957,19 +953,17 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
-	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	width_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	height_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
 						       content,
-						       scaled_width,
-						       scaled_height);
+						       width_out,
+						       height_out);
 	_cairo_surface_release_device_reference (shadow_surface);
-	width_out = scaled_width;
-	height_out = scaled_height;
     }
     if (! shadow_surface)
 	goto FINISH;
@@ -1278,19 +1272,17 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
-	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	width_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	height_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
 						       content,
-						       scaled_width,
-						       scaled_height);
+						       width_out,
+						       height_out);
 	_cairo_surface_release_device_reference (shadow_surface);
-	width_out = scaled_width;
-	height_out = scaled_height;
     }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
@@ -1563,19 +1555,17 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
-	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	width_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	height_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
 						       content,
-						       scaled_width,
-						       scaled_height);
+						       width_out,
+						       height_out);
 	_cairo_surface_release_device_reference (shadow_surface);
-	width_out = scaled_width;
-	height_out = scaled_height;
     }
     if (! shadow_surface)
 	goto FINISH;
@@ -1875,19 +1865,17 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 						      &width_out,
 						      &height_out);
     else {
-	int scaled_width = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
-	int scaled_height = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	width_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
+	height_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
 						       content,
-						       scaled_width,
-						       scaled_height);
+						       width_out,
+						       height_out);
 	_cairo_surface_release_device_reference (shadow_surface);
-	width_out = scaled_width;
-	height_out = scaled_height;
     }
     if (unlikely (shadow_surface->status))
 	goto FINISH;
