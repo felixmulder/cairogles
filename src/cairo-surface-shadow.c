@@ -252,6 +252,34 @@ _calculate_shadow_extents_scale (cairo_rectangle_int_t *extents,
     return MIN (1.0, MIN (x_scale, y_scale));
 }
 
+static void
+_cairo_shadow_cache_list_init (cairo_shadow_cache_list_t *shadow_cache_list,
+			       cairo_surface_t           *target)
+{
+    cairo_status_t  status;
+    cairo_device_t *device = target->device;
+
+    if (device != NULL) {
+	shadow_cache_list->caches = &device->shadow_caches;
+	shadow_cache_list->size = device->shadow_caches_size;
+	shadow_cache_list->locked = FALSE;
+    }
+    else if (target != NULL &&
+	     target->backend &&
+	     target->backend->has_shadow_cache &&
+	     target->backend->has_shadow_cache (target)) {
+	status = target->backend->shadow_cache_acquire (target);
+	shadow_cache_list->locked = TRUE;
+
+	if (status == CAIRO_STATUS_SUCCESS) {
+	    shadow_cache_list->caches = target->backend->get_shadow_cache (target);
+	    if (shadow_cache_list->caches) {
+		shadow_cache_list->size = *target->backend->get_shadow_cache_size (target);
+	    }
+	}
+    }
+}
+
 /* A collection of routines to draw shadow*/
 
 cairo_status_t
@@ -303,24 +331,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if (_cairo_clip_is_all_clipped (clip))
 	return CAIRO_STATUS_SUCCESS;
 
-    if (device != NULL) {
-	shadow_cache_list.caches = &device->shadow_caches;
-	shadow_cache_list.size = device->shadow_caches_size;
-	shadow_cache_list.locked = FALSE;
-    }
-    else if (target->backend &&
-	     target->backend->has_shadow_cache &&
-	     target->backend->has_shadow_cache (target)) {
-	status = target->backend->shadow_cache_acquire (target);
-	shadow_cache_list.locked = TRUE;
-
-	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
-	    if (shadow_cache_list.caches) {
-		shadow_cache_list.size = *target->backend->get_shadow_cache_size (target);
-	    }
-	}
-    }
+    _cairo_shadow_cache_list_init (&shadow_cache_list, target);
     if (shadow_cache_list.caches != NULL) {
 	hash = _cairo_shadow_hash_for_paint (source, shadow);
 	shadow_cache = _cairo_shadow_cache_list_find (&shadow_cache_list, hash);
@@ -568,24 +579,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     if (_cairo_clip_is_all_clipped (clip))
 	return CAIRO_STATUS_SUCCESS;
 
-    if (device != NULL) {
-	shadow_cache_list.caches = &device->shadow_caches;
-	shadow_cache_list.size = device->shadow_caches_size;
-	shadow_cache_list.locked = FALSE;
-    }
-    else if (target->backend &&
-	     target->backend->has_shadow_cache &&
-	     target->backend->has_shadow_cache (target)) {
-	status = target->backend->shadow_cache_acquire (target);
-	shadow_cache_list.locked = TRUE;
-
-	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
-	    if (shadow_cache_list.caches) {
-		shadow_cache_list.size = *target->backend->get_shadow_cache_size (target);
-	    }
-	}
-    }
+    _cairo_shadow_cache_list_init (&shadow_cache_list, target);
     if (shadow_cache_list.caches != NULL) {
 	hash = _cairo_shadow_hash_for_mask (source, mask, shadow);
 	shadow_cache = _cairo_shadow_cache_list_find (&shadow_cache_list, hash);
@@ -835,24 +829,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     if (shadow->color.alpha == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
-    if (device != NULL) {
-	shadow_cache_list.caches = &device->shadow_caches;
-	shadow_cache_list.size = device->shadow_caches_size;
-	shadow_cache_list.locked = FALSE;
-    }
-    else if (target->backend &&
-	     target->backend->has_shadow_cache &&
-	     target->backend->has_shadow_cache (target)) {
-	status = target->backend->shadow_cache_acquire (target);
-	shadow_cache_list.locked = TRUE;
-
-	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
-	    if (shadow_cache_list.caches) {
-		shadow_cache_list.size = *target->backend->get_shadow_cache_size (target);
-	    }
-	}
-    }
+    _cairo_shadow_cache_list_init (&shadow_cache_list, target);
     if (shadow_cache_list.caches != NULL) {
 	hash = _cairo_shadow_hash_for_stroke (source, path, stroke_style, ctm, shadow);
 	shadow_cache = _cairo_shadow_cache_list_find (&shadow_cache_list, hash);
@@ -1152,23 +1129,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 						   tolerance, antialias,
 						   clip, shadow);
 
-    if (device != NULL) {
-	shadow_cache_list.caches = &device->shadow_caches;
-	shadow_cache_list.size = device->shadow_caches_size;
-    }
-    else if (target->backend &&
-	     target->backend->has_shadow_cache &&
-	     target->backend->has_shadow_cache (target)) {
-	status = target->backend->shadow_cache_acquire (target);
-	shadow_cache_list.locked = TRUE;
-
-	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
-	    if (shadow_cache_list.caches) {
-		shadow_cache_list.size = *target->backend->get_shadow_cache_size (target);
-	    }
-	}
-    }
+    _cairo_shadow_cache_list_init (&shadow_cache_list, target);
     if (shadow_cache_list.caches != NULL) {
 	hash = _cairo_shadow_hash_for_stroke (source, path, stroke_style, ctm, shadow);
 	shadow_cache = _cairo_shadow_cache_list_find (&shadow_cache_list, hash);
@@ -1431,24 +1392,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     if (shadow->color.alpha == 0.0)
 	return CAIRO_STATUS_SUCCESS;
 
-    if (device != NULL) {
-	shadow_cache_list.caches = &device->shadow_caches;
-	shadow_cache_list.size = device->shadow_caches_size;
-	shadow_cache_list.locked = FALSE;
-    }
-    else if (target->backend &&
-	     target->backend->has_shadow_cache &&
-	     target->backend->has_shadow_cache (target)) {
-	status = target->backend->shadow_cache_acquire (target);
-	shadow_cache_list.locked = TRUE;
-
-	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
-	    if (shadow_cache_list.caches) {
-		shadow_cache_list.size = *target->backend->get_shadow_cache_size (target);
-	    }
-	}
-    }
+    _cairo_shadow_cache_list_init (&shadow_cache_list, target);
     if (shadow_cache_list.caches != NULL) {
 	hash = _cairo_shadow_hash_for_fill (source, path, fill_rule, shadow);
 	shadow_cache = _cairo_shadow_cache_list_find (&shadow_cache_list, hash);
@@ -1743,24 +1687,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
 						 tolerance, antialias,
 						 clip, shadow);
 
-    if (device != NULL) {
-	shadow_cache_list.caches = &device->shadow_caches;
-	shadow_cache_list.size = device->shadow_caches_size;
-	shadow_cache_list.locked = FALSE;
-    }
-    else if (target->backend &&
-	     target->backend->has_shadow_cache &&
-	     target->backend->has_shadow_cache (target)) {
-	status = target->backend->shadow_cache_acquire (target);
-	shadow_cache_list.locked = TRUE;
-
-	if (status == CAIRO_STATUS_SUCCESS) {
-	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
-	    if (shadow_cache_list.caches) {
-		shadow_cache_list.size = *target->backend->get_shadow_cache_size (target);
-	    }
-	}
-    }
+    _cairo_shadow_cache_list_init (&shadow_cache_list, target);
     if (shadow_cache_list.caches != NULL) {
 	hash = _cairo_shadow_hash_for_fill (source, path, fill_rule, shadow);
 	shadow_cache = _cairo_shadow_cache_list_find (&shadow_cache_list, hash);
