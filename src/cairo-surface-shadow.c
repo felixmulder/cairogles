@@ -53,6 +53,7 @@
 typedef struct _cairo_shadow_cache_list {
     cairo_list_t *caches;
     unsigned long size;
+    cairo_bool_t locked;
 } cairo_shadow_cache_list_t;
 
 static unsigned long
@@ -285,7 +286,6 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     unsigned long         size;
     cairo_surface_t	 *cache_surface = NULL;
     cairo_bool_t          bounded;
-    cairo_bool_t          locked = FALSE;
     cairo_bool_t          draw_shadow_only = source->shadow.draw_shadow_only;
 
     cairo_shadow_cache_list_t shadow_cache_list;
@@ -306,12 +306,13 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if (device != NULL) {
 	shadow_cache_list.caches = &device->shadow_caches;
 	shadow_cache_list.size = device->shadow_caches_size;
+	shadow_cache_list.locked = FALSE;
     }
     else if (target->backend &&
 	     target->backend->has_shadow_cache &&
 	     target->backend->has_shadow_cache (target)) {
 	status = target->backend->shadow_cache_acquire (target);
-	locked = TRUE;
+	shadow_cache_list.locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
 	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
@@ -420,7 +421,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     shadow_surface_extents.width = width_out;
     shadow_surface_extents.height = height_out;
 
-    if ((device || locked) && shadow->enable_cache && bounded) {
+    if ((device || shadow_cache_list.locked) && shadow->enable_cache && bounded) {
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
@@ -461,7 +462,7 @@ _cairo_surface_shadow_paint (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
-    if ((locked ||device) && shadow->enable_cache && bounded) {
+    if ((shadow_cache_list.locked ||device) && shadow->enable_cache && bounded) {
 	status = _cairo_surface_mask (cache_surface, CAIRO_OPERATOR_OVER,
 				      color_pattern, shadow_pattern, NULL);
 	if (unlikely (status))
@@ -509,7 +510,7 @@ FINISH:
     cairo_surface_destroy (shadow_surface);
     cairo_surface_destroy (cache_surface);
 
-    if (locked)
+    if (shadow_cache_list.locked)
 	target->backend->shadow_cache_release (target);
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
@@ -550,7 +551,6 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     unsigned long         size;
     cairo_surface_t	 *cache_surface = NULL;
     cairo_bool_t          bounded;
-    cairo_bool_t          locked = FALSE;
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     cairo_shadow_cache_list_t shadow_cache_list;
@@ -571,12 +571,13 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     if (device != NULL) {
 	shadow_cache_list.caches = &device->shadow_caches;
 	shadow_cache_list.size = device->shadow_caches_size;
+	shadow_cache_list.locked = FALSE;
     }
     else if (target->backend &&
 	     target->backend->has_shadow_cache &&
 	     target->backend->has_shadow_cache (target)) {
 	status = target->backend->shadow_cache_acquire (target);
-	locked = TRUE;
+	shadow_cache_list.locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
 	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
@@ -690,7 +691,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     shadow_surface_extents.width = width_out;
     shadow_surface_extents.height = height_out;
 
-    if ((locked || device) && shadow->enable_cache && bounded) {
+    if ((shadow_cache_list.locked || device) && shadow->enable_cache && bounded) {
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
@@ -731,7 +732,7 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
-    if ((locked || device) && shadow->enable_cache && bounded) {
+    if ((shadow_cache_list.locked || device) && shadow->enable_cache && bounded) {
 	status = _cairo_surface_mask (cache_surface, CAIRO_OPERATOR_OVER,
 				      color_pattern, shadow_pattern, NULL);
 	if (unlikely (status))
@@ -779,7 +780,7 @@ FINISH:
     cairo_surface_destroy (shadow_surface);
     cairo_surface_destroy (cache_surface);
 
-    if (locked)
+    if (shadow_cache_list.locked)
 	target->backend->shadow_cache_release (target);
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
@@ -826,7 +827,6 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     cairo_device_t       *device = target->device;
     unsigned long         size;
     cairo_surface_t	 *cache_surface = NULL;
-    cairo_bool_t          locked = FALSE;
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
     cairo_operator_t	  shadow_op;
 
@@ -838,12 +838,13 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     if (device != NULL) {
 	shadow_cache_list.caches = &device->shadow_caches;
 	shadow_cache_list.size = device->shadow_caches_size;
+	shadow_cache_list.locked = FALSE;
     }
     else if (target->backend &&
 	     target->backend->has_shadow_cache &&
 	     target->backend->has_shadow_cache (target)) {
 	status = target->backend->shadow_cache_acquire (target);
-	locked = TRUE;
+	shadow_cache_list.locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
 	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
@@ -970,7 +971,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     shadow_surface_extents.width = width_out;
     shadow_surface_extents.height = height_out;
 
-    if ((locked || device) && shadow->enable_cache) {
+    if ((shadow_cache_list.locked || device) && shadow->enable_cache) {
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
@@ -1030,7 +1031,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
-    if ((locked || device) && shadow->enable_cache) {
+    if ((shadow_cache_list.locked || device) && shadow->enable_cache) {
 	status = _cairo_surface_paint (cache_surface, CAIRO_OPERATOR_OVER,
 				       shadow_pattern, NULL);
 	if (unlikely (status))
@@ -1081,7 +1082,7 @@ FINISH:
     cairo_surface_destroy (shadow_surface);
     cairo_surface_destroy (cache_surface);
 
-    if (locked)
+    if (shadow_cache_list.locked)
 	target->backend->shadow_cache_release (target);
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
@@ -1127,7 +1128,6 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     cairo_device_t       *device = target->device;
     unsigned long         size;
     cairo_surface_t	 *cache_surface = NULL;
-    cairo_bool_t          locked = FALSE;
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     cairo_shadow_cache_list_t shadow_cache_list;
@@ -1160,7 +1160,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 	     target->backend->has_shadow_cache &&
 	     target->backend->has_shadow_cache (target)) {
 	status = target->backend->shadow_cache_acquire (target);
-	locked = TRUE;
+	shadow_cache_list.locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
 	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
@@ -1281,7 +1281,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     shadow_surface_extents.width = width_out;
     shadow_surface_extents.height = height_out;
 
-    if ((locked || device) && shadow->enable_cache) {
+    if ((shadow_cache_list.locked || device) && shadow->enable_cache) {
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
@@ -1331,7 +1331,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     if (unlikely (status))
 	goto FINISH;
 
-    if ((locked || device) && shadow->enable_cache) {
+    if ((shadow_cache_list.locked || device) && shadow->enable_cache) {
 	status = _cairo_surface_mask (cache_surface, CAIRO_OPERATOR_OVER,
 				      color_pattern, shadow_pattern, NULL);
 	if (unlikely (status))
@@ -1380,7 +1380,7 @@ FINISH:
     cairo_surface_destroy (shadow_surface);
     cairo_surface_destroy (cache_surface);
 
-    if (locked)
+    if (shadow_cache_list.locked)
 	target->backend->shadow_cache_release (target);
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
@@ -1423,7 +1423,6 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     cairo_shadow_cache_t *shadow_cache = NULL;
     cairo_device_t       *device = target->device;
     unsigned long         size;
-    cairo_bool_t          locked = FALSE;
     cairo_color_t         bg_color;
     cairo_operator_t      shadow_op;
 
@@ -1435,12 +1434,13 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     if (device != NULL) {
 	shadow_cache_list.caches = &device->shadow_caches;
 	shadow_cache_list.size = device->shadow_caches_size;
+	shadow_cache_list.locked = FALSE;
     }
     else if (target->backend &&
 	     target->backend->has_shadow_cache &&
 	     target->backend->has_shadow_cache (target)) {
 	status = target->backend->shadow_cache_acquire (target);
-	locked = TRUE;
+	shadow_cache_list.locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
 	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
@@ -1565,7 +1565,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     shadow_surface_extents.width = width_out;
     shadow_surface_extents.height = height_out;
 
-    if ((locked || device) && shadow->enable_cache) {
+    if ((shadow_cache_list.locked || device) && shadow->enable_cache) {
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
@@ -1621,7 +1621,7 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
-    if ((locked || device) && shadow->enable_cache) {
+    if ((shadow_cache_list.locked || device) && shadow->enable_cache) {
 	status = _cairo_surface_paint (cache_surface, CAIRO_OPERATOR_OVER,
 				       shadow_pattern, NULL);
 
@@ -1679,7 +1679,7 @@ FINISH:
 
     cairo_surface_destroy (shadow_surface);
 
-    if (locked)
+    if (shadow_cache_list.locked)
 	target->backend->shadow_cache_release (target);
     return status;
 }
@@ -1720,7 +1720,6 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     cairo_device_t       *device = target->device;
     unsigned long         size;
     cairo_surface_t	 *cache_surface = NULL;
-    cairo_bool_t          locked = FALSE;
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
 
     cairo_shadow_cache_list_t shadow_cache_list;
@@ -1747,12 +1746,13 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     if (device != NULL) {
 	shadow_cache_list.caches = &device->shadow_caches;
 	shadow_cache_list.size = device->shadow_caches_size;
+	shadow_cache_list.locked = FALSE;
     }
     else if (target->backend &&
 	     target->backend->has_shadow_cache &&
 	     target->backend->has_shadow_cache (target)) {
 	status = target->backend->shadow_cache_acquire (target);
-	locked = TRUE;
+	shadow_cache_list.locked = TRUE;
 
 	if (status == CAIRO_STATUS_SUCCESS) {
 	    shadow_cache_list.caches = target->backend->get_shadow_cache (target);
@@ -1866,7 +1866,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     shadow_surface_extents.width = width_out;
     shadow_surface_extents.height = height_out;
 
-    if ((locked || device) && shadow->enable_cache) {
+    if ((shadow_cache_list.locked || device) && shadow->enable_cache) {
 	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
@@ -1913,7 +1913,7 @@ _cairo_surface_shadow_fill (cairo_surface_t	*target,
     if (unlikely (status))
 	goto FINISH;
 
-    if ((locked || device) && shadow->enable_cache) {
+    if ((shadow_cache_list.locked || device) && shadow->enable_cache) {
 	status = _cairo_surface_mask (cache_surface, CAIRO_OPERATOR_OVER,
 				      color_pattern, shadow_pattern, NULL);
 	if (unlikely (status))
@@ -1963,7 +1963,7 @@ FINISH:
 
     cairo_surface_destroy (shadow_surface);
 
-    if (locked)
+    if (shadow_cache_list.locked)
 	target->backend->shadow_cache_release (target);
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
 
