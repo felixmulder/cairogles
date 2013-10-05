@@ -678,7 +678,6 @@ _cairo_surface_shadow_mask (cairo_surface_t		*target,
 	height_out = MIN (shadow_width, MAX_SHADOW_SIZE) * 0.5;
 
 	content = cairo_surface_get_content (target);
-	content = cairo_surface_get_content (target);
 	if (content == CAIRO_CONTENT_COLOR)
 	    content = CAIRO_CONTENT_COLOR_ALPHA;
 	shadow_surface = cairo_surface_create_similar (target,
