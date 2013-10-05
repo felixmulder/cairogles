@@ -818,7 +818,6 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     unsigned long         size;
     cairo_surface_t	 *cache_surface = NULL;
     cairo_bool_t 	  draw_shadow_only = source->shadow.draw_shadow_only;
-    cairo_operator_t	  shadow_op;
 
     cairo_shadow_cache_list_t shadow_cache_list;
 
@@ -949,13 +948,12 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 			    shadow_copy.color.green,
 			    shadow_copy.color.blue,
 			    shadow_copy.color.alpha);
-    /* paint with offset and scale */
-    shadow_op = CAIRO_OPERATOR_CLEAR;
 
+    /* paint with offset and scale */
     status = _cairo_surface_scale_translate_stroke (shadow_surface,
 						    &bg_color,
 						    &m,
-						    shadow_op,
+						    CAIRO_OPERATOR_CLEAR,
 						    &shadow_source.base,
 						    &shadow_path,
 						    stroke_style,
@@ -1339,7 +1337,6 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
     cairo_device_t       *device = target->device;
     unsigned long         size;
     cairo_color_t         bg_color;
-    cairo_operator_t      shadow_op;
 
     cairo_shadow_cache_list_t shadow_cache_list;
 
@@ -1468,12 +1465,10 @@ _cairo_surface_inset_shadow_fill (cairo_surface_t *target,
 			    shadow_copy.color.blue,
 			    shadow_copy.color.alpha);
     /* paint with offset and scale */
-    shadow_op = CAIRO_OPERATOR_CLEAR;
-
     status = _cairo_surface_scale_translate_fill (shadow_surface,
 						  &bg_color,
 						  &m,
-						  shadow_op,
+						  CAIRO_OPERATOR_CLEAR,
 						  &shadow_source.base,
 						  &shadow_path,
 						  fill_rule,
