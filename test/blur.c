@@ -43,18 +43,6 @@ draw (cairo_t *cr, int width, int height)
 {
     const cairo_test_context_t *ctx = cairo_test_get_context (cr);
 
-    int rgba_attribs[] = {
-	GLX_RGBA,
-	GLX_RED_SIZE, 1,
-	GLX_GREEN_SIZE, 1,
-	GLX_BLUE_SIZE, 1,
-	GLX_ALPHA_SIZE, 1,
-	GLX_STENCIL_SIZE, 1,
-	GLX_SAMPLES, 4,
-	GLX_SAMPLE_BUFFERS, 1,
-	GLX_DOUBLEBUFFER,
-	None
-    };
     int line_width = 20;
     int x = width / 2;
     int y = height / 2;
