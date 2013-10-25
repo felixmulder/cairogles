@@ -507,7 +507,7 @@ _cairo_gl_subsurface_operand_init (cairo_gl_operand_t *operand,
 	return status;
 
     blur_extents.x = blur_extents.y = 0;
-    blur_extents.width = cairo_gl_surface_get_height (&surface->base);
+    blur_extents.width = cairo_gl_surface_get_width (&surface->base);
     blur_extents.height = cairo_gl_surface_get_height (&surface->base);
 
     blur_surface = _cairo_gl_gaussian_filter (dst, src, surface, &blur_extents);
@@ -659,7 +659,7 @@ _cairo_gl_surface_operand_init (cairo_gl_operand_t *operand,
 	return status;
 
     blur_extents.x = blur_extents.y = 0;
-    blur_extents.width = cairo_gl_surface_get_height (&surface->base);
+    blur_extents.width = cairo_gl_surface_get_width (&surface->base);
     blur_extents.height = cairo_gl_surface_get_height (&surface->base);
 
     blur_surface = _cairo_gl_gaussian_filter (dst, src, surface, &blur_extents);
