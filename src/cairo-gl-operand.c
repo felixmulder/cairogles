@@ -255,8 +255,8 @@ _cairo_gl_image_cache_add_image (cairo_gl_context_t *ctx,
     int image_cache_size;
 
     if (! image->base.device ||
-	(image->width > IMAGE_CACHE_MAX_SIZE ||
-	image->height > IMAGE_CACHE_MAX_SIZE))
+	(image->width >= IMAGE_CACHE_MAX_SIZE ||
+	 image->height >= IMAGE_CACHE_MAX_SIZE))
 	return CAIRO_INT_STATUS_UNSUPPORTED;
     else if (! _cairo_gl_surface_is_texture (image))
         return CAIRO_INT_STATUS_UNSUPPORTED;
