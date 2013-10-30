@@ -1069,6 +1069,7 @@ _cairo_gstate_paint (cairo_gstate_t *gstate)
     const cairo_pattern_t *pattern;
     cairo_status_t status;
     cairo_operator_t op;
+    cairo_bool_t destroy_pattern = FALSE;
 
     status = _cairo_gstate_get_pattern_status (gstate->source);
     if (unlikely (status))
@@ -1085,9 +1086,14 @@ _cairo_gstate_paint (cairo_gstate_t *gstate)
 
     op = _reduce_op (gstate);
     /* do not use static pattern */
-    /*if (op == CAIRO_OPERATOR_CLEAR) {
-	pattern = &_cairo_pattern_clear.base;
-    } else */ {
+    if (op == CAIRO_OPERATOR_CLEAR) {
+	if (! _cairo_gstate_has_shadow (gstate)) 
+	    pattern = &_cairo_pattern_clear.base;
+	else {
+	    pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
+	    destroy_pattern = TRUE;
+	}
+    } else {
 	_cairo_gstate_copy_transformed_source (gstate, &source_pattern.base);
 	pattern = &source_pattern.base;
     }
@@ -1096,9 +1102,13 @@ _cairo_gstate_paint (cairo_gstate_t *gstate)
     if (_cairo_gstate_has_shadow (gstate))
 	((cairo_pattern_t *)pattern)->shadow = gstate->shadow;
 
-    return _cairo_surface_paint (gstate->target,
-				 op, pattern,
-				 gstate->clip);
+    status = _cairo_surface_paint (gstate->target,
+				   op, pattern,
+				   gstate->clip);
+    if (destroy_pattern)
+	cairo_pattern_destroy ((cairo_pattern_t *)pattern);
+
+    return status;
 }
 
 cairo_status_t
@@ -1109,6 +1119,7 @@ _cairo_gstate_mask (cairo_gstate_t  *gstate,
     const cairo_pattern_t *source;
     cairo_operator_t op;
     cairo_status_t status;
+    cairo_bool_t destroy_pattern = FALSE;
 
     status = _cairo_gstate_get_pattern_status (mask);
     if (unlikely (status))
@@ -1142,9 +1153,14 @@ _cairo_gstate_mask (cairo_gstate_t  *gstate,
     }
 
     op = _reduce_op (gstate);
-    /*if (op == CAIRO_OPERATOR_CLEAR) {
-	source = &_cairo_pattern_clear.base;
-    } else */ {
+    if (op == CAIRO_OPERATOR_CLEAR) {
+	if (! _cairo_gstate_has_shadow (gstate))
+	    source = &_cairo_pattern_clear.base;
+	else {
+	    source = cairo_pattern_create_rgba (0, 0, 0, 0);
+	    destroy_pattern = TRUE;
+	}
+    } else {
 	_cairo_gstate_copy_transformed_source (gstate, &source_pattern.base);
 	source = &source_pattern.base;
     }
@@ -1187,6 +1203,9 @@ _cairo_gstate_mask (cairo_gstate_t  *gstate,
 				      &mask_pattern.base,
 				      gstate->clip);
     }
+
+    if (destroy_pattern)
+	cairo_pattern_destroy ((cairo_pattern_t *)source);
 
     return status;
 }
@@ -1308,6 +1327,7 @@ _cairo_gstate_fill (cairo_gstate_t *gstate, cairo_path_fixed_t *path)
 {
     cairo_status_t status;
     const cairo_pattern_t *pattern;
+    cairo_bool_t destroy_pattern = FALSE;
 
     status = _cairo_gstate_get_pattern_status (gstate->source);
     if (unlikely (status))
@@ -1341,9 +1361,14 @@ _cairo_gstate_fill (cairo_gstate_t *gstate, cairo_path_fixed_t *path)
 
 	op = _reduce_op (gstate);
 	/* FIXME: I don't like this */
-	/*if (op == CAIRO_OPERATOR_CLEAR) {
-	    pattern = &_cairo_pattern_clear.base;
-	} else */ {
+	if (op == CAIRO_OPERATOR_CLEAR) {
+	    if (_cairo_gstate_has_shadow (gstate)) 
+		pattern = &_cairo_pattern_clear.base;
+	    else {
+		pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
+		destroy_pattern = TRUE;
+	    }
+	} else {
 	    _cairo_gstate_copy_transformed_source (gstate, &source_pattern.base);
 	    pattern = &source_pattern.base;
 	}
@@ -1374,6 +1399,9 @@ _cairo_gstate_fill (cairo_gstate_t *gstate, cairo_path_fixed_t *path)
 					  gstate->clip);
 	}
     }
+
+    if (destroy_pattern)
+	cairo_pattern_destroy ((cairo_pattern_t *)pattern);
 
     return status;
 }
