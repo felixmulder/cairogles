@@ -46,6 +46,7 @@ CAIRO_BEGIN_DECLS
 
 cairo_private cairo_status_t
 _cairo_surface_scale_translate_paint (cairo_surface_t *target,
+				      const cairo_bool_t clear_bg,
 				      const cairo_matrix_t *matrix,
 				      cairo_operator_t	 op,
 				      cairo_pattern_t *source,
@@ -62,6 +63,7 @@ _cairo_surface_paint_get_offset_extents (cairo_surface_t *target,
 
 cairo_private cairo_status_t
 _cairo_surface_scale_translate_mask (cairo_surface_t *target,
+				     const cairo_bool_t clear_bg,
 				     const cairo_matrix_t *matrix,
 				     cairo_operator_t	 op,
 				     cairo_pattern_t *source,

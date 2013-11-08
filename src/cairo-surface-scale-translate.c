@@ -66,6 +66,7 @@ _transformed_pattern (cairo_pattern_t *pattern,
 
 cairo_status_t
 _cairo_surface_scale_translate_paint (cairo_surface_t	    *target,
+				      const cairo_bool_t     clear_bg,
 				      const cairo_matrix_t  *matrix,
 				      cairo_operator_t	     op,
 				      cairo_pattern_t *source,
@@ -93,10 +94,12 @@ _cairo_surface_scale_translate_paint (cairo_surface_t	    *target,
 	_transformed_pattern (source, &m);
     }
 
-    clear_pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
-    status = _cairo_surface_paint (target, CAIRO_OPERATOR_SOURCE,
-				   clear_pattern, dev_clip);
-    cairo_pattern_destroy (clear_pattern);
+    if (clear_bg) {
+	clear_pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
+	status = _cairo_surface_paint (target, CAIRO_OPERATOR_SOURCE,
+				       clear_pattern, dev_clip);
+	cairo_pattern_destroy (clear_pattern);
+    }
 
     status = _cairo_surface_paint (target, op, source, dev_clip);
 
@@ -163,6 +166,7 @@ _cairo_surface_paint_get_offset_extents (cairo_surface_t *target,
 
 cairo_status_t
 _cairo_surface_scale_translate_mask (cairo_surface_t *target,
+				     const cairo_bool_t clear_bg,
 				     const cairo_matrix_t *matrix,
 				     cairo_operator_t	 op,
 				     cairo_pattern_t *source,
@@ -192,10 +196,12 @@ _cairo_surface_scale_translate_mask (cairo_surface_t *target,
 	_transformed_pattern (mask, &m);
     }
 
-    clear_pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
-    status = _cairo_surface_paint (target, CAIRO_OPERATOR_SOURCE,
-				   clear_pattern, dev_clip);
-    cairo_pattern_destroy (clear_pattern);
+    if (clear_bg) {
+	clear_pattern = cairo_pattern_create_rgba (0, 0, 0, 0);
+	status = _cairo_surface_paint (target, CAIRO_OPERATOR_SOURCE,
+				       clear_pattern, dev_clip);
+	cairo_pattern_destroy (clear_pattern);
+    }
 
     status = _cairo_surface_mask (target, op,
 				  source, mask,
@@ -327,10 +333,12 @@ _cairo_surface_scale_translate_stroke (cairo_surface_t *surface,
 	}
     }
 
-    clear_pattern = _cairo_pattern_create_solid (bg_color);
-    status = _cairo_surface_paint (surface, CAIRO_OPERATOR_SOURCE,
+    if (bg_color) {
+	clear_pattern = _cairo_pattern_create_solid (bg_color);
+	status = _cairo_surface_paint (surface, CAIRO_OPERATOR_SOURCE,
 				   clear_pattern, dev_clip);
-    cairo_pattern_destroy (clear_pattern);
+	cairo_pattern_destroy (clear_pattern);
+    }
 
     status = _cairo_surface_stroke (surface, op, source,
 				    dev_path, &style_copy,
@@ -586,10 +594,12 @@ _cairo_surface_translate_glyphs (cairo_surface_t 	*surface,
 	}
     }
 
-    clear_pattern = _cairo_pattern_create_solid (bg_color);
-    status = _cairo_surface_paint (surface, CAIRO_OPERATOR_SOURCE,
+    if (bg_color) {
+	clear_pattern = _cairo_pattern_create_solid (bg_color);
+	status = _cairo_surface_paint (surface, CAIRO_OPERATOR_SOURCE,
 				   clear_pattern, NULL);
-    cairo_pattern_destroy (clear_pattern);
+	cairo_pattern_destroy (clear_pattern);
+    }
 
     status = _cairo_surface_show_text_glyphs (surface, op, source,
 					      NULL, 0,

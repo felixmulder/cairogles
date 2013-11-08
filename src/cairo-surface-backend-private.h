@@ -203,6 +203,7 @@ struct _cairo_surface_backend {
 
     cairo_surface_t *
     (*get_shadow_surface) 	(void	*surface,
+				 const cairo_bool_t has_blur,
 				 int	 width,
 				 int	 height,
 				 int    *width_out,
