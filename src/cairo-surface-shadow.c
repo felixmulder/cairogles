@@ -878,6 +878,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     cairo_shadow_type_t   shadow_type = source->shadow.type;
     cairo_bool_t          has_blur = ! (source->shadow.x_blur == 0.0 &&
 					source->shadow.y_blur == 0.0);
+    double                line_width = stroke_style->line_width;
 
     cairo_shadow_cache_list_t shadow_cache_list;
 
@@ -1001,6 +1002,8 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
     scale = _calculate_shadow_extents_scale (&shadow_surface_extents,
 					     shadow_width,
 					     shadow_height);
+    if (line_width * scale <= 1.0) 
+	((cairo_stroke_style_t *)stroke_style)->line_width = line_width / scale;
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -1034,7 +1037,7 @@ _cairo_surface_inset_shadow_stroke (cairo_surface_t		*target,
 			     shadow_copy.y_blur * scale * 0.5);
 
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern,
-						    stroke_style->line_width);
+						    line_width * scale);
     if (unlikely (status))
 	goto FINISH;
 
@@ -1099,6 +1102,7 @@ FINISH:
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     ((cairo_pattern_t *)source)->shadow.type = shadow_type;
+    ((cairo_stroke_style_t *)stroke_style)->line_width = line_width;
     return status;
 }
 
@@ -1144,6 +1148,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     cairo_shadow_type_t   shadow_type = source->shadow.type;
     cairo_bool_t          has_blur = ! (source->shadow.x_blur == 0.0 &&
 					source->shadow.y_blur == 0.0);
+    double		  line_width = stroke_style->line_width;
 
     cairo_shadow_cache_list_t shadow_cache_list;
 
@@ -1280,6 +1285,10 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
     scale = _calculate_shadow_extents_scale (&shadow_surface_extents,
 					     shadow_width,
 					     shadow_height);
+
+    if (line_width * scale <= 1.0) 
+	((cairo_stroke_style_t *)stroke_style)->line_width = line_width / scale;
+
     cairo_matrix_init_scale (&m, scale, scale);
     cairo_matrix_translate (&m, -x_offset, -y_offset);
 
@@ -1308,7 +1317,7 @@ _cairo_surface_shadow_stroke (cairo_surface_t		*target,
 			     shadow_copy.y_blur * scale * 0.5);
 
     status = _cairo_pattern_create_gaussian_matrix (shadow_pattern,
-						    stroke_style->line_width);
+						    line_width * scale);
     if (unlikely (status))
 	goto FINISH;
 
@@ -1367,6 +1376,7 @@ FINISH:
 
     ((cairo_pattern_t *)source)->shadow.draw_shadow_only = draw_shadow_only;
     ((cairo_pattern_t *)source)->shadow.type = shadow_type;
+    ((cairo_stroke_style_t *)stroke_style)->line_width = line_width;
     return status;
 }
 
