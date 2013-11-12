@@ -365,6 +365,7 @@ _cairo_gl_context_destroy_operand (cairo_gl_context_t *ctx,
     case CAIRO_GL_OPERAND_CONSTANT:
 	if (ctx->operands[tex_unit].constant.encode_as_attribute)
 	    dispatch->DisableVertexAttribArray (CAIRO_GL_COLOR_ATTRIB_INDEX);
+	break;
     case CAIRO_GL_OPERAND_TEXTURE:
     case CAIRO_GL_OPERAND_GAUSSIAN:
         dispatch->DisableVertexAttribArray (CAIRO_GL_TEXCOORD0_ATTRIB_INDEX + tex_unit);
