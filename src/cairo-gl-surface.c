@@ -1304,8 +1304,10 @@ _cairo_gl_surface_draw_image (cairo_gl_surface_t *dst,
 	/* we must resolve the renderbuffer to texture before we
 	   upload image */
 	status = _cairo_gl_surface_resolve_multisampling (dst);
-	if (unlikely (status))
+	if (unlikely (status)) {
+	    free (data_start_gles2);
 	    goto FAIL;
+	}
 
         _cairo_gl_context_activate (ctx, CAIRO_GL_TEX_TEMP);
 	glBindTexture (ctx->tex_target, dst->tex);
