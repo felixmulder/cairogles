@@ -674,9 +674,9 @@ _cairo_gl_surface_operand_init (cairo_gl_operand_t *operand,
 
     operand->texture.texgen = use_texgen;
 
-    if (blur_surface == surface && 
-	surface->needs_to_cache &&
-	surface->base.device) {
+    if (surface->base.device  &&
+	blur_surface == surface && 
+	surface->needs_to_cache) {
         status = _cairo_gl_context_acquire (dst->base.device, &ctx);
         if (status == CAIRO_INT_STATUS_SUCCESS) {
             ctx_acquired = TRUE;
