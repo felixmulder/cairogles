@@ -433,6 +433,44 @@ _cairo_gl_msaa_compositor_set_clip (cairo_composite_rectangles_t *composite,
     composite->is_bounded = is_bounded;
 }
 
+static cairo_bool_t
+_pattern_is_pixel_aligned (const cairo_pattern_t *pattern)
+{
+    long xoffset, yoffset;
+
+    if (!pattern)
+	return TRUE;
+
+    xoffset = pattern->matrix.x0;
+    yoffset = pattern->matrix.y0;
+
+    if (pattern->matrix.xx != 1.0 ||
+	pattern->matrix.xy != 0.0 ||
+	pattern->matrix.yy != 1.0 ||
+	pattern->matrix.yx != 1.0 ||
+	pattern->matrix.x0 != xoffset ||
+	pattern->matrix.y0 != yoffset)
+	return FALSE;
+    return TRUE;
+}
+
+static cairo_bool_t
+_clip_is_pixel_aligned (const cairo_clip_t *clip)
+{
+    if (!clip)
+	return TRUE;
+
+    if (clip->path || clip->num_boxes > 1)
+	return FALSE;
+
+    if (_cairo_fixed_is_integer (clip->boxes[0].p1.x) &&
+	_cairo_fixed_is_integer (clip->boxes[0].p1.y) &&
+	_cairo_fixed_is_integer (clip->boxes[0].p2.x) &&
+	_cairo_fixed_is_integer (clip->boxes[0].p2.y))
+	return TRUE;
+    return FALSE;
+}
+
 /* Masking with the SOURCE operator requires two passes. In the first
  * pass we use the mask as the source to get:
  * result = (1 - ma) * dst
@@ -452,6 +490,10 @@ _cairo_gl_msaa_compositor_mask_source_operator (const cairo_compositor_t *compos
 
     cairo_clip_t *clip = composite->clip;
     cairo_traps_t traps;
+    cairo_bool_t is_pixel_aligned =
+	_pattern_is_pixel_aligned (composite->original_source_pattern) &&
+	_pattern_is_pixel_aligned (composite->original_mask_pattern) &&
+	_clip_is_pixel_aligned (clip);
 
     /* If we have a non-rectangular clip, we can avoid using the stencil buffer
      * for clipping and just draw the clip polygon. */
@@ -463,9 +505,11 @@ _cairo_gl_msaa_compositor_mask_source_operator (const cairo_compositor_t *compos
 	}
     }
 
-    status = _blit_texture_to_renderbuffer (dst);
-    if (unlikely (status))
-	return status;
+    if (! is_pixel_aligned) {
+	status = _blit_texture_to_renderbuffer (dst);
+	if (unlikely (status))
+	    return status;
+    }
 
     status = _cairo_gl_composite_init (&setup,
 				       CAIRO_OPERATOR_DEST_OUT,
@@ -481,7 +525,8 @@ _cairo_gl_msaa_compositor_mask_source_operator (const cairo_compositor_t *compos
     if (unlikely (status))
 	goto finish;
 
-    _cairo_gl_composite_set_multisample (&setup);
+    if (! is_pixel_aligned || dst->msaa_active)
+	_cairo_gl_composite_set_multisample (&setup);
 
     status = _cairo_gl_composite_begin (&setup, &ctx);
     if (unlikely (status))
@@ -548,6 +593,7 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
     cairo_int_status_t status;
     cairo_operator_t op = composite->op;
     cairo_clip_t *clip = composite->clip;
+    cairo_bool_t is_pixel_aligned = FALSE;
 
     if (! can_use_msaa_compositor (dst, CAIRO_ANTIALIAS_DEFAULT))
 	return CAIRO_INT_STATUS_UNSUPPORTED;
@@ -602,9 +648,16 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
 	return _paint_back_unbounded_surface (compositor, composite, surface);
     }
 
-    status = _blit_texture_to_renderbuffer (dst);
-    if (unlikely (status))
-	return status;
+    if (_pattern_is_pixel_aligned (composite->original_source_pattern) &&
+	_pattern_is_pixel_aligned (composite->original_mask_pattern) &&
+	_clip_is_pixel_aligned (composite->clip))
+	is_pixel_aligned = TRUE;
+
+    if (! is_pixel_aligned) {
+	status = _blit_texture_to_renderbuffer (dst);
+	if (unlikely (status))
+	    return status;
+    }
 
     status = _cairo_gl_composite_init (&setup,
 				       op,
@@ -631,9 +684,10 @@ _cairo_gl_msaa_compositor_mask (const cairo_compositor_t	*compositor,
     if (unlikely (status))
 	goto finish;
 
-    /* We always use multisampling here, because we do not yet have the smarts
-       to calculate when the clip or the source requires it. */
-     _cairo_gl_composite_set_multisample (&setup);
+    /* if the source, mask and clip are pixel-aligned and
+       msaa is not active, we paint to texture directly */
+    if (! is_pixel_aligned || dst->msaa_active)
+	_cairo_gl_composite_set_multisample (&setup);
 
     status = _cairo_gl_composite_begin (&setup, &ctx);
 
