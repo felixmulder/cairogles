@@ -1299,6 +1299,7 @@ _cairo_image_surface_get_font_options (void                  *abstract_surface,
 
 static cairo_surface_t *
 _cairo_image_surface_shadow_surface (void *surface,
+				     cairo_bool_t has_blur,
 				     int width, int height,
 				     int *width_out, int *height_out)
 {
@@ -1307,21 +1308,37 @@ _cairo_image_surface_shadow_surface (void *surface,
 
     if (width < MIN_IMAGE_SHADOW_SIZE)
 	shadow_width = width;
-    else if (width < MIN_IMAGE_SHADOW_SIZE * 2)
-	shadow_width = MIN_IMAGE_SHADOW_SIZE;
-    else if (width > MAX_IMAGE_SHADOW_SIZE * 2)
-	shadow_width = MAX_IMAGE_SHADOW_SIZE;
-    else
-	shadow_width = width * 0.5;
-
+    else if (has_blur) {
+	if (width < MIN_IMAGE_SHADOW_SIZE * 2)
+	    shadow_width = MIN_IMAGE_SHADOW_SIZE;
+	else if (width > MAX_IMAGE_SHADOW_SIZE * 2)
+	    shadow_width = MAX_IMAGE_SHADOW_SIZE;
+	else
+	    shadow_width = width * 0.5;
+    }
+    else {
+	if (width > MAX_IMAGE_SHADOW_SIZE)
+	    shadow_width = MAX_IMAGE_SHADOW_SIZE;
+	else
+	    shadow_width = width;
+    }
+	
     if (height < MIN_IMAGE_SHADOW_SIZE)
 	shadow_height = height;
-    else if (height < MIN_IMAGE_SHADOW_SIZE * 2)
-	shadow_height = MIN_IMAGE_SHADOW_SIZE;
-    else if (height > MAX_IMAGE_SHADOW_SIZE * 2)
-	shadow_height = MAX_IMAGE_SHADOW_SIZE;
-    else
-	shadow_height = height * 0.5;
+    else if (has_blur) {
+	if (height < MIN_IMAGE_SHADOW_SIZE * 2)
+	    shadow_height = MIN_IMAGE_SHADOW_SIZE;
+	else if (height > MAX_IMAGE_SHADOW_SIZE * 2)
+	    shadow_height = MAX_IMAGE_SHADOW_SIZE;
+	else
+	    shadow_height = height * 0.5;
+    }
+    else {
+	if (height > MAX_IMAGE_SHADOW_SIZE)
+	    shadow_height = MAX_IMAGE_SHADOW_SIZE;
+	else
+	    shadow_height = height;
+    }
 
     shadow_surface = (cairo_image_surface_t *)
 		cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
