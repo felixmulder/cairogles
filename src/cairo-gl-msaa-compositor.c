@@ -906,9 +906,24 @@ _cairo_gl_msaa_compositor_stroke (const cairo_compositor_t	*compositor,
     cairo_gl_surface_t *dst = (cairo_gl_surface_t *) composite->surface;
     struct _tristrip_composite_info info;
     cairo_bool_t use_color_attribute;
+    cairo_rectangle_int_t stroke_extents;
 
     if (! can_use_msaa_compositor (dst, antialias))
 	return CAIRO_INT_STATUS_UNSUPPORTED;
+
+    if (! _cairo_path_fixed_stroke_is_rectilinear (path)) {
+	_cairo_path_fixed_approximate_fill_extents (path, &stroke_extents);
+
+	if (stroke_extents.width != 0 &&
+	    stroke_extents.height != 0) {
+	    if ((stroke_extents.width / stroke_extents.height > 10  && 
+		 stroke_extents.height < 10) ||
+		(stroke_extents.height / stroke_extents.width > 10 && 
+		 stroke_extents.width < 10)) {
+		return CAIRO_INT_STATUS_UNSUPPORTED;
+	    }
+	}
+    }
 
     if (composite->is_bounded == FALSE) {
 	cairo_surface_t* surface = _prepare_unbounded_surface (dst);
@@ -1073,9 +1088,23 @@ _cairo_gl_msaa_compositor_fill (const cairo_compositor_t	*compositor,
     cairo_int_status_t status;
     cairo_traps_t traps;
     cairo_bool_t draw_path_with_traps;
+    cairo_rectangle_int_t fill_extents;
 
     if (! can_use_msaa_compositor (dst, antialias))
 	return CAIRO_INT_STATUS_UNSUPPORTED;
+
+    if (! _cairo_path_fixed_fill_is_rectilinear (path)) {
+	_cairo_path_fixed_approximate_fill_extents (path, &fill_extents);
+
+	if (fill_extents.width != 0 && fill_extents.height != 0) {
+	    if ((fill_extents.width / fill_extents.height > 10  && 
+		 fill_extents.height < 10) ||
+		(fill_extents.height / fill_extents.width > 10 && 
+		 fill_extents.width < 10)) {
+		return CAIRO_INT_STATUS_UNSUPPORTED;
+	    }
+	}
+    }
 
     if (composite->is_bounded == FALSE) {
 	cairo_surface_t* surface = _prepare_unbounded_surface (dst);
