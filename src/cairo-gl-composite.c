@@ -797,8 +797,8 @@ _cairo_gl_set_operands_and_operator (cairo_gl_composite_t *setup,
 	! setup->src.constant.encode_as_attribute)
 	_cairo_gl_context_setup_spans (ctx,
 				       setup->spans,
-				       setup->src.type == CAIRO_GL_OPERAND_CONSTANT &&
-				       setup->src.constant.encode_as_attribute,
+				       setup->src.type == CAIRO_GL_OPERAND_CONSTANT ||
+				       ! setup->src.constant.encode_as_attribute,
 				       vertex_size,
 				       dst_size + src_size + mask_size);
 
@@ -843,7 +843,9 @@ _cairo_gl_composite_begin (cairo_gl_composite_t *setup,
 	glEnable (GL_BLEND);
 	ctx->states_cache.blend_enabled = TRUE;
     }
-    _cairo_gl_set_operands_and_operator (setup, ctx);
+    status = _cairo_gl_set_operands_and_operator (setup, ctx);
+    if (unlikely (status))
+	goto FAIL;
 
     status = _cairo_gl_composite_setup_clipping (setup, ctx, ctx->vertex_size);
     if (unlikely (status))
