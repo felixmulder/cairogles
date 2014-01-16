@@ -1036,6 +1036,8 @@ _cairo_stroker_spline_to (void *closure,
     double slope_dx, slope_dy;
     cairo_point_t points[3];
     cairo_point_t intersect_point;
+    cairo_line_join_t line_join_save;
+    cairo_status_t status;
 
     stroker->has_initial_sub_path = TRUE;
 
@@ -1081,6 +1083,23 @@ _cairo_stroker_spline_to (void *closure,
     points[2] = new_face.ccw;
     stroker->add_triangle (stroker->closure, points);
     }
+
+    /* compute join */
+    /* Temporarily modify the stroker to use round joins to guarantee
+     * smooth stroked curves. */
+    line_join_save = stroker->style.line_join;
+    stroker->style.line_join = CAIRO_LINE_JOIN_ROUND;
+
+    if (! stroker->dash.dashed || stroker->dash.dash_on) {
+	if (stroker->has_current_face) {
+	    status = _cairo_stroker_join (stroker,
+					  &stroker->current_face, &new_face);
+	    if (unlikely (status))
+		return status;
+	}
+    }
+
+    stroker->style.line_join = line_join_save;
 
     stroker->current_face = new_face;
     stroker->has_current_face = TRUE;
