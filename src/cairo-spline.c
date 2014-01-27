@@ -262,6 +262,12 @@ _cairo_spline_decompose (cairo_spline_t *spline, double tolerance)
     cairo_spline_knots_t s1;
     cairo_status_t status;
 
+    /* this is the entry point for spline decompose, we adjust the
+       final_slope if b, c, d are very close
+     */
+    if (_cairo_spline_error_squared (&spline->knots) < tolerance * tolerance)
+	spline->final_slope = spline->initial_slope;
+
     s1 = spline->knots;
     spline->last_point = s1.a;
     status = _cairo_spline_decompose_into (&s1, tolerance * tolerance, spline);
