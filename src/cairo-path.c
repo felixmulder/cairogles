@@ -342,7 +342,7 @@ _cairo_path_create_internal (cairo_path_fixed_t *path_fixed,
 	path->data = NULL;
 	path->status = CAIRO_STATUS_SUCCESS;
     }
-
+    path->is_convex = path_fixed->is_convex;
     return path;
 }
 

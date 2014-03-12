@@ -38,6 +38,7 @@
 
 #include "cairo-box-inline.h"
 #include "cairo-slope-private.h"
+#include "cairo-convex-fill-private.h"
 
 cairo_bool_t
 _cairo_spline_intersects (const cairo_point_t *a,

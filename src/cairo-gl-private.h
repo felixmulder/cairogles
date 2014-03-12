@@ -825,6 +825,12 @@ _cairo_gl_composite_emit_triangle_as_tristrip (cairo_gl_context_t	*ctx,
 					       const cairo_point_t	 triangle[3]);
 
 cairo_private cairo_int_status_t
+_cairo_gl_composite_emit_triangle_fan (cairo_gl_context_t     *ctx,
+				       cairo_gl_composite_t   *setup,
+				       const cairo_point_t    *fan,
+                                       int                     count);
+
+cairo_private cairo_int_status_t
 _cairo_gl_composite_emit_point_as_tristrip_line (cairo_gl_context_t  *ctx,
 						 const cairo_point_t point[2],
 						 cairo_bool_t	     start_point);

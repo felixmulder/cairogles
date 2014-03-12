@@ -101,6 +101,7 @@ typedef struct _cairo_path_buf_fixed {
 struct _cairo_path_fixed {
     cairo_point_t last_move_point;
     cairo_point_t current_point;
+    cairo_point_t start_point;
     unsigned int has_current_point	: 1;
     unsigned int needs_move_to		: 1;
     unsigned int has_extents		: 1;
@@ -113,6 +114,7 @@ struct _cairo_path_fixed {
     cairo_box_t extents;
 
     cairo_path_buf_fixed_t  buf;
+    unsigned int is_convex         	: 1;
 };
 
 cairo_private void

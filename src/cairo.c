@@ -1635,7 +1635,6 @@ cairo_arc (cairo_t *cr,
 	    angle2 += 2 * M_PI;
 	angle2 += angle1;
     }
-
     status = cr->backend->arc (cr, xc, yc, radius, angle1, angle2, TRUE);
     if (unlikely (status))
 	_cairo_set_error (cr, status);

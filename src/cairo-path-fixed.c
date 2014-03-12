@@ -86,6 +86,7 @@ _cairo_path_fixed_init (cairo_path_fixed_t *path)
     path->current_point.x = 0;
     path->current_point.y = 0;
     path->last_move_point = path->current_point;
+    path->start_point = path->current_point;
 
     path->has_current_point = FALSE;
     path->needs_move_to = TRUE;
@@ -95,6 +96,7 @@ _cairo_path_fixed_init (cairo_path_fixed_t *path)
     path->fill_is_rectilinear = TRUE;
     path->fill_maybe_region = TRUE;
     path->fill_is_empty = TRUE;
+    path->is_convex = TRUE;
 
     path->extents.p1.x = path->extents.p1.y = 0;
     path->extents.p2.x = path->extents.p2.y = 0;
@@ -132,6 +134,9 @@ _cairo_path_fixed_init_copy (cairo_path_fixed_t *path,
 
     path->buf.base.num_ops = other->buf.base.num_ops;
     path->buf.base.num_points = other->buf.base.num_points;
+
+    path->is_convex = other->is_convex;
+
     memcpy (path->buf.op, other->buf.base.op,
 	    other->buf.base.num_ops * sizeof (other->buf.op[0]));
     memcpy (path->buf.points, other->buf.points,
@@ -408,6 +413,11 @@ _cairo_path_fixed_move_to (cairo_path_fixed_t  *path,
     path->current_point.y = y;
     path->last_move_point = path->current_point;
 
+    if (_cairo_path_fixed_is_empty (path))
+	path->is_convex = TRUE;
+    else
+	path->is_convex = FALSE;
+
     return CAIRO_STATUS_SUCCESS;
 }
 
@@ -449,6 +459,11 @@ _cairo_path_fixed_new_sub_path (cairo_path_fixed_t *path)
 	}
 	path->needs_move_to = TRUE;
     }
+
+    if (_cairo_path_fixed_is_empty (path))
+	path->is_convex = TRUE;
+    else
+	path->is_convex = FALSE;
 
     path->has_current_point = FALSE;
 }
@@ -548,6 +563,13 @@ _cairo_path_fixed_line_to (cairo_path_fixed_t *path,
 
     _cairo_box_add_point (&path->extents, &point);
 
+    /* if line to point does not match start point, is_convex false */
+    if (path->is_convex) {
+	if (path->start_point.x != x &&
+	    path->start_point.y != y)
+	    path->is_convex = FALSE;
+    }
+
     return _cairo_path_fixed_add (path, CAIRO_PATH_OP_LINE_TO, &point, 1);
 }
 
@@ -619,6 +641,8 @@ _cairo_path_fixed_curve_to (cairo_path_fixed_t	*path,
     path->fill_is_rectilinear = FALSE;
     path->fill_maybe_region = FALSE;
     path->fill_is_empty = FALSE;
+
+    path->is_convex = FALSE;
 
     return _cairo_path_fixed_add (path, CAIRO_PATH_OP_CURVE_TO, point, 3);
 }
@@ -1451,6 +1475,19 @@ _cairo_path_fixed_is_single_line (const cairo_path_fixed_t *path)
 
     return buf->op[0] == CAIRO_PATH_OP_MOVE_TO &&
 	buf->op[1] == CAIRO_PATH_OP_LINE_TO;
+}
+
+cairo_bool_t
+_cairo_path_fixed_is_empty (const cairo_path_fixed_t *path)
+{
+    unsigned int i;
+    const cairo_path_buf_t *buf = cairo_path_head (path);
+    for (i = 0; i < buf->num_ops; i++) {
+	if (buf->op[i] != CAIRO_PATH_OP_MOVE_TO)
+	    return FALSE;
+    }
+
+    return TRUE;
 }
 
 cairo_bool_t
