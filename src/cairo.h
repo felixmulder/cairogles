@@ -892,6 +892,13 @@ cairo_rectangle (cairo_t *cr,
 		 double x, double y,
 		 double width, double height);
 
+cairo_public void
+cairo_rounded_rectangle (cairo_t *cr,
+			 double x, double y,
+			 double width, double height,
+			 double r_top_left,    double r_top_right,
+			 double r_bottom_left, double r_bottom_right);
+
 /* XXX: NYI
 cairo_public void
 cairo_stroke_to_path (cairo_t *cr);

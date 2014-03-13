@@ -1867,6 +1867,53 @@ cairo_rectangle (cairo_t *cr,
 	_cairo_set_error (cr, status);
 }
 
+/**
+ * cairo_rounded_rectangle:
+ * @cr: a cairo context
+ * @x: the X coordinate of the top left corner of the rectangle
+ * @y: the Y coordinate to the top left corner of the rectangle
+ * @width: the width of the rectangle
+ * @height: the height of the rectangle
+ * @r_top_left: top left corner radius
+ * @r_top_right: top right corner radius
+ * @r_bottom_left: bottom left corner radius
+ * @r_bottom_left: top left corner radius
+ *
+ * Adds a closed sub-path roundedrectangle of the given size to the current
+ * path at position (@x, @y) in user-space coordinates.
+ *
+ * This function is logically equivalent to:
+ * <informalexample><programlisting>
+ * cairo_move_to (cr, x, y + r_top_left)
+ * cairo_rel_curve_to (cr, ....)
+ * cairo_rel_line_to (cr, ....)
+ * cairo_rel_curve_to (cr, ....)
+ * cairo_line_to (cr, ....)
+ * cairo_rel_curve_to (cr, ....)
+ * cairo_close_path (cr)
+ * </programlisting></informalexample>
+ *
+ * Since: 1.12
+ **/
+void
+cairo_rounded_rectangle (cairo_t *cr,
+			 double x, double y,
+			 double width, double height,
+			 double r_top_left, double r_top_right,
+			 double r_bottom_left, double r_bottom_right)
+{
+    cairo_status_t status;
+
+    if (unlikely (cr->status))
+	return;
+
+    status = cr->backend->rounded_rectangle (cr, x, y, width, height,
+					     r_top_left, r_top_right,
+					     r_bottom_left, r_bottom_right);
+    if (unlikely (status))
+	_cairo_set_error (cr, status);
+}
+
 #if 0
 /* XXX: NYI */
 void

@@ -116,6 +116,7 @@ struct _cairo_backend {
 
     cairo_status_t (*arc) (void *cr, double xc, double yc, double radius, double angle1, double angle2, cairo_bool_t forward);
     cairo_status_t (*rectangle) (void *cr, double x, double y, double width, double height);
+    cairo_status_t (*rounded_rectangle) (void *cr, double x, double y, double width, double height, double r_top_left, double r_top_right, double r_bottom_left, double r_bottom_right);
 
     void (*path_extents) (void *cr, double *x1, double *y1, double *x2, double *y2);
     cairo_bool_t (*has_current_point) (void *cr);

@@ -889,6 +889,161 @@ _cairo_default_context_rectangle (void *abstract_cr,
     return _cairo_default_context_close_path (cr);
 }
 
+static cairo_status_t
+_cairo_default_context_rounded_rectangle_curve_to (void *abstract_cr,
+						   double xc, double yc, 
+						   double radius,
+						   double angle_a,
+						   double angle_b)
+{
+    double sin_a, cos_a;
+    double sin_b, cos_b;
+    double h;
+
+    sin_a = radius * sin (angle_a);
+    cos_a = radius * cos (angle_a);
+    sin_b = radius * sin (angle_b);
+    cos_b = radius * cos (angle_b);
+    h = 4.0/3.0 * tan ((angle_b - angle_a) / 4.0);
+    return _cairo_default_context_curve_to (abstract_cr,
+					    xc + cos_a - h * sin_a,
+					    yc + sin_a + h * cos_a,
+					    xc + cos_b + h * sin_b,
+					    yc + sin_b - h * cos_b,
+					    xc + cos_b, yc + sin_b);
+}
+
+static cairo_status_t
+_cairo_default_context_rounded_rectangle (void *abstract_cr,
+					  double x, double y,
+					  double width, double height,
+					  double r_top_left, double r_top_right,
+					  double r_bottom_left, double r_bottom_right)
+{
+    cairo_default_context_t *cr = abstract_cr;
+    cairo_status_t status;
+    double temp_scale, scale = 1.0;
+    double length;
+    cairo_bool_t path_empty;
+    double x_start, y_start;
+
+    if (width <= 0.0 || height <= 0.0)
+	return CAIRO_STATUS_SUCCESS;
+    
+    path_empty = _cairo_path_fixed_is_empty (cr->path);
+
+    if (r_top_left <= 0.0)
+	r_top_left = 0.0;
+    if (r_top_right <= 0.0)
+	r_top_left = 0.0;
+    if (r_bottom_left < 0.0)
+	r_bottom_left = 0.0;
+    if (r_bottom_right <= 0.0)
+	r_bottom_right = 0.0;
+
+    length = r_top_left + r_top_right;
+    if (length > width) {
+	temp_scale = width / length;
+	scale = temp_scale;
+    }
+    length = r_top_right + r_bottom_right;
+    if (length > height) {
+	temp_scale = height / length;
+	if (temp_scale < scale)
+	    scale = temp_scale;
+    }
+    length = r_bottom_right + r_bottom_left;
+    if (length > width) {
+	temp_scale = width / length;
+	if (temp_scale < scale)
+	    scale = temp_scale;
+    }
+    length = r_bottom_left + r_top_left;
+    if (length > height) {
+	temp_scale = height / length;
+	if (temp_scale < scale)
+	    scale = temp_scale;
+    }
+    
+    if (scale != 0) {
+	r_top_left *= scale;
+	r_top_right *= scale;
+	r_bottom_left *= scale;
+	r_bottom_right *= scale;
+    }
+
+    status = _cairo_default_context_move_to (cr, x, y + r_top_left);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_default_context_rounded_rectangle_curve_to (cr,
+								x + r_top_left,
+								y + r_top_left,
+								r_top_left,
+								M_PI,
+								1.5 * M_PI);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_default_context_rel_line_to (cr,
+						 width - r_top_left - r_top_right,
+						 0);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_default_context_rounded_rectangle_curve_to (cr,
+								x + width - r_top_right,
+								y + r_top_right,
+								r_top_right,
+								1.5 *M_PI,
+								2.0 * M_PI);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_default_context_rel_line_to (cr, 0, height - r_top_right - r_bottom_right);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_default_context_rounded_rectangle_curve_to (cr,
+								x + width - r_bottom_right,
+								y + height - r_bottom_right,
+								r_bottom_right,
+								0,
+								0.5 * M_PI);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_default_context_rel_line_to (cr, -width + r_bottom_right + r_bottom_left, 0);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_default_context_rounded_rectangle_curve_to (cr,
+								x + r_bottom_left,
+								y + height - r_bottom_left,
+								r_bottom_left,
+								0.5 * M_PI,
+								M_PI);
+    if (unlikely (status))
+	return status;
+
+    status = _cairo_default_context_close_path (cr);
+    if (unlikely (status))
+	return status;
+
+    if (path_empty) {
+	x_start = x;
+	y_start = y + r_top_left;
+	_cairo_gstate_user_to_backend (cr->gstate, &x_start, &y_start);
+	cr->path->start_point.x = _cairo_fixed_from_double (x_start);
+	cr->path->start_point.y = _cairo_fixed_from_double (y_start);
+	cr->path->is_convex = TRUE;
+    }
+    else
+	cr->path->is_convex = FALSE;
+
+    return CAIRO_STATUS_SUCCESS;
+}
+
 static void
 _cairo_default_context_path_extents (void *abstract_cr,
 				     double *x1,
@@ -1460,6 +1615,7 @@ static const cairo_backend_t _cairo_default_context_backend = {
     _cairo_default_context_close_path,
     _cairo_default_context_arc,
     _cairo_default_context_rectangle,
+    _cairo_default_context_rounded_rectangle,
     _cairo_default_context_path_extents,
     _cairo_default_context_has_current_point,
     _cairo_default_context_get_current_point,
