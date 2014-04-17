@@ -1033,14 +1033,23 @@ _cairo_gl_msaa_compositor_stroke (const cairo_compositor_t	*compositor,
     if (_cairo_gl_hairline_style_is_hairline (style, ctm)) {
 	cairo_gl_hairline_closure_t closure;
 
+        /* prevent overlapping is very expensive, we should avoid it
+           at all cost.  In case of hairline, the overlapping occurs
+           on a single pixel and is almost indistinguishable.  To
+           trade-off quality vs performance, for hairline, we disable
+           overlapping
+	*/
+        
 	if (! (_is_continuous_arc (path, style) ||
-	       _is_continuous_single_line (path, style))) {
+	       _is_continuous_single_line (path, style) ||
+               path->is_convex)) {
 	    status = _prevent_overlapping_strokes (info.ctx, &info.setup,
 						   composite, path,
 						   style, ctm);
 	    if (unlikely (status))
 		goto finish;
 	}
+        
 
 	closure.ctx = info.ctx;
 
