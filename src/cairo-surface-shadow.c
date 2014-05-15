@@ -316,7 +316,8 @@ _cairo_ensure_shadow_surface (cairo_surface_t *target,
 						       content,
 						       width_out,
 						       height_out);
-	_cairo_surface_release_device_reference (shadow_surface);
+	if (shadow_surface->device)
+	    _cairo_surface_release_device_reference (shadow_surface);
     }
 
     shadow_surface_extents->x = 0;
@@ -2019,7 +2020,8 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
 						       content,
 						       shadow_width,
 						       shadow_height);
-	_cairo_surface_release_device_reference (shadow_surface);
+	if (shadow_surface->device)
+	    _cairo_surface_release_device_reference (shadow_surface);
     }
     if (! shadow_surface || unlikely (shadow_surface->status))
 	goto FINISH;
@@ -2038,7 +2040,8 @@ _cairo_surface_inset_shadow_glyphs (cairo_surface_t		*target,
 						     CAIRO_CONTENT_COLOR_ALPHA,
 						     shadow_surface_extents.width,
 						     shadow_surface_extents.height);
-	_cairo_surface_release_device_reference (mask_surface);
+	if (mask_surface->device)
+	    _cairo_surface_release_device_reference (mask_surface);
     }
     if (! mask_surface || unlikely (mask_surface->status))
 	goto FINISH;
@@ -2221,7 +2224,8 @@ _cairo_surface_shadow_glyphs (cairo_surface_t		*target,
 						       content,
 						       shadow_width,
 						       shadow_height);
-	_cairo_surface_release_device_reference (shadow_surface);
+	if (shadow_surface->device)
+	    _cairo_surface_release_device_reference (shadow_surface);
     }
     if (! shadow_surface || unlikely (shadow_surface->status))
 	goto FINISH;
